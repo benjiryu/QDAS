@@ -1,0 +1,295 @@
+# Pattern: Code Selection and Assignment
+
+## Metadata
+
+- Status: Draft for team review
+- Version: 0.1
+- Last updated: 2026-08-03
+- Related workflows: code-selection-and-assignment, excerpt-selection, notes-and-memos
+- Related patterns: excerpt-selection, transcript-segment, code-definition (not yet written), pending-assignment (not yet written), status-feedback (not yet written)
+- Research evidence: magnification interview with Carmel (stable code ordering), co-design workshop (codebook reference without losing position), competitive analysis (dropdown-based assignment as a friction point)
+
+## Purpose
+
+Let a researcher find one or more codes, check their definitions, apply them to a confirmed excerpt, and return to the transcript with position intact.
+
+## Owns
+
+- Code search and browse
+- Pending assignment state
+- Provisional code creation
+- Save and return
+
+## Does not own
+
+- Excerpt boundaries (excerpt-selection.md)
+- Codebook editing, approval, and versioning (codebook.md, not yet written)
+- Note content and visibility rules (note-editor.md, not yet written)
+
+## 1. Two changes from the current draft
+
+**Search is required.** The current draft gives the popup a create-a-code field and a hierarchical checkbox list, with no way to search. With a codebook of realistic size, browse-only navigation will consume most of a participant session, and the finding will be about scrolling rather than about coding. Search is the first control in the panel.
+
+**The panel is not anchored to the selected text.** The current draft places a popup adjacent to the selection. Under magnification this means the panel appears in a different screen location for every excerpt, which is the predictability problem Carmel raised. This pattern specifies a fixed-position panel instead. The decision needs team sign-off and is recorded in section 12.
+
+## 2. Container
+
+A non-modal panel in a fixed position, present in the DOM only while open.
+
+Non-modal rather than modal, because the user needs to re-read the excerpt and its surrounding context while choosing codes, and a modal that traps focus makes that a separate trip. The transcript remains reachable and readable while the panel is open. The excerpt stays confirmed and visibly marked throughout.
+
+Panel placement is a `codebookPresentation` flag with three values, so that the recommended side panel, a full-page variant, and the anchored popup currently in the Figma prototype can be compared in session rather than argued about in advance. The fixed-position rule in section 11 applies to `sidePanel` and `fullPage`. Under `anchoredPopup` the panel follows the selection by definition, which is precisely the property being tested.
+
+### 2.1 Commands
+
+| Command | Available when | Result |
+|---|---|---|
+| `codes.save` | Pending assignment is non-empty | Write assignments, close panel, return per `postCodingReturn` |
+| `codes.cancel` | Panel open | Discard pending codes and draft note, close panel, excerpt stays `confirmed` |
+| `codes.focusSearch` | Panel open | Move focus to the search field without clearing it |
+| `codes.clearSearch` | Query is non-empty | Clear query, remove results region, focus search field |
+
+Escape maps to `codes.cancel`. This is the panel's binding while it is open; excerpt-selection.md section 4.1 gives up its claim on Escape for exactly this reason.
+
+Save is unavailable with an empty pending assignment. Its unavailable state carries a programmatic reason, since a disabled control with no explanation is a dead end for a screen reader user.
+
+Chords follow the platform-conditional mapping in transcript-segment.md section 4.2.
+
+## 3. Regions, in fixed order
+
+1. Panel heading, naming the excerpt by size and start speaker
+2. Excerpt summary, with a control to re-read the full excerpt
+3. Search field
+4. Search results, present only when a query is active
+5. Recently used codes, collapsed by default
+6. Codebook, in canonical order
+7. Proposed codes, present only when the project permits provisional codes
+8. Create a code
+9. Pending assignment
+10. Note
+11. Save, Cancel
+
+This order never changes. Sections 4, 5, and 7 appear and disappear, but the sections that remain never reorder around them. Search results appear in their own region rather than filtering the canonical codebook in place, so the codebook's structure stays where the user learned it.
+
+## 4. The code list
+
+Native checkboxes in nested lists. Not a tree widget.
+
+Rationale: `role="tree"` with multi-selection has uneven screen reader support and requires reimplementing keyboard behavior that native controls already provide correctly. The accessibility contract prefers semantic HTML over ARIA recreation, and this is the place where that preference pays for itself. Hierarchy is conveyed through nested list structure and through each group's accessible name, so a user reaching a child code hears its parent context without needing a tree's level announcements.
+
+- Each code is a native checkbox with a visible label.
+- Child codes sit in a nested list under their parent, labeled by the parent code.
+- Checking a parent does not check its children. Coding a parent is a distinct analytic act from coding its children.
+- Checking a box adds the code to the pending assignment and announces the pending count. The panel does not close.
+- Unchecking removes it from pending.
+- Order is the project's canonical codebook order, read from the stored `canonicalOrderIndex`. The index is computed once, at codebook import or code approval, as hierarchy first and then alphabetically within each parent. It is stored rather than recomputed on render, so that renaming a code does not silently move it. Order never changes with frequency, recency, or relevance.
+
+Each code row exposes:
+
+- Code name
+- Short definition
+- A control opening the full definition
+- Color, as a redundant channel only. Color never carries meaning that is not also in text.
+
+## 5. Search
+
+- Searches code name, short definition, full definition, parent path, and synonyms.
+- Results appear in their own region, above the canonical codebook, with a heading stating the result count.
+- Results show the parent path so a matched child code is identifiable without expanding the hierarchy.
+- The canonical codebook remains present and unchanged below the results.
+- The query persists while a definition is opened and closed.
+- The query persists while codes are checked, so a user can apply several codes from one search.
+- Clearing the query removes the results region and returns focus to the search field.
+
+## 6. Code definitions
+
+Opening a definition is a disclosure inside the code's own row, not a nested overlay. Nested overlays inside a panel create a focus return problem that is avoidable here.
+
+The definition includes short definition, full definition, inclusion criteria, exclusion criteria, examples, status, and codebook version.
+
+Closing a definition returns focus to the control that opened it, with the query and every pending selection intact.
+
+Example visibility during independent coding is a project setting. Whether examples influence coder independence is a methodological question for Angie, recorded in section 12.
+
+## 7. Creating a provisional code
+
+- Name and short definition are required; full definition is optional.
+- A created code enters the pending assignment immediately.
+- It appears in the Proposed codes region, never in the canonical codebook. The canonical structure does not change until a qualitative lead approves the code.
+- Status is `provisional` until approved.
+- Announce on creation that the code was created as provisional and added to pending.
+
+## 8. Pending assignment
+
+The pending assignment is a visible, named region, not an implicit state behind the Save button.
+
+It lists every pending code with a remove control, shows the count, and is announced on change. It persists while the user searches, browses, opens definitions, creates codes, and edits the note.
+
+Save writes one `CodeAssignment` per pending code, all sharing the excerpt, coder, coding round, and codebook version. Save is unavailable while the list is empty.
+
+Pending codes survive a return to boundary adjustment. If the user invokes a boundary command from `confirmed`, the panel closes and the pending list is held until the excerpt is confirmed again.
+
+Cancel discards all pending codes and the draft note, and creates no records. Cancel prompts for confirmation when the pending assignment is non-empty.
+
+## 9. Focus behavior
+
+| Trigger | Focus destination |
+|---|---|
+| Panel opens | Search field |
+| Check or uncheck a code | Unchanged |
+| Open a definition | First element of the definition disclosure |
+| Close a definition | The control that opened it |
+| Create a code | Pending assignment region |
+| Remove a pending code | Next pending code, or the pending region heading if the list is now empty |
+| Save succeeds | Per `postCodingReturn`, default `excerptStartSegment` |
+| Boundary command invoked from the panel | The invoked boundary control; panel closes, pending codes held |
+| Save fails | The error message, with retry adjacent |
+| Cancel | Excerpt toolbar, excerpt still confirmed |
+
+## 10. Screen reader information
+
+| Event | Automatic | On request |
+|---|---|---|
+| Panel opens | Panel name, excerpt size and start speaker, pending count if non-zero | Full excerpt text |
+| Search returns | Result count | Result list |
+| Code checked | Code name, new pending count | Definition |
+| Code unchecked | Code name removed, new pending count | Pending list |
+| Code created | Provisional status, added to pending | Pending list |
+| Save succeeds | Codes applied, count, return location | Assignment detail |
+| Save fails | What failed, that nothing was lost, that retry is available | Error detail |
+
+Save confirmation states the return location explicitly, because the user needs to know where they are before deciding what to do next.
+
+## 11. Visual and magnification behavior
+
+- Fixed panel position, unchanged between invocations.
+- Checked state is not conveyed by color alone; the native checkbox provides shape.
+- Code color is redundant with the code name in every location it appears, including the transcript's right-hand column.
+- At narrow width or high zoom the panel becomes a full-width region in the same logical position in the reading order, and the transcript reflows above it. Regions do not reorder.
+- The panel is completable without horizontal panning.
+- Hierarchy indentation at high zoom uses a text indicator in addition to indent depth, since indentation past a few levels is easy to lose when only part of the panel is visible.
+
+## 12. Persistence and error recovery
+
+Preserved across search, browse, definition open and close, and note editing: excerpt boundaries, transcript position, pending codes, search query, expanded definitions, draft note.
+
+On save failure nothing is discarded. The excerpt stays confirmed, the pending codes stay pending, the note stays drafted, and retry is available.
+
+## 13. Data model
+
+```text
+CodeAssignment
+  assignmentId
+  excerptId
+  codeId
+  coderId
+  codingRoundId
+  codebookVersionId
+  status              active | provisional | superseded
+  uncertaintyFlag
+  visibility
+  createdAt
+  updatedAt
+
+Code
+  codeId
+  projectId
+  parentCodeId        nullable
+  name
+  shortDefinition
+  fullDefinition
+  inclusionCriteria
+  exclusionCriteria
+  examples
+  synonyms
+  colorToken
+  status              approved | provisional | deprecated | merged
+  canonicalOrderIndex
+
+Note
+  noteId
+  authorId
+  noteType
+  noteText
+  visibility
+  status
+  relatedExcerptId      populated in v0.1
+  relatedAssignmentId   reserved, unused in v0.1
+  relatedCodeId         reserved, unused in v0.1
+  createdAt
+```
+
+`codebookVersionId` is recorded on every assignment so that a later codebook change does not retroactively alter what a coder was working from.
+
+`CodeAssignment.status` distinguishes an assignment made against an approved code from one made against a code still awaiting approval, and marks assignments superseded by a reflexivity decision. `CodeAssignment.visibility` carries the independent-coding rule from users-and-roles.md. Neither is exercised by this pattern; both are written at save so that review and administration can read them without a migration.
+
+`Note` is listed here for field agreement only. Note behavior, types, and visibility rules belong to note-editor.md, which is not yet written.
+
+## 14. Acceptance criteria
+
+**Search does not reorder the codebook.** Given a query returning three codes, when the results appear, then the canonical codebook remains present below them in unchanged order.
+
+**Return from definition.** Given the user opens the third search result's definition, when the definition closes, then focus returns to the third result and the query is unchanged.
+
+**Multiple codes in one pass.** Given an open panel, when the user checks three codes, then all three appear in the pending assignment and the panel has not closed.
+
+**Query survives selection.** Given an active query and one checked result, when the user checks a second result, then the query and both selections are intact.
+
+**Stable code order.** Given the codebook in project hierarchy, when the panel is closed and reopened, then the hierarchy and item order are unchanged.
+
+**Parent does not cascade.** Given a parent code with two children, when the parent is checked, then only the parent enters the pending assignment.
+
+**Provisional codes do not enter the canonical list.** Given a newly created code, when the panel is reopened, then the code appears under Proposed codes and the canonical codebook order is unchanged.
+
+**Cancel creates nothing.** Given two pending codes and a draft note, when the user confirms cancel, then no assignment and no note exist, and the excerpt remains confirmed.
+
+**Save failure preserves everything.** Given two pending codes and a draft note, when saving fails, then both codes, the note, and the excerpt are preserved and retry is available.
+
+**Return location is announced.** Given a successful save, when the panel closes, then the announcement states how many codes were applied and where focus has returned.
+
+**Not color-only.** Given the panel rendered without color, when a user identifies a code and its checked state, then both remain identifiable.
+
+## 15. Prototype configuration
+
+```text
+codebookPresentation:  sidePanel | fullPage | anchoredPopup
+  v0.1 assumption: sidePanel
+
+codeListEntry:  searchFirst | browseFirst
+  v0.1 assumption: searchFirst
+
+showRecentCodes:  true | false
+  v0.1 assumption: true, collapsed by default
+
+showExamplesDuringIndependentCoding:  true | false
+  v0.1 assumption: true
+
+allowProvisionalCodes:  true | false
+  v0.1 assumption: true
+
+showCodeFrequencies:  administratorOnly | reviewPhase | always
+  v0.1 assumption: administratorOnly
+```
+
+## 16. Unresolved questions
+
+**Side panel, full page, or the anchored popup already in Figma?**
+Owner: team, needs a decision before build. Evidence needed: task-based comparison with magnification and screen reader participants rather than preference ranking. Temporary assumption: side panel at a fixed position, on the reasoning that an anchored popup moves with the selection and defeats learned location. This contradicts the current Figma prototype and should be recorded in the decision log either way. Implementation can proceed behind the flag.
+
+**Search-first or browse-first?**
+Owner: team. Evidence needed: session one. Temporary assumption: search field focused on open, with the full codebook visible below so browsing costs nothing. Implementation can proceed.
+
+**Should examples be visible during independent coding?**
+Owner: Angie. Evidence needed: qualitative lead interview. This is a methodological question about coder independence, not an interface question, and should not be resolved by the design team. Temporary assumption: visible. Implementation can proceed behind the flag.
+
+**How is hierarchy represented at high zoom?**
+Owner: Benji. Evidence needed: magnification session. Temporary assumption: indentation plus a text level indicator. Implementation can proceed.
+
+**Do notes attach to the excerpt, to individual code assignments, or to both?**
+Owner: team, blocks the note editor spec. Evidence needed: workshop review and qualitative lead interview. Temporary assumption: one note per excerpt in v0.1. The `Note` entity in section 13 reserves `relatedAssignmentId` and `relatedCodeId` so that widening the attachment rule later does not require a migration, but neither field is written in v0.1. Implementation can proceed for the excerpt-level path only.
+
+**When does `showCodeFrequencies` take effect?**
+Owner: Angie. Evidence needed: qualitative lead interview on what is safe to expose during independent coding. The flag is declared here but no region in this pattern currently reads it. Temporary assumption: administrator-only, and code frequency does not appear in the coding panel at all. Implementation can proceed.
+
+**Can a coder mark an assignment uncertain, and does uncertainty raise review priority?**
+Owner: Angie. Evidence needed: qualitative lead interview. Temporary assumption: `uncertaintyFlag` exists in the model and is settable, and does not yet affect review ordering. Implementation can proceed.
