@@ -142,7 +142,13 @@ export interface CodeAssignment {
   updatedAt: string;
 }
 
-/** relatedAssignmentId, relatedCodeId, relatedReviewItemId reserved. See N-1. */
+/**
+ * Per D-011, a coding note attaches to an excerpt and a file-wide note attaches
+ * to a source. A note is never stored against a speaker turn; a turn's note
+ * indicator is derived from the excerpts it contains.
+ *
+ * relatedAssignmentId, relatedCodeId, relatedReviewItemId reserved.
+ */
 export interface Note {
   noteId: Id;
   authorId: Id;
@@ -152,6 +158,8 @@ export interface Note {
   status: string;
   createdAt: string;
   relatedExcerptId: Id | null;
+  /** File-wide notes. Defined now, surface out of scope for v0.1. See N-4. */
+  relatedSourceId: Id | null;
   relatedAssignmentId: Id | null;
   relatedCodeId: Id | null;
   relatedReviewItemId: Id | null;

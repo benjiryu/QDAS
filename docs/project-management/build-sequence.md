@@ -69,11 +69,23 @@ The build must pass before any feature work. Fix errors here rather than carryin
 
 ### 0.6 Claude Code
 
+Use the native installer rather than a global npm install:
+
 ```bash
-npm install -g @anthropic-ai/claude-code
-cd "~/Coding Projects/QDAS"
+curl -fsSL https://claude.ai/install.sh | bash
+```
+
+The npm route writes to `/usr/local/lib/node_modules`, which is not user-writable on a default macOS Node install, and fails with `EACCES`. Do not work around that with `sudo`; the Claude Code documentation warns against it, and it leaves root-owned files in your npm tree. The native installer puts the binary in `~/.local/bin` instead, which you own, and auto-updates.
+
+Then verify and start:
+
+```bash
+claude --version
+cd ~/"Coding Projects/QDAS"
 claude
 ```
+
+Note the quote placement. `cd "~/Coding Projects/QDAS"` fails, because a tilde inside quotes is a literal character rather than your home directory. Put the tilde outside: `cd ~/"Coding Projects/QDAS"`.
 
 Run it from the repository root so it can read `CLAUDE.md` and `/docs`. Do not run `/init`; `CLAUDE.md` already exists and `/init` would overwrite it.
 
@@ -89,12 +101,9 @@ Run it from the repository root so it can read `CLAUDE.md` and `/docs`. Do not r
 
 **Run tests after every change.** This is in `CLAUDE.md`, but check that it actually happened rather than assuming.
 
-**Review behaviorally, not by reading code.** Your leverage as a reviewer is the acceptance criteria, which is why the specifications carry them. After each task, work through the Given-When-Then statements in the relevant pattern spec by hand:
+**Review behaviorally, not by reading code.** Your leverage as a reviewer is the acceptance criteria, which is why the specifications carry them. After each task, work through the Given-When-Then statements in the relevant pattern spec by hand: keyboard only, 400% zoom, VoiceOver, and focus destination at every transition.
 
-1. Keyboard only. Unplug the mouse if it helps.
-2. Browser zoom at 400%. Check nothing requires horizontal scrolling.
-3. Turn on VoiceOver, Command+F5 on macOS, and complete the task by ear.
-4. Confirm focus lands where the spec says after every transition.
+Procedures, VoiceOver commands, the caption panel, and what VoiceOver will not catch are in `docs/testing/manual-testing.md`. Run the criteria for the task in hand, not the whole list every time.
 
 If a criterion fails, quote the criterion back to the agent rather than describing the symptom. "Acceptance criterion 'Context does not move focus' in excerpt-selection.md fails" produces a better fix than "focus is jumping around."
 
@@ -238,12 +247,21 @@ Done when: both criteria pass by hand, and the position ribbon and the spoken re
 ```
 Implement excerpt selection per docs/patterns/excerpt-selection.md.
 
-- The state machine in section 3 exactly, including the confirmed to adjusting
+There is no visual design for this feature. Per D-018 you have latitude on how
+it presents: toolbar placement and grouping, control labels, how the pending
+range is indicated, how boundary markers are drawn, layout at each width.
+Propose your approach in the plan.
+
+You do not have latitude on behavior. Implement exactly:
+
+- The state machine in section 3, including the confirmed to adjusting
   transition and the confirmed to idle discard
 - Commands and availability per section 4, including the Escape rule in 4.1
 - Delta announcements per section 5
 - Focus behavior per section 6, including that reading context does not move focus
-- Fixed toolbar position that does not follow the selection
+- A toolbar position that is fixed and does not follow the selection
+
+If any of the above seems wrong, say so rather than changing it.
 
 Do not implement code selection. On confirm, announce and stop.
 

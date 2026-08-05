@@ -142,6 +142,8 @@ Reported on request:
 
 Not reported automatically. Announcing position on every movement is the kind of verbosity that makes continuous reading unusable.
 
+Per D-009 the indicator reports reading position, not coding completion. The label must not say "Progress," which reads as completion. The Hi-Fi currently shows `Progress 10%`, and an earlier frame shows `4:39/1:32:12 (53%)`, which is audio elapsed time. Neither is this value.
+
 ### 5.1 Change from the current draft
 
 The existing prototype specification defines the progress indicator as reflecting "the word selected for a screen reader and the top line viewable for a sighted user." Both halves need revising. The application cannot know the screen reader's reading position, and defining the sighted value from scroll produces a number that contradicts the spoken one whenever a user scrolls without acting.
@@ -242,14 +244,13 @@ Entities referenced but owned elsewhere: `Speaker`, `Source`, `CodingRound`, and
 
 ## 12. Unresolved questions
 
-**Does the prototype need word-level boundary precision?**
-Owner: Benji, with Angie. Evidence needed: whether AFB coding practice ever requires sub-sentence excerpts. Temporary assumption: no. Offsets are stored in the data model so that word-level precision can be added later without migrating excerpts, but v0.1 always writes whole-sentence boundaries. Implementation can proceed.
+**Word-level precision: resolved by D-016.** The application does not implement word-level navigation. Continuous prose in the DOM already gives every screen reader word-level reading at no cost, and rebuilding it would duplicate assistive technology.
 
-**How should suggested meaning units be represented, if at all?**
-Owner: team. Evidence needed: workshop follow-up. Temporary assumption: out of scope for v0.1. Sentence and speaker turn only. Implementation can proceed.
+Excerpt boundaries stay whole-sentence. Word-level *reading* and word-level *boundaries* are different capabilities: the first comes free from the DOM, the second is application state the application can only place at an addressable unit, and it cannot observe where a screen reader's word cursor sits in any case. A user can hear any word and can begin an excerpt only at a sentence. Offsets stay in the model, always written at full segment bounds.
+
+**Meaning units: resolved.** Out of scope for v0.1. Sentence and speaker turn only.
 
 **Which modifier chord survives contact with JAWS, NVDA, and VoiceOver?**
 Owner: whoever runs the accessibility smoke test. Evidence needed: hands-on verification with each screen reader before the first session. Temporary assumption: Alt-based chords as listed. Implementation can proceed, with the binding table held in one configuration file so reassignment is a single edit.
 
-**Should segmentation be revisable by the qualitative lead during a project?**
-Owner: Angie. Evidence needed: qualitative lead interview. Temporary assumption: no. Segmentation is fixed at import for v0.1. Implementation can proceed.
+**Segmentation revision: resolved.** No. Segmentation is fixed at conversion and the qualitative lead cannot revise it mid-project.

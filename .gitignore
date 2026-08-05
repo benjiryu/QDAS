@@ -32,3 +32,6 @@ playwright/.cache
 
 # Real research data, never committed. See docs/testing/seed-data.md
 data-local
+
+# Claude Code local settings, personal to each contributor
+.claude/settings.local.json

@@ -39,7 +39,7 @@ Implemented with genuine state and genuine consequences.
 Present enough to keep the workflow coherent, not built.
 
 - Authentication. A role and user switcher stands in.
-- File import. Sources are converted offline and loaded as seeded data.
+- File import. Sources are converted offline and loaded as seeded data. Per D-012, import is not a control in the coding toolbar. A simulated feature given a primary control invites participants to try it and produces findings about something that does not exist.
 - Automatic segmentation. Segmentation is produced by the offline conversion step.
 - Live collaboration and cloud sync. A second coder's work is seeded.
 - Notifications.
@@ -52,11 +52,13 @@ Present enough to keep the workflow coherent, not built.
 
 - Survey response coding. The data model accommodates it; no interface is built.
 - Codebook editing, approval, versioning, and change propagation.
-- Audio playback and transcript-audio synchronization.
+- Audio playback and transcript-audio synchronization. Docked per D-014 when it is built.
 - Administrator dashboard.
 - Home and dashboard beyond a minimal route into a project.
+- Overarching Themes. Present in the Hi-Fi, absent from every specification and from the domain model. See A-5.
+- File-level notes. Coding notes are in scope; the separate file-wide notes surface is not. See D-011 and N-4.
 
-Survey and audio both appear in the current Figma prototype. They are deliberately excluded here so that the build stays inside the interactions the research is testing.
+Survey, audio, themes, and file-level notes all appear in the current Figma prototype. They are deliberately excluded here so that the build stays inside the interactions the research is testing.
 
 ## Completion criteria
 

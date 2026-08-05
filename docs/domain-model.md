@@ -122,7 +122,8 @@ CodeAssignment
 Note
   noteId, authorId, noteType, noteText
   visibility, status, createdAt
-  relatedExcerptId
+  relatedExcerptId    coding notes, written in v0.1
+  relatedSourceId     file-wide notes, see D-011
   relatedAssignmentId, relatedCodeId, relatedReviewItemId (reserved)
 
 CodingRound
@@ -162,6 +163,9 @@ Project.phase            setup | pilot | independentCoding | review | reflexivit
 Written so that later work does not require a migration.
 
 - `Excerpt.startOffset` and `endOffset`. Always the full segment bounds. Word-level precision is an open question.
-- `Note.relatedAssignmentId`, `relatedCodeId`, `relatedReviewItemId`. Notes attach only to excerpts in v0.1.
+- `Note.relatedAssignmentId`, `relatedCodeId`, `relatedReviewItemId`. Per D-011, a note attaches to an excerpt when written during coding and to a source when written as a file-wide note. Assignment-level, code-level, and review-level attachment stay reserved.
+- `Note.relatedSourceId`. Defined so the field exists, but the file-level notes surface is out of scope for v0.1. See N-4.
+
+A speaker turn carrying a note indicator derives that state from the excerpts within it. A note is never stored against a turn, which is what the current Figma row components assume.
 - `SurveyResponse` in its entirety.
 - `ActivityRecord`. Written but not read.

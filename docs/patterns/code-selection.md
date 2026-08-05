@@ -285,11 +285,9 @@ Owner: Angie. Evidence needed: qualitative lead interview. This is a methodologi
 **How is hierarchy represented at high zoom?**
 Owner: Benji. Evidence needed: magnification session. Temporary assumption: indentation plus a text level indicator. Implementation can proceed.
 
-**Do notes attach to the excerpt, to individual code assignments, or to both?**
-Owner: team, blocks the note editor spec. Evidence needed: workshop review and qualitative lead interview. Temporary assumption: one note per excerpt in v0.1. The `Note` entity in section 13 reserves `relatedAssignmentId` and `relatedCodeId` so that widening the attachment rule later does not require a migration, but neither field is written in v0.1. Implementation can proceed for the excerpt-level path only.
+**Notes: resolved by D-011.** A coding note attaches to the excerpt. File-wide notes attach to the source and live in a separate surface that is out of scope for v0.1. `relatedAssignmentId` and `relatedCodeId` stay reserved and unwritten.
 
-**When does `showCodeFrequencies` take effect?**
-Owner: Angie. Evidence needed: qualitative lead interview on what is safe to expose during independent coding. The flag is declared here but no region in this pattern currently reads it. Temporary assumption: administrator-only, and code frequency does not appear in the coding panel at all. Implementation can proceed.
+**Code frequency: resolved by D-010.** `showCodeFrequencies` stays at `administratorOnly`. No count appears in this panel, and none appears in any coder-facing view during independent coding. The Hi-Fi Coded data screen currently shows a count beside every code and needs that removed for the coder view.
 
 **Can a coder mark an assignment uncertain, and does uncertainty raise review priority?**
 Owner: Angie. Evidence needed: qualitative lead interview. Temporary assumption: `uncertaintyFlag` exists in the model and is settable, and does not yet affect review ordering. Implementation can proceed.
