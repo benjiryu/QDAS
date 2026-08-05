@@ -1,0 +1,84 @@
+/*
+ * Shell layout only. Regions stack at narrow width; they never reorder, per
+ * docs/accessibility-contract.md section 2.1.
+ */
+
+.skip-link {
+  position: absolute;
+  left: 0.5rem;
+  top: -4rem;
+  z-index: 10;
+  padding: 0.5rem 0.75rem;
+  background: var(--surface);
+  border: 2px solid var(--text);
+  border-radius: 4px;
+  transition: top 120ms ease-out;
+}
+
+.skip-link:focus-visible {
+  top: 0.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skip-link {
+    transition: none;
+  }
+}
+
+.app-banner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  align-items: baseline;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.app-banner__name {
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.nav-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.app-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.project-nav {
+  flex: 1 1 14rem;
+  min-width: 0;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+main {
+  flex: 999 1 20rem;
+  min-width: 0;
+}
+
+/*
+ * The skip link lands here, so the landing has to be visible. Section 2.4
+ * treats indicator thickness and contrast as functional, not styling.
+ */
+main:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 4px;
+}
+
+.placeholder {
+  margin: 0;
+  color: var(--text-muted);
+}
