@@ -297,6 +297,8 @@ Add code definitions and provisional code creation per
 docs/patterns/code-selection.md sections 6 and 7.
 
 - Definitions are inline disclosures, not nested overlays
+- A definition shows short definition, full definition, inclusion criteria, and
+  exclusion criteria. Not examples: they are out of scope per D-019
 - Closing a definition returns focus to the control that opened it, with the
   search query and every pending selection intact
 - Created codes are provisional, enter pending immediately, and appear in the
@@ -313,8 +315,11 @@ Complete the coding workflow per docs/patterns/code-selection.md sections 8, 9,
 12 and docs/patterns/excerpt-selection.md section 9.
 
 - Pending assignment as a visible named region, announced on change
+- An uncertainty control on the pending assignment, per D-021. Sets
+  uncertaintyFlag on every assignment written at save. Does not affect ordering
 - Save unavailable while pending is empty, with a programmatic reason
-- One note per excerpt, plain text
+- One note per excerpt, plain text, no note type. Types are deferred to the
+  notes page specification per D-020
 - Save writes one CodeAssignment per pending code, recording codebookVersionId
 - Return per postCodingReturn, announcing where focus landed
 - Cancel discards and confirms first when pending is non-empty

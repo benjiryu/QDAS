@@ -57,6 +57,8 @@ Present enough to keep the workflow coherent, not built.
 - Home and dashboard beyond a minimal route into a project.
 - Overarching Themes. Present in the Hi-Fi, absent from every specification and from the domain model. See A-5.
 - File-level notes. Coding notes are in scope; the separate file-wide notes surface is not. See D-011 and N-4.
+- Code examples. Definitions carry short definition, full definition, inclusion criteria, and exclusion criteria only. See D-019.
+- Note types. A note is free text. See D-020.
 
 Survey, audio, themes, and file-level notes all appear in the current Figma prototype. They are deliberately excluded here so that the build stays inside the interactions the research is testing.
 

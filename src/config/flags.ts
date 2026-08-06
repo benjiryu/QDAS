@@ -42,7 +42,11 @@ export interface PrototypeFlags {
   codebookPresentation: CodebookPresentation;
   codeListEntry: CodeListEntry;
   showRecentCodes: boolean;
-  /** Methodological, not cosmetic. See C-2. Owner: Angie. */
+  /**
+   * Inert in v0.1. Examples are out of scope per D-019, so this governs nothing
+   * until they are built. When they are, C-2 returns as a methodological
+   * question about coder independence and belongs to the qualitative lead.
+   */
   showExamplesDuringIndependentCoding: boolean;
   allowProvisionalCodes: boolean;
   showCodeFrequencies: CodeFrequencyVisibility;
@@ -66,7 +70,7 @@ export const defaultFlags: PrototypeFlags = {
   codebookPresentation: 'sidePanel',
   codeListEntry: 'searchFirst',
   showRecentCodes: true,
-  showExamplesDuringIndependentCoding: true,
+  showExamplesDuringIndependentCoding: false,
   allowProvisionalCodes: true,
   showCodeFrequencies: 'administratorOnly',
 

@@ -105,11 +105,11 @@ Each code row exposes:
 
 Opening a definition is a disclosure inside the code's own row, not a nested overlay. Nested overlays inside a panel create a focus return problem that is avoidable here.
 
-The definition includes short definition, full definition, inclusion criteria, exclusion criteria, examples, status, and codebook version.
+The definition includes short definition, full definition, inclusion criteria, exclusion criteria, status, and codebook version.
+
+Examples are out of scope for v0.1 per D-019. `Code.examples` stays in the model, unwritten and unread. Definitions and the inclusion and exclusion criteria carry the disambiguation behavior the panel is being tested for, including the pair of similarly named codes in the seed fixture.
 
 Closing a definition returns focus to the control that opened it, with the query and every pending selection intact.
-
-Example visibility during independent coding is a project setting. Whether examples influence coder independence is a methodological question for Angie, recorded in section 12.
 
 ## 7. Creating a provisional code
 
@@ -124,6 +124,8 @@ Example visibility during independent coding is a project setting. Whether examp
 The pending assignment is a visible, named region, not an implicit state behind the Save button.
 
 It lists every pending code with a remove control, shows the count, and is announced on change. It persists while the user searches, browses, opens definitions, creates codes, and edits the note.
+
+It also carries an uncertainty control, per D-021. Marking the assignment uncertain sets `uncertaintyFlag` on every assignment written at save. The control has a visible label and a programmatic state, and its change is announced like any other pending change. Uncertainty does not affect review ordering in v0.1; whether it should is open as N-3 and belongs to slice 3.
 
 Save writes one `CodeAssignment` per pending code, all sharing the excerpt, coder, coding round, and codebook version. Save is unavailable while the list is empty.
 

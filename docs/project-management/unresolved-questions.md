@@ -10,8 +10,22 @@ Resolved entries are retained with their resolution so that a settled question i
 
 ### Blocking
 
-**B-1. Does the AFB data agreement cover prototype development, LLM agent exposure, and display to research participants?**
-Owner: Benji with Dr. Silverman. Evidence: terms of the current arrangement; whether UCI IRB review covers this use. Assumption: none available. Build proceeds against synthetic fixtures until answered. This remains the only item that blocks a participant session outright.
+**B-1. Does the AFB data agreement cover using real deidentified material in a participant session?**
+
+Owner: Benji with Dr. Silverman. Evidence: terms of the current arrangement, and whether UCI IRB review covers this use.
+
+*Narrowed by the synthetic fixture, not closed by it.* The original question had three parts. Building against a synthetic fixture settles two of them: development use and LLM agent exposure both stop being questions, because no real material is present while the prototype is built and the agent never reads a real transcript. Development is unblocked and stays unblocked.
+
+The third part survives untouched. Loading real deidentified transcripts for a session means showing one person's interview to a different person, and that is the part that needs the agreement checked. No fixture removes it, because the fixture is precisely what is being replaced at that moment.
+
+*Two components with different risk profiles.* Worth separating rather than treating as one permission:
+
+- **Transcripts.** Interview text carries re-identification risk that survives name removal, higher in a small community. This is the sensitive half.
+- **The codebook.** Code names, definitions, and criteria are analytic apparatus rather than participant speech, and likely carry far less risk. Confirming the codebook separately may be quick, and it is the half that drives the search and browse findings the code panel is being tested for.
+
+*A fallback that de-risks the schedule.* Session one can run entirely on the synthetic fixture if the fixture meets the shape requirements in `seed-data.md` section 4. What that costs is ecological validity: a qualitative researcher given invented text may code it as an exercise rather than bringing real analytic judgment, and that is a genuine threat to workflow findings. A middle path is the synthetic transcript with the real codebook, which recovers most of the codebook realism at much lower risk.
+
+The decision to make deliberately: whether session one waits on B-1 or runs on the fixture. Waiting produces better data. Running does not stall the research.
 
 **B-2. Panel placement: side panel, full page, or anchored popup?**
 
@@ -38,19 +52,7 @@ Owner: team, with evidence from session one. Assumption: fixed side panel, per D
 
 *What it blocks downstream.* Focus entry and return destinations, whether the transcript remains readable during code selection, whether excerpt re-reading needs a stored copy, and the review workspace later, which will likely reuse whatever pattern wins. F-7 is entangled with this: what reflows depends on whether there are two regions to begin with.
 
-### Awaiting the qualitative lead
-
-**C-2. Should code examples be visible during independent coding?** Owner: Angie. A methodological question about coder independence, not an interface question. Assumption: visible, behind a flag.
-
-**N-2. Which note types are required?** Owner: Angie. Assumption: free text with no type in v0.1.
-
-**N-3. Does an uncertainty flag affect review priority?** Owner: Angie. Assumption: flag is settable and does not yet affect ordering.
-
-### Awaiting evidence from a session or from hardware
-
-**T-5. Which chords survive JAWS, NVDA, and VoiceOver?** Owner: whoever runs the smoke test. Evidence: hands-on verification on real hardware. Assumption: the platform-conditional defaults in `keybindings.ts`. Held in one module so reassignment is a single edit.
-
-**C-3. How is hierarchy represented at high zoom?** Owner: Benji. Assumption: indentation plus a text level indicator.
+### Awaiting evidence from a session or from a design pass
 
 **F-7. What is the reflow behavior?** Owner: Benji. The Hi-Fi has a fixed 384 pixel sidebar with no collapsed state, and Coded data places three regions side by side. Neither survives 400 percent zoom under the single-panel rule. Evidence needed: a design decision about what collapses, what becomes sequential, and in what order. Assumption: sidebar collapses, code panel becomes a full-width region in the same reading position, logical order unchanged. Implementation can proceed on the assumption; the design needs to catch up.
 
@@ -61,6 +63,8 @@ Owner: team, with evidence from session one. Assumption: fixed side panel, per D
 ### Transcript and segmentation
 
 **T-1. RESOLVED.** Default navigation unit is the sentence.
+
+**T-5. RESOLVED for development, D-024.** The routine smoke test runs in VoiceOver on Safari. Chord verification against a participant's own screen reader stays a per-session gate, because VoiceOver does not surface browse-mode key interception and NVDA and JAWS do. NVDA is free.
 
 **T-2. RESOLVED, D-016.** The application does not implement word-level navigation. Continuous prose in the DOM already lets a screen reader read and move by word, and recreating that is the kind of duplication the interaction principles rule out. Excerpt boundaries remain whole-sentence. See D-016 for why word-level reading and word-level boundaries are different capabilities.
 
@@ -84,11 +88,19 @@ Owner: team, with evidence from session one. Assumption: fixed side panel, per D
 
 **C-1. RESOLVED.** Search field focused on open, full codebook visible below. May be revisited.
 
+**C-2. RESOLVED, D-022.** Examples are not visible during independent coding. Methodological, not scope: an example is a prior coder's interpretation, and reading it makes an independent judgment less independent. Examples remain out of v0.1 for scope reasons; the flag stays `false` for a reason that does not expire.
+
+**C-3. RESOLVED.** Hierarchy at high zoom is indentation plus a text level indicator.
+
 **C-4. RESOLVED.** No AI suggestions in v0.1.
 
 ### Notes and themes
 
 **N-1. RESOLVED, D-011.** Coding notes attach to excerpts. File-wide notes attach to the source.
+
+**N-3. RESOLVED, D-023.** Uncertainty raises an item's review priority. The flag is written in v0.1 per D-021; the ordering behavior lands in slice 3.
+
+**N-2. RESOLVED, D-020.** A note in v0.1 is free text with no type. Note types and their visibility rules are specified in the notes page specification, written later.
 
 **N-4. RESOLVED, D-017.** The file-wide notes surface is out of scope for v0.1. A later version may carry a single page for file-wide notes and emergent themes together.
 

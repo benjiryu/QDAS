@@ -232,3 +232,100 @@ Reason: those second items are the research instrument. `excerpt-selection.md` a
 The distinction is worth stating because "there is no design for this" and "there is no specification for this" are different situations, and only the first is true here.
 
 Closes F-1.
+
+## D-019 Code examples are out of scope for v0.1
+
+Date: 2026-08 | Workflow: code assignment | Status: approved
+
+The definition disclosure shows short definition, full definition, inclusion criteria, and exclusion criteria. Examples are not shown, and no example content is required in the fixture.
+
+Reason: scope. Examples add content to author and a region to lay out, and the disambiguation behavior the panel is being tested for is carried by the definition and the inclusion and exclusion criteria.
+
+Important distinction, so this is not later mistaken for a settled question. C-2 asked whether examples should be visible *during independent coding*, which is a methodological question about coder independence and belongs to Angie. This decision does not answer it. It removes examples from v0.1, so the methodological question does not yet arise. When examples are built, C-2 returns and still needs a methodological answer.
+
+Implementation implications:
+
+- `Code.examples` stays in the domain model, unwritten and unread in v0.1.
+- `showExamplesDuringIndependentCoding` defaults to `false` and governs nothing until examples exist.
+- The seed fixture still requires full definitions with inclusion and exclusion criteria for every code, and still requires a pair of similarly named codes. Definitions carry the disambiguation case on their own.
+
+## D-020 Note types are deferred to the notes page specification
+
+Date: 2026-08 | Workflow: notes | Status: approved
+
+A note in v0.1 is free text with no type. Note types, and the visibility rules that go with them, will be specified in a notes page specification written later.
+
+Reason: typed notes only earn their cost once there is somewhere that filters or routes by type, and that surface does not exist in v0.1. Choosing a type list now would fix a taxonomy before the workflow that consumes it is understood.
+
+Implementation implications:
+
+- `Note.noteType` stays nullable and is written as null.
+- A notes page specification becomes an expected document. It owns note types, visibility rules, the file-wide notes surface from D-011 and D-017, and how notes are searched and filtered.
+
+Closes N-2.
+
+## D-021 A coder can mark an assignment uncertain
+
+Date: 2026-08 | Workflow: code assignment | Status: approved
+
+The coding panel carries a control that marks the pending assignment uncertain. The flag is stored and does not affect review ordering in v0.1.
+
+Reason: uncertainty was raised in the co-design workshop both as a thing coders want to record in the moment and as a filter for review. Recording it costs one control; reconstructing it after the fact is impossible.
+
+Implementation implications, because this is not currently in the build sequence:
+
+- Task 10 gains an uncertainty control on the pending assignment.
+- `CodeAssignment.uncertaintyFlag` is written at save. `PendingAssignment.uncertaintyFlag` already exists in `src/domain/types.ts`.
+- The control has a visible label and a programmatic state, and its change is announced like any other pending-assignment change.
+- Review ordering ignores it for now. Whether uncertainty raises review priority stays open as N-3 and belongs to Angie.
+
+Closes the implementation half of N-3.
+
+## D-022 Code examples are hidden during independent coding
+
+Date: 2026-08 | Workflow: code assignment | Status: approved
+
+When examples are built, they are not visible to a coder during independent coding. They may be visible in other phases.
+
+Reason: methodological. An example is a prior coder's interpretation of the code, and reading it during independent coding imports that interpretation into a judgment that is supposed to be made independently. That contaminates the disagreement the review phase exists to examine, because two coders who both read the same example are no longer coding independently.
+
+This supersedes the scope-only reasoning in D-019. Examples remain out of v0.1 for scope reasons, and when they arrive `showExamplesDuringIndependentCoding` stays `false` for a methodological reason that does not expire.
+
+Implementation implication: the flag governs visibility by phase, not globally. Examples appear in review, reflexivity, and any training or onboarding surface, and not in the coding panel during independent coding.
+
+Closes C-2.
+
+## D-023 Uncertainty raises review priority
+
+Date: 2026-08 | Workflow: review and reflexivity | Status: approved, implemented in slice 3
+
+An assignment marked uncertain raises the priority of its review item.
+
+Reason: a coder flagging uncertainty is the cheapest and most reliable signal the system has about where interpretation is unsettled. Discovering the same thing later by comparing disagreement patterns is slower and less specific, and misses the case where two coders were both uncertain and happened to agree, which looks like consensus and is not.
+
+Implementation implications:
+
+- `uncertaintyFlag` is written at save in v0.1 per D-021, so the data exists before the consuming behavior does.
+- Review ordering in slice 3 raises items containing at least one uncertain assignment.
+- No conflict with R-4. Coder identities stay hidden until independent coding closes, and review ordering only applies after it does. Uncertainty never becomes visible to another coder during independent work.
+- Agreement plus mutual uncertainty is a distinct state from agreement plus confidence, and review should be able to tell them apart.
+
+Closes N-3.
+
+## D-024 The development smoke test runs in VoiceOver
+
+Date: 2026-08 | Workflow: process | Status: approved, with a stated coverage limit
+
+The routine accessibility smoke test during development runs in VoiceOver on macOS with Safari.
+
+Reason: it is the configuration available to the team, and it catches the majority of structural defects: missing accessible names, wrong heading order, lost focus, absent announcements.
+
+Coverage this does not provide, stated so that a clean pass is not over-read:
+
+- Browse mode. NVDA and JAWS intercept single keys for quick navigation; VoiceOver does not work this way, so keyboard collisions will not surface.
+- Live region behavior under rapid successive announcements differs across all three.
+- AFB participants are more likely to use JAWS or NVDA on Windows than VoiceOver.
+
+Consequence: item 11 of the pre-session smoke test, chord verification against the participant's own screen reader and browser, remains a per-session gate and is not satisfied by the development smoke test. NVDA is free and runs on any Windows machine or virtual machine, which makes closing this gap cheap for participants who use it.
+
+Closes T-5 for development. The session gate stays open by design.
