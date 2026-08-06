@@ -173,6 +173,7 @@ Announcements use a polite live region. None of these interrupt.
 - Coded segments carry a non-color indicator in addition to color. Color alone fails the contract, and code color is already load-bearing in the codebook.
 - `coded-multiple` is visually distinct from `coded`. Overlapping highlights that simply layer color become unreadable at high zoom and unparseable by screen reader.
 - The speaker and timestamp column collapses into the turn's leading text at narrow width, preserving reading order rather than requiring horizontal panning.
+- Page-level reflow follows D-033: the narrow stack is primary, sidebar collapsed to a disclosure, command strip, transcript, code panel below. The wide layout is the same sequence with the panel alongside.
 - Scroll position is preserved when returning from any overlay or panel.
 
 ## 8. Persistence

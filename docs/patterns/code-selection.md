@@ -167,7 +167,7 @@ Cancel discards all pending changes and the draft note, and creates no records. 
 | Save succeeds | Per `postCodingReturn`, default `excerptStartSegment` |
 | Boundary command invoked from the panel | The invoked boundary control; panel closes, pending codes held |
 | Save fails | The error message, with retry adjacent |
-| Cancel | Excerpt toolbar, excerpt still confirmed |
+| Cancel | Command strip, excerpt still confirmed |
 
 ## 10. Screen reader information
 
@@ -189,7 +189,7 @@ Save confirmation states the return location explicitly, because the user needs 
 - Fixed panel position, unchanged between invocations.
 - Checked state is not conveyed by color alone; the native checkbox provides shape.
 - Code color is redundant with the code name in every location it appears, including the transcript's right-hand column.
-- At narrow width or high zoom the panel becomes a full-width region in the same logical position in the reading order, and the transcript reflows above it. Regions do not reorder.
+- Layout follows D-033: the narrow form is primary and the wide form derives from it. Narrow: collapsed source sidebar, command strip, transcript, this panel as a full-width labeled region below the transcript. Wide: the same sequence with the panel permitted alongside the transcript, fixed right, roughly 360 to 400 pixels at 100 percent zoom. The logical order is identical in both.
 - The panel is completable without horizontal panning.
 - Hierarchy indentation at high zoom uses a text indicator in addition to indent depth, since indentation past a few levels is easy to lose when only part of the panel is visible.
 

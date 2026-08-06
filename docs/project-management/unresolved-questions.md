@@ -26,15 +26,11 @@ Assumption until answered: real data is not deployed to an unauthenticated publi
 
 ### Awaiting a design pass
 
-**F-13. The excerpt toolbar and the coding toolbar are two objects and the specifications treat them as one.** Owner: Benji. `excerpt-selection.md` specifies an excerpt toolbar holding the boundary controls, fixed position, not following the selection. The Hi-Fi has a separate top bar reading `Code | Note`, which D-012 and D-015 lean on without specifying. D-029 settles what the two controls do; where they live, and whether they are one bar or two, is a design question.
-
-**F-14. The top bar carries a Note button and the code panel carries a note region.** Owner: Benji. Either these are two different things or one is redundant, and nothing says which. `code-selection.md` region 10 is a note on the excerpt; a top-bar Note during coding has no specified target. Related to N-4, the deferred file-wide notes surface.
-
-**F-12. The Figma shows a centered modal; the specification says non-modal fixed panel.** Owner: Benji. Opened by D-027. The design needs updating back: fixed panel, no dimmed backdrop, transcript live alongside. Not a behavioral question, but an unrecorded contradiction between design and specification is exactly what gets quietly reversed at a design review.
+**F-12. The Figma does not yet reflect D-027, D-031, D-032, and D-033.** Owner: Benji. One drawing settles it: design the 320 pixel stack first, collapsed source sidebar as a disclosure, command strip, transcript, code panel as a full-width region below. Then derive the wide variant, the same sequence with the panel alongside, fixed right, roughly 360 to 400 pixels. No modal, no dimming, no Note button in the top bar. Deriving wide from narrow guarantees the logical order never differs, which is what the contract requires.
 
 ### Awaiting evidence from a session or from a design pass
 
-**F-7. What is the reflow behavior?** Owner: Benji. The Hi-Fi has a fixed 384 pixel sidebar with no collapsed state, and Coded data places three regions side by side. Neither survives 400 percent zoom under the single-panel rule. Evidence needed: a design decision about what collapses, what becomes sequential, and in what order. Assumption: sidebar collapses, code panel becomes a full-width region in the same reading position, logical order unchanged. Implementation can proceed on the assumption; the design needs to catch up.
+
 
 **F-9. Figma frame hygiene.** Owner: Benji. The frame named `Project` contains the login form, the frame named `Log in` holds only the wordmark, and three hidden `Home` frames carry conflicting taxonomies from different generations. Not behavioral. Resolution: clean before the MSE handoff.
 
@@ -113,6 +109,12 @@ Assumption until answered: real data is not deployed to an unauthenticated publi
 **A-4. RESOLVED, D-014.** Audio is docked. Out of scope for v0.1 regardless.
 
 ### Figma and specification conflicts
+
+**F-7. RESOLVED, D-033.** The narrow layout is primary and the wide layout derives from it. Sidebar collapses to a disclosure, command strip, transcript, panel below; wide is the same order with the panel alongside.
+
+**F-13. RESOLVED, D-031.** One permanently reserved command strip holds the entry controls and the boundary controls. Nothing appears or disappears; availability is the phase signal.
+
+**F-14. RESOLVED, D-032.** No Note button in v0.1. The excerpt note is the panel's region 10. Note returns with a distinct file-wide meaning when that surface is built.
 
 **F-1. RESOLVED, D-018.** The agent has latitude on how excerpt selection is presented. The behavior specified in `excerpt-selection.md` is not latitude. See D-018 for where the line sits and why.
 

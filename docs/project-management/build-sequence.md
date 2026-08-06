@@ -322,10 +322,13 @@ Done when: both criteria pass by hand, and the position ribbon and the spoken re
 ```
 Implement excerpt selection per docs/patterns/excerpt-selection.md.
 
-There is no visual design for this feature. Per D-018 you have latitude on how
-it presents: toolbar placement and grouping, control labels, how the pending
-range is indicated, how boundary markers are drawn, layout at each width.
-Propose your approach in the plan.
+Per D-031 the boundary controls live in a single permanently reserved command
+strip under the top navigation, together with the two entry controls from
+D-029. The strip never appears or disappears; controls are disabled with an
+exposed reason when unavailable. Each control shows its chord via
+describeChord. Within those constraints, D-018 latitude applies: grouping,
+labels, how the pending range is indicated, boundary markers. Propose your
+approach in the plan.
 
 You do not have latitude on behavior. Implement exactly:
 
@@ -334,8 +337,8 @@ You do not have latitude on behavior. Implement exactly:
 - Commands and availability per section 4, including the Escape rule in 4.1
 - Delta announcements per section 5
 - Focus behavior per section 6, including that reading context does not move focus
-- The toolbar does not move with the selection. Where it sits is yours; that it
-  stays put between invocations is not
+- The strip does not move with the selection and does not appear or disappear
+  with excerpt state
 
 If any of the above seems wrong, say so rather than changing it.
 
@@ -362,6 +365,10 @@ Implement code selection per docs/patterns/code-selection.md sections 2 to 5.
 
 - A non-modal panel in a fixed position, per D-027. Not a dialog, no focus
   trap, no dimmed backdrop. The transcript stays reachable while it is open
+- Layout per D-033: full-width region below the transcript at narrow width,
+  alongside it fixed right at roughly 360 to 400 pixels when space permits,
+  same logical order in both
+- No Note button in the top bar, per D-032. The excerpt note is region 10
 - The panel is a labeled region so it is findable in browse mode
 - Escape cancels wherever focus sits; codes.focusSearch returns focus to it
 - The panel resizes and scrolls internally; it does not hold fixed dimensions
