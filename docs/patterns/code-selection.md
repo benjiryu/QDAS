@@ -61,7 +61,7 @@ Placement remains a `codebookPresentation` flag, so the comparison recorded agai
 | `codes.focusSearch` | Panel open | Move focus to the search field without clearing it |
 | `codes.clearSearch` | Query is non-empty | Clear query, remove results region, focus search field |
 
-Escape maps to `codes.cancel` and works wherever focus sits while the panel is open. excerpt-selection.md section 4.1 gives up its claim on Escape for exactly this reason.
+Escape maps to `codes.cancel` and works wherever focus sits while the panel is open. Because Escape means something different with the panel closed, it is resolved by `resolveEscape(panelOpen)` in `src/config/keybindings.ts` rather than read from the chord table. See excerpt-selection.md section 4.1.
 
 There is no separate adjust-boundaries command. The panel is non-modal, so the boundary commands in `excerpt-selection.md` section 4 reach the application directly and the excerpt toolbar remains visible and operable.
 

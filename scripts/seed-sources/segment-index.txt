@@ -1,0 +1,417 @@
+garden-a	turn 1, sentence 1	sg-a0cfed2891	Thanks for making the time today.
+garden-a	turn 1, sentence 2	sg-2a615067a1	To start, could you tell me how you first got involved with the garden
+garden-a	turn 2, sentence 1	sg-9c8b350eda	I moved into the neighborhood in the spring of my second year at the c
+garden-a	turn 2, sentence 2	sg-119f5cae6c	For about four months I just looked at it.
+garden-a	turn 2, sentence 3	sg-4410bcc68a	There was a hand-painted sign on the gate with a phone number, and I t
+garden-a	turn 2, sentence 4	sg-f0a2e1c548	What finally made me call was a tomato plant that had grown through th
+garden-a	turn 2, sentence 5	sg-4115504c51	Somebody had tied it back with a strip of blue fabric so it would not 
+garden-a	turn 2, sentence 6	sg-036f6c266e	That small act of care made me think there were people in there who wo
+garden-a	turn 2, sentence 7	sg-cc95c65803	So I called the number, and a woman named Perla answered, and she told
+garden-a	turn 2, sentence 8	sg-e576b7d943	I put my name down anyway.
+garden-a	turn 2, sentence 9	sg-b3b08fbc4d	It ended up being fourteen months, which I understand is fast for this
+garden-a	turn 3, sentence 1	sg-6ac5273b5c	What was the wait like?
+garden-a	turn 4, sentence 1	sg-c8737052c8	Honestly it was frustrating, because a garden is not something you can
+garden-a	turn 4, sentence 2	sg-f74d0e84dc	You want it in April when the weather turns and you have nowhere to pu
+garden-a	turn 4, sentence 3	sg-c2266fa9d3	I bought containers for my balcony that first year and grew peppers an
+garden-a	turn 4, sentence 4	sg-adb07343c9	It kept me going, but a balcony faces one direction and mine faced nor
+garden-a	turn 4, sentence 5	sg-c734697419	By the second spring I was checking my email constantly.
+garden-a	turn 4, sentence 6	sg-29fb3e75e3	When the offer came it was in November, which is the worst possible mo
+garden-a	turn 5, sentence 1	sg-c2f724d6d6	Why the worst month?
+garden-a	turn 6, sentence 1	sg-5120bbe7f5	Because there is nothing to do and everything to imagine.
+garden-a	turn 6, sentence 2	sg-75d7ddb9dd	I had a twenty by twenty foot plot that had been abandoned for most of
+garden-a	turn 6, sentence 3	sg-7eed456e42	I spent that whole winter reading about soil amendments and drawing la
+garden-a	turn 6, sentence 4	sg-27e9847825	Every layout I drew was for a garden with about four times the labor I
+garden-a	turn 6, sentence 5	sg-aad1990da6	That is a mistake I have watched almost every new member make since.
+garden-a	turn 6, sentence 6	sg-65fddd0c65	You plan for the person you are in February, and you garden as the per
+garden-a	turn 7, sentence 1	sg-1a754b3ae1	Say more about that difference.
+garden-a	turn 8, sentence 1	sg-d6f1e82ee8	In February you have infinite energy and no mosquitoes.
+garden-a	turn 8, sentence 2	sg-307e869b46	You are reading catalogs at your kitchen table with a cup of coffee, a
+garden-a	turn 8, sentence 3	sg-9807c07bb3	In July the reality is that it is ninety four degrees at six in the ev
+garden-a	turn 8, sentence 4	sg-d9dc06ab1c	The gap between those two people is where most of the failure happens.
+garden-a	turn 8, sentence 5	sg-a80d8f38bf	It is not that people lack knowledge.
+garden-a	turn 8, sentence 6	sg-72a6e062f1	It is that they planned for a version of themselves who had six free h
+garden-a	turn 8, sentence 7	sg-dc8c135b20	I now tell newcomers to plant half of what they think they can handle,
+garden-a	turn 9, sentence 1	sg-68f323e6df	How did you learn what to actually do in the plot?
+garden-a	turn 10, sentence 1	sg-7deaccd57b	Almost entirely from the people on either side of me.
+garden-a	turn 10, sentence 2	sg-e44f69b3a3	There is a formal orientation, and it is fine, but it happens once in 
+garden-a	turn 10, sentence 3	sg-1d14752e5f	What actually taught me was Hector, who had the plot to my north and h
+garden-a	turn 10, sentence 4	sg-30c2d8d8ee	He never gave me a lesson in his life.
+garden-a	turn 10, sentence 5	sg-bc52fedc10	He would just walk past while I was doing something wrong and stop and
+garden-a	turn 10, sentence 6	sg-bf3e03a28d	Then he would keep walking.
+garden-a	turn 10, sentence 7	sg-cc7836e8ab	The first season I thought he was being difficult.
+garden-a	turn 10, sentence 8	sg-89d6ef3cf8	By the third season I understood that he was letting me decide whether
+garden-a	turn 10, sentence 9	sg-569b275edf	I have tried to copy that with newer members and I am not as good at i
+garden-a	turn 10, sentence 10	sg-83dfe7b4d2	I explain too much.
+garden-a	turn 11, sentence 1	sg-e7fc73794c	Were there other sources of learning?
+garden-a	turn 12, sentence 1	sg-e46ffbb0c3	The garden runs workshops three or four times a season, usually on a S
+garden-a	turn 12, sentence 2	sg-c1ccfe5616	Seed starting in February, pruning in June, seed saving in September.
+garden-a	turn 12, sentence 3	sg-b2b9e14034	They are useful and they are also completely different from learning b
+garden-a	turn 12, sentence 4	sg-186f3c69a2	A workshop teaches you the general case.
+garden-a	turn 12, sentence 5	sg-5ad401c44c	Hector taught me my plot, which drains badly on the west end and gets 
+garden-a	turn 12, sentence 6	sg-84b06b65cf	No workshop can tell you that.
+garden-a	turn 12, sentence 7	sg-5c99d11c07	There is also a shelf of books in the tool shed that nobody has organi
+garden-a	turn 13, sentence 1	sg-3a97f1baf9	You mentioned rules.
+garden-a	turn 13, sentence 2	sg-9880ed636e	What are the main ones?
+garden-a	turn 14, sentence 1	sg-3ffeb41624	The big ones are about maintenance and about water.
+garden-a	turn 14, sentence 2	sg-456b2f5a3d	Every plot has to be planted by the middle of May and kept reasonably 
+garden-a	turn 14, sentence 3	sg-f42e3d094b	Water is on a schedule during July and August because the pressure at 
+garden-a	turn 14, sentence 4	sg-06dda96129	There are rules about what you can plant, mostly about height, because
+garden-a	turn 14, sentence 5	sg-53f0e74e14	No pesticides that are not on the approved list.
+garden-a	turn 14, sentence 6	sg-60c2c4a473	Dogs on leash.
+garden-a	turn 14, sentence 7	sg-dc1882c110	The gate stays locked, and you do not give the code to anyone who is n
+garden-a	turn 15, sentence 1	sg-d4364390b9	How are those rules decided?
+garden-a	turn 16, sentence 1	sg-01d909acee	There is a steering committee of seven people who are elected in Octob
+garden-a	turn 16, sentence 2	sg-3084d4bbd7	In practice the committee decides and the general meeting ratifies.
+garden-a	turn 16, sentence 3	sg-d826f73730	I have been on the committee twice, and I would say that is a fair des
+garden-a	turn 16, sentence 4	sg-5a26211586	What I would criticize is that the people who show up to meetings are 
+garden-a	turn 16, sentence 5	sg-68b69d5e35	So the rules tend to reflect what long-time members find annoying.
+garden-a	turn 16, sentence 6	sg-3a764b9424	The maintenance deadline is a good example.
+garden-a	turn 16, sentence 7	sg-5bbb81c1cc	Mid May makes sense if you have been gardening for fifteen years and s
+garden-a	turn 16, sentence 8	sg-57c7b92cc5	If you are new and working two jobs, mid May is aggressive.
+garden-a	turn 17, sentence 1	sg-08c37e9550	Has that come up?
+garden-a	turn 18, sentence 1	sg-11e8dac3e8	It came up two years ago and it got heated.
+garden-a	turn 18, sentence 2	sg-f99fb76100	A newer member, who I will not name, got a reassignment notice in June
+garden-a	turn 18, sentence 3	sg-518fec3493	She had started chemotherapy in April.
+garden-a	turn 18, sentence 4	sg-47b75e6da6	Nobody on the committee knew that, because there is no mechanism for a
+garden-a	turn 18, sentence 5	sg-fc986034f9	She was extremely upset, and I think rightly.
+garden-a	turn 18, sentence 6	sg-e8aebe3a15	What came out of it was a hardship pause that any member can request o
+garden-a	turn 18, sentence 7	sg-f088138e39	You email the committee, you say you are requesting a pause, and your 
+garden-a	turn 18, sentence 8	sg-5e81a1e771	That was one of the better things we have done.
+garden-a	turn 18, sentence 9	sg-d5d1ce6030	It took a bad incident to get there, which is how most of our rules ha
+garden-a	turn 19, sentence 1	sg-215e62de54	Can we talk about water?
+garden-a	turn 19, sentence 2	sg-b89d4ea55d	You mentioned it twice.
+garden-a	turn 20, sentence 1	sg-960a5e0ee6	Water is the thing that generates the most conflict on the site, by a 
+garden-a	turn 20, sentence 2	sg-1ced5b048f	Physically there are four spigots for sixty two plots, and they were i
+garden-a	turn 20, sentence 3	sg-424af89f24	The far northwest corner has almost no pressure after ten in the morni
+garden-a	turn 20, sentence 4	sg-5cde9632e6	So there is a schedule, odd plots on odd days, and the schedule is the
+garden-a	turn 20, sentence 5	sg-91fea42938	People who violate it get talked about in a way that people who violat
+garden-a	turn 20, sentence 6	sg-2220bbd0f3	Part of that is fairness and part of it is that water is the differenc
+garden-a	turn 20, sentence 7	sg-b546ed374f	I have seen genuinely kind people become quite sharp about a hose.
+garden-a	turn 21, sentence 1	sg-94b3bff3e9	How do people handle it when there is a conflict?
+garden-a	turn 22, sentence 1	sg-38e60a68ff	Badly, mostly, and then it resolves anyway.
+garden-a	turn 22, sentence 2	sg-1c73beeec2	The first move is almost always indirect.
+garden-a	turn 22, sentence 3	sg-222942bc40	Somebody complains to a third person, and the third person mentions it
+garden-a	turn 22, sentence 4	sg-ebc576b8d8	That reminder is understood by every single person to be aimed at one 
+garden-a	turn 22, sentence 5	sg-71e0426d0a	It works about half the time.
+garden-a	turn 22, sentence 6	sg-6c8c678dbd	When it does not work, someone eventually has a direct conversation, u
+garden-a	turn 22, sentence 7	sg-4d03f62d38	There is no formal complaint process, which I have gone back and forth
+garden-a	turn 22, sentence 8	sg-530d496384	A formal process would be fairer and it would also make the place feel
+garden-a	turn 22, sentence 9	sg-18486972cc	The current system relies on everyone being embarrassed by the same th
+garden-a	turn 23, sentence 1	sg-7b9caa1b67	What do you mean by that?
+garden-a	turn 24, sentence 1	sg-8f7a1a4111	The garden has changed a lot in who is in it.
+garden-a	turn 24, sentence 2	sg-ad1ae1a552	When I joined, it was mostly people who had been in the neighborhood t
+garden-a	turn 24, sentence 3	sg-191ff6fefd	Now there are many more people my age and younger who moved here in th
+garden-a	turn 24, sentence 4	sg-ade06cac2f	Those two groups have very different ideas of what the space is for.
+garden-a	turn 24, sentence 5	sg-bd34af84f6	For the older members it is food production and it is serious.
+garden-a	turn 24, sentence 6	sg-f05ee9bc5c	There are people there who grow enough to matter to their grocery budg
+garden-a	turn 24, sentence 7	sg-7bfeb4aaf8	For the newer members it is often about being outside and having a pro
+garden-a	turn 24, sentence 8	sg-0f62247a43	Neither of those is wrong.
+garden-a	turn 24, sentence 9	sg-72faeaeaec	But the indirect way conflict gets handled assumes everyone shares an 
+garden-a	turn 25, sentence 1	sg-7a0bb4d00f	How does that tension show up day to day?
+garden-a	turn 26, sentence 1	sg-6f37658e18	In small comments, mostly.
+garden-a	turn 26, sentence 2	sg-0d769b6b86	Someone will say, very pleasantly, that they see you are trying flower
+garden-a	turn 26, sentence 3	sg-6a1a33abc7	There is a whole sentence underneath that.
+garden-a	turn 26, sentence 4	sg-21b849bcfc	It shows up in what people share.
+garden-a	turn 26, sentence 5	sg-a89d88eba3	The older members share seeds and seedlings constantly, and the sharin
+garden-a	turn 26, sentence 6	sg-0ff131559d	You do not take without asking, you do not take the last of anything, 
+garden-a	turn 26, sentence 7	sg-c61894fc3f	I have watched newer members accept a bag of seedlings and never bring
+garden-a	turn 26, sentence 8	sg-271a5683e8	Not a real bill.
+garden-a	turn 26, sentence 9	sg-679170b157	An expectation.
+garden-a	turn 26, sentence 10	sg-6837ac6ce5	When they do not reciprocate, they get quietly moved out of the sharin
+garden-a	turn 27, sentence 1	sg-630b59679f	Has anyone tried to make that explicit?
+garden-a	turn 28, sentence 1	sg-ffe3f4768e	I brought it up at a committee meeting once and it did not go anywhere
+garden-a	turn 28, sentence 2	sg-76de3aeed5	The reaction was essentially that people should just be decent to each
+garden-a	turn 28, sentence 3	sg-a6878a3ee1	There is a real reluctance to write down anything social.
+garden-a	turn 28, sentence 4	sg-135de11c37	Rules about hoses are fine.
+garden-a	turn 28, sentence 5	sg-a133228453	Rules about generosity feel wrong to people, and I understand that, be
+garden-a	turn 28, sentence 6	sg-2ee80dc11e	But the cost of leaving it unwritten falls entirely on the newest peop
+garden-a	turn 28, sentence 7	sg-72f8318ade	That is the pattern with most of what makes the garden work.
+garden-a	turn 28, sentence 8	sg-e8b83e709c	The unwritten parts are the parts that matter, and they are invisible 
+garden-a	turn 29, sentence 1	sg-7ecfad68ca	You mentioned physical access earlier.
+garden-a	turn 29, sentence 2	sg-56027dea5b	Can you say more?
+garden-a	turn 30, sentence 1	sg-713e62305a	The site is not accessible in any meaningful way for a lot of people.
+garden-a	turn 30, sentence 2	sg-1ff0b1b4d2	The paths between plots are packed dirt and they are about thirty inch
+garden-a	turn 30, sentence 3	sg-8f0435e3e1	There are two raised beds near the gate that were built with grant mon
+garden-a	turn 30, sentence 4	sg-1273dd6c2a	They are four feet off the ground, which is good, and they are also th
+garden-a	turn 30, sentence 5	sg-b3405940d3	There has been friction about who gets them.
+garden-a	turn 30, sentence 6	sg-7cf6adc860	My view is that they should be allocated on need and reviewed every ye
+garden-a	turn 30, sentence 7	sg-beae595e40	There are people who think that is unfair because the waiting list sho
+garden-a	turn 30, sentence 8	sg-5883b40bf7	That argument comes up about every two years and has never been settle
+garden-a	turn 31, sentence 1	sg-59339727b8	What happened the last time it came up?
+garden-a	turn 32, sentence 1	sg-4cdb552e83	It came up when a member had a stroke and could not use his plot anymo
+garden-a	turn 32, sentence 2	sg-0822aef98b	He had been there eleven years.
+garden-a	turn 32, sentence 3	sg-da2881a00f	There was a proposal to move him to one of the raised beds, and the pe
+garden-a	turn 32, sentence 4	sg-5e4161aca9	Both of those positions are defensible.
+garden-a	turn 32, sentence 5	sg-cc7da55594	What we did was nothing, and he left the garden, and I still think abo
+garden-a	turn 32, sentence 6	sg-c8e293946f	The proposal that came out of it was that when an accessible bed turns
+garden-a	turn 32, sentence 7	sg-9329cbb366	Those beds turn over about once every four years.
+garden-a	turn 33, sentence 1	sg-e8d49dd5c1	Are there other access issues beyond the beds?
+garden-a	turn 34, sentence 1	sg-40635604f8	The gate is heavy and it has a latch that needs two hands.
+garden-a	turn 34, sentence 2	sg-7f23d57ecf	The tool shed has a step up into it.
+garden-a	turn 34, sentence 3	sg-572e2ad1f5	There is no seating anywhere except one bench near the compost, which 
+garden-a	turn 34, sentence 4	sg-28ca64b01c	And the notices are all on a corkboard by the gate, printed small, whi
+garden-a	turn 34, sentence 5	sg-d2474c33af	When we moved most communication to email that helped some people and 
+garden-a	turn 34, sentence 6	sg-8dfd5110e4	We have not solved that.
+garden-a	turn 34, sentence 7	sg-ce144a034e	Right now there is one person who prints the emails and pins them up, 
+garden-a	turn 35, sentence 1	sg-d4375a7ad6	Let us talk about your own plot.
+garden-a	turn 35, sentence 2	sg-54739d87cc	What do you grow?
+garden-a	turn 36, sentence 1	sg-46b71d48e1	Tomatoes, which I grow far too many of, and I know it.
+garden-a	turn 36, sentence 2	sg-f9eab64087	Beans, both bush and pole.
+garden-a	turn 36, sentence 3	sg-0fb9ef8959	Greens in the spring and fall, mostly chard and kale because they forg
+garden-a	turn 36, sentence 4	sg-73bcc8233d	Garlic in the fall, which is the single most satisfying thing to grow 
+garden-a	turn 36, sentence 5	sg-f1ded69728	Peppers, which have never once done as well as I want.
+garden-a	turn 36, sentence 6	sg-3b31398857	Herbs along the north edge where it is shady.
+garden-a	turn 36, sentence 7	sg-d78f5b0e59	And two rows of zinnias that I plant every year and that Hector has co
+garden-a	turn 37, sentence 1	sg-f3b9f60d3f	What does he say?
+garden-a	turn 38, sentence 1	sg-7dcabf9265	He says, you are still doing the flowers.
+garden-a	turn 38, sentence 2	sg-63c561ab71	Every June.
+garden-a	turn 38, sentence 3	sg-af20c8db65	And I say, I am still doing the flowers.
+garden-a	turn 38, sentence 4	sg-6eafc02d6f	And that is the entire conversation, and we have had it six times, and
+garden-a	turn 38, sentence 5	sg-18aba0e510	The first year I think he meant it.
+garden-a	turn 38, sentence 6	sg-df4eee1712	Now it is a joke that we both maintain.
+garden-a	turn 38, sentence 7	sg-eec5e35e33	That is the actual texture of the place.
+garden-a	turn 38, sentence 8	sg-3301dca8db	Things that started as friction become the thing you look forward to.
+garden-a	turn 39, sentence 1	sg-6308caa067	How much time does the plot take?
+garden-a	turn 40, sentence 1	sg-d9724ca60c	In the shoulder seasons, maybe two hours a week.
+garden-a	turn 40, sentence 2	sg-a3c4b4478f	From late June through August it is more like five or six, and it is n
+garden-a	turn 40, sentence 3	sg-625c8d1641	That is the thing people underestimate.
+garden-a	turn 40, sentence 4	sg-09094d815c	A garden is not a hobby you can do when you feel like it, or rather it
+garden-a	turn 40, sentence 5	sg-00a271f436	The watering is the inflexible part.
+garden-a	turn 40, sentence 6	sg-7fb63c6671	Everything else can slide a week.
+garden-a	turn 40, sentence 7	sg-e64a0800e2	Water cannot slide two days in August.
+garden-a	turn 41, sentence 1	sg-8271c56abb	How do you fit that around work?
+garden-a	turn 42, sentence 1	sg-476f8641bc	I go in the mornings before my shift, which means five thirty or six.
+garden-a	turn 42, sentence 2	sg-fc241b7558	That is partly practical and partly that I like the site empty.
+garden-a	turn 42, sentence 3	sg-2502209a68	There is a period between about five thirty and seven where there migh
+garden-a	turn 42, sentence 4	sg-4e79c8ae97	In the evenings it is a completely different place, and it is social, 
+garden-a	turn 42, sentence 5	sg-2b6456eddb	I have thought about the fact that I chose the hours that let me avoid
+garden-a	turn 42, sentence 6	sg-00699c8604	I am not sure what to make of that.
+garden-a	turn 43, sentence 1	sg-5829faa11b	What do you do with what you grow?
+garden-a	turn 44, sentence 1	sg-662f47b9c4	I eat a lot of it, I give a lot of it away, and I waste some of it, wh
+garden-a	turn 44, sentence 2	sg-c5c5f17a0f	There is a donation bin by the gate that goes to a food pantry on Thur
+garden-a	turn 44, sentence 3	sg-f95392733e	There is a real mismatch there.
+garden-a	turn 44, sentence 4	sg-07d97b7b15	What the pantry actually wants is things that store and things people 
+garden-a	turn 44, sentence 5	sg-4bd01a3306	What we produce in surplus is exactly the things that do not store.
+garden-a	turn 44, sentence 6	sg-0bc0312fb5	I have suggested we coordinate what people plant so the donation is mo
+garden-a	turn 44, sentence 7	sg-a9ddd0bbaf	Probably correctly.
+garden-a	turn 45, sentence 1	sg-dcf99eff27	You said you waste some.
+garden-a	turn 46, sentence 1	sg-58118b3369	I do.
+garden-a	turn 46, sentence 2	sg-20f5d8f288	There is a stretch in August where everything comes at once and I cann
+garden-a	turn 46, sentence 3	sg-bc9aa3de25	So there are weeks where I go in, water, pick what I can carry, and le
+garden-a	turn 46, sentence 4	sg-f86dde2b13	The first year that made me feel terrible.
+garden-a	turn 46, sentence 5	sg-8162d7e133	Now I understand it as part of the cycle, and I compost it, and it goe
+garden-a	turn 46, sentence 6	sg-d5787ab273	But there is a version of me that expected to be more efficient than t
+garden-a	turn 47, sentence 1	sg-440045adb8	Has your relationship to the garden changed over six seasons?
+garden-a	turn 48, sentence 1	sg-f2cba2ad40	Completely.
+garden-a	turn 48, sentence 2	sg-c954e02e0d	The first two years it was a project with a goal, which was to be good
+garden-a	turn 48, sentence 3	sg-1c5736e9dc	I read constantly and I measured things and I kept a notebook with pla
+garden-a	turn 48, sentence 4	sg-3241dba8b9	I still have those notebooks and they are slightly embarrassing.
+garden-a	turn 48, sentence 5	sg-0b0584aa35	Around year three something shifted and it became a place I go rather 
+garden-a	turn 48, sentence 6	sg-610116d124	I stopped keeping the notebook.
+garden-a	turn 48, sentence 7	sg-0e52fa409a	My yields probably went down.
+garden-a	turn 48, sentence 8	sg-78f27ec500	I would not go back.
+garden-a	turn 48, sentence 9	sg-95eacda7ad	The notebook version of me was gardening in order to have gardened, an
+garden-a	turn 49, sentence 1	sg-710b7d08c8	What caused the shift?
+garden-a	turn 50, sentence 1	sg-e45bc6e581	I think it was the year my mother was ill.
+garden-a	turn 50, sentence 2	sg-a93b9e7116	I was driving up to see her most weekends and I did not have the energ
+garden-a	turn 50, sentence 3	sg-9edcf8b59e	So the plot got the minimum, and the minimum turned out to be enough f
+garden-a	turn 50, sentence 4	sg-4d06237f56	Plants are much less fragile than a beginner believes.
+garden-a	turn 50, sentence 5	sg-4555d1be34	That was also the year I found out what the garden does when someone i
+garden-a	turn 50, sentence 6	sg-aa809fbf2a	People watered my plot without being asked and without telling me.
+garden-a	turn 50, sentence 7	sg-736662ed80	I came back after ten days and it was clearly watered, and nobody ever
+garden-a	turn 50, sentence 8	sg-1725853ce1	I have a guess.
+garden-a	turn 51, sentence 1	sg-36990b217d	How did that land for you?
+garden-a	turn 52, sentence 1	sg-e310cfcac3	It undid me a bit, honestly.
+garden-a	turn 52, sentence 2	sg-fa37fd6001	I had spent two years thinking of the place as somewhere I had a trans
+garden-a	turn 52, sentence 3	sg-ea1135dbd0	I paid dues, I followed rules, I got dirt.
+garden-a	turn 52, sentence 4	sg-04b8285952	And then this thing happened that was entirely outside that, and nobod
+garden-a	turn 52, sentence 5	sg-03f2524eeb	All I could do was do it for someone else later, which I have, twice.
+garden-a	turn 52, sentence 6	sg-7a5d557e35	That is when I understood the sharing rules I was describing earlier.
+garden-a	turn 52, sentence 7	sg-545153eb7f	They are not about the seedlings.
+garden-a	turn 52, sentence 8	sg-f216fa5eea	The seedlings are the visible part of a system for finding out who wil
+garden-a	turn 53, sentence 1	sg-e1f8bdbdcd	Do you think new members find that out?
+garden-a	turn 54, sentence 1	sg-85b891e903	Some do and it takes them years.
+garden-a	turn 54, sentence 2	sg-b994cd5c31	Some never do and they leave after two seasons thinking it was a place
+garden-a	turn 54, sentence 3	sg-7fa3ebdec4	The turnover in the first two years is high, and I do not think the ga
+garden-a	turn 54, sentence 4	sg-db9d940170	The assumption is that people discover it is more work than they thoug
+garden-a	turn 54, sentence 5	sg-ca0b9553a5	But I think a number of them leave because nothing ever happened to th
+garden-a	turn 54, sentence 6	sg-ce71d22048	Nobody stopped at their plot.
+garden-a	turn 54, sentence 7	sg-2add9619d7	They came, they gardened alone, they went home.
+garden-a	turn 54, sentence 8	sg-51fb1c0266	If you have a bad first season and no one has spoken to you, there is 
+garden-a	turn 55, sentence 1	sg-fcdfdfa27c	Has anything been tried to address that?
+garden-a	turn 56, sentence 1	sg-7cd6b8d23f	There was a mentor program for one season, about four years ago.
+garden-a	turn 56, sentence 2	sg-bbb79e8c93	Every new member was assigned to a long-time member.
+garden-a	turn 56, sentence 3	sg-6fd1460251	It was well intentioned and it mostly did not work, because being assi
+garden-a	turn 56, sentence 4	sg-c66f5b8720	Attendance at the paired meetups was low.
+garden-a	turn 56, sentence 5	sg-3764a911fa	What I noticed, though, is that three of those pairs did stick, and th
+garden-a	turn 56, sentence 6	sg-cdab780108	So the failure rate was high and the successes were real.
+garden-a	turn 56, sentence 7	sg-80fab0191c	The committee looked at the low participation and cancelled it.
+garden-a	turn 56, sentence 8	sg-c5e9911c9a	I think that was the wrong read.
+garden-a	turn 56, sentence 9	sg-ef09b2130c	The right read is that it worked one time in five and that is still a 
+garden-a	turn 57, sentence 1	sg-36655b48d0	Would you run it again?
+garden-a	turn 58, sentence 1	sg-89d257ab60	I would run it differently.
+garden-a	turn 58, sentence 2	sg-34e8fe2529	I would not pair people.
+garden-a	turn 58, sentence 3	sg-65f6d89142	I would put four new members and two experienced members on a task tog
+garden-a	turn 58, sentence 4	sg-c099197c31	The pairing made it a relationship, and you cannot assign a relationsh
+garden-a	turn 58, sentence 5	sg-8e04515760	A task is much lower stakes.
+garden-a	turn 58, sentence 6	sg-b1294b5dce	You can work next to someone for two hours and not talk, and it is sti
+garden-a	turn 58, sentence 7	sg-0363da045c	That is how I actually met everyone I know there, which was through th
+garden-a	turn 59, sentence 1	sg-366f4f554c	Tell me about the workday.
+garden-a	turn 60, sentence 1	sg-bf835c21c2	Every member owes six hours of common work per season, and most of it 
+garden-a	turn 60, sentence 2	sg-0ae3325f42	You sign up for a crew and you do things that benefit the whole site r
+garden-a	turn 60, sentence 3	sg-c9b0b9040c	Repairing the fence, spreading wood chips on the paths, cleaning out t
+garden-a	turn 60, sentence 4	sg-4c403cc523	It is genuinely the best thing the garden does and I would defend it a
+garden-a	turn 60, sentence 5	sg-6afe57f8e6	The complaint is that it is inflexible and that some people cannot do 
+garden-a	turn 60, sentence 6	sg-dddba91193	Both of those are legitimate.
+garden-a	turn 60, sentence 7	sg-4742437b58	There are alternative hours you can do, like taking minutes at meeting
+garden-a	turn 61, sentence 1	sg-04682d85a5	How does that show up?
+garden-a	turn 62, sentence 1	sg-72bd0e8b3c	If you spent your six hours moving wood chips, people know it, because
+garden-a	turn 62, sentence 2	sg-6fbb00c3f4	If you spent them doing the newsletter at your kitchen table, nobody s
+garden-a	turn 62, sentence 3	sg-2cbb457a3a	There is a status difference and nobody would ever admit to it.
+garden-a	turn 62, sentence 4	sg-2f522e493d	I have done both.
+garden-a	turn 62, sentence 5	sg-048e210676	The year I did the newsletter I felt like I had gotten away with somet
+garden-a	turn 62, sentence 6	sg-ea8ead0343	Physical labor in a shared space is legible in a way that administrati
+garden-a	turn 63, sentence 1	sg-ac806ab973	What would you change about the garden if you could change one thing?
+garden-a	turn 64, sentence 1	sg-8c7d230ebf	More water access points, which is boring and is the correct answer.
+garden-a	turn 64, sentence 2	sg-b49862294a	Almost every fight is a water fight underneath.
+garden-a	turn 64, sentence 3	sg-e07699b979	If there were eight spigots instead of four, the schedule could be loo
+garden-a	turn 64, sentence 4	sg-8bb056ed49	It is a plumbing problem that everybody experiences as a character pro
+garden-a	turn 64, sentence 5	sg-14af59ca79	We talk about it as people being inconsiderate.
+garden-a	turn 64, sentence 6	sg-7314a572ff	It is a pressure differential.
+garden-a	turn 65, sentence 1	sg-96176fb423	Why has that not happened?
+garden-a	turn 66, sentence 1	sg-ccc6a5a841	Money and permission.
+garden-a	turn 66, sentence 2	sg-96674aed48	The land is owned by the city and leased to the garden association for
+garden-a	turn 66, sentence 3	sg-21919c6f68	Any permanent improvement needs city approval, and the approval proces
+garden-a	turn 66, sentence 4	sg-ba88d5db98	There was a grant application two years ago that got most of the way a
+garden-a	turn 66, sentence 5	sg-736f10c273	The lease was renewed.
+garden-a	turn 66, sentence 6	sg-66d74361e0	Nobody restarted the grant.
+garden-a	turn 66, sentence 7	sg-fc611bc5c9	That is not anyone's fault exactly.
+garden-a	turn 66, sentence 8	sg-bc25c4a414	It is that the volunteer who was carrying it moved away, and there was
+garden-a	turn 67, sentence 1	sg-d7cf08fffd	Does that happen often?
+garden-a	turn 68, sentence 1	sg-baae3bdc51	Constantly, and it is the thing that most limits what the garden can d
+garden-a	turn 68, sentence 2	sg-430993c0c5	Everything runs on individuals, and when an individual stops, the func
+garden-a	turn 68, sentence 3	sg-45e9a42606	The seed library was excellent for three years and then the person run
+garden-a	turn 68, sentence 4	sg-7e1b9c8bee	The website was updated regularly until it was not, and the last post 
+garden-a	turn 68, sentence 5	sg-aac3537078	There is no institutional memory.
+garden-a	turn 68, sentence 6	sg-8336fac9ad	There is a shared drive that four people can access and none of them c
+garden-a	turn 69, sentence 1	sg-93da4c8298	Has anyone tried to build that memory?
+garden-a	turn 70, sentence 1	sg-e62eb5e0f0	The committee keeps minutes, and the minutes are the closest thing.
+garden-a	turn 70, sentence 2	sg-f83c65c21f	But minutes record decisions and not reasons.
+garden-a	turn 70, sentence 3	sg-e434235ad2	I can go back and read that in a certain year we voted to move the mai
+garden-a	turn 70, sentence 4	sg-39b4b6fb91	I cannot find out why, and everyone who was in the room has a differen
+garden-a	turn 70, sentence 5	sg-368a59da1f	So every few years someone proposes moving it back, and the argument g
+garden-a	turn 70, sentence 6	sg-10bfb17950	It is not territorial.
+garden-a	turn 70, sentence 7	sg-4cc4d9cf02	It is exhausting to relitigate something when you cannot produce the e
+garden-a	turn 71, sentence 1	sg-93817fc49e	That is a good description of a problem a lot of groups have.
+garden-a	turn 72, sentence 1	sg-a6e7bbf036	I have started writing things down for that reason.
+garden-a	turn 72, sentence 2	sg-38b00cf86c	Not officially.
+garden-a	turn 72, sentence 3	sg-23fa9859a4	I keep a document with dates and what happened and what the argument w
+garden-a	turn 72, sentence 4	sg-cb5230054d	It started as a way to stop myself from misremembering.
+garden-a	turn 72, sentence 5	sg-5857022aaf	Now two other people ask me for it before meetings, which is either us
+garden-a	turn 72, sentence 6	sg-effc77a98e	Probably both.
+garden-a	turn 73, sentence 1	sg-ccf5eafd61	We are getting close to time.
+garden-a	turn 73, sentence 2	sg-11cbb75faf	Is there anything about the garden that you think an outsider would mi
+garden-a	turn 74, sentence 1	sg-74e8fbc3ab	That it is peaceful.
+garden-a	turn 74, sentence 2	sg-a4960e4f63	People walk past the fence and see a quiet green place with vegetables
+garden-a	turn 74, sentence 3	sg-68af118153	It is not.
+garden-a	turn 74, sentence 4	sg-0e7c21612b	It is a place with sixty two plots and a hundred and forty people and 
+garden-a	turn 74, sentence 5	sg-a003cdfacd	What is different is that the stakes are low enough that the politics 
+garden-a	turn 74, sentence 6	sg-e26fd84144	Nobody loses their livelihood over the water schedule.
+garden-a	turn 74, sentence 7	sg-9ddcdfef61	So you get all the behavior of a human institution with almost none of
+garden-a	turn 74, sentence 8	sg-bb91140bb7	I think it is the second one, and I think it is why I am still there a
+garden-a	turn 75, sentence 1	sg-c2dda73654	Anything you wish I had asked?
+garden-a	turn 76, sentence 1	sg-e0f762057d	You did not ask what it smells like in the first week of May, and that
+garden-a	turn 76, sentence 2	sg-e281935166	Also you did not ask about the crows, and there is a crow situation.
+garden-a	turn 76, sentence 3	sg-a9fab11b14	But I suspect that is not what your study is about.
+garden-a	turn 77, sentence 1	sg-7a8090a3bc	We can come back to the crows.
+garden-a	turn 77, sentence 2	sg-837439f88b	Thank you, this has been extremely helpful.
+garden-a	turn 78, sentence 1	sg-6bebd0be33	Thank you for asking.
+garden-a	turn 78, sentence 2	sg-9df83a9587	It is more interesting to talk about than I expected, and I have said 
+garden-a	turn 78, sentence 3	sg-68cf1cc876	I am going to think about that.
+garden-b	turn 1, sentence 1	sg-5dd7e1d0e1	To start, how long have you had your plot?
+garden-b	turn 2, sentence 1	sg-17b19a1807	This is my first season, so about five months.
+garden-b	turn 2, sentence 2	sg-127e69d05d	I got the offer in February, which everyone told me was lucky.
+garden-b	turn 2, sentence 3	sg-5d31a6843e	I had been on the list for a bit under two years.
+garden-b	turn 2, sentence 4	sg-ed38081f03	My partner put us on it and then forgot, and the email came at a point
+garden-b	turn 3, sentence 1	sg-ccd4018efd	What made you want one?
+garden-b	turn 4, sentence 1	sg-bb5f39b9c3	Partly food and mostly wanting a reason to be outside that was not exe
+garden-b	turn 4, sentence 2	sg-e22a9fcc5e	I work from home and I was noticing that I could go three days without
+garden-b	turn 4, sentence 3	sg-0ca532c66c	A gym membership did not stick.
+garden-b	turn 4, sentence 4	sg-f73950a18f	I thought a plot might stick because things would die if I did not sho
+garden-b	turn 5, sentence 1	sg-cfd1f4a418	How has the first season gone?
+garden-b	turn 6, sentence 1	sg-191045f224	Mixed, and better than I expected in the parts I did not plan.
+garden-b	turn 6, sentence 2	sg-c42226b80c	The growing has been about half successful.
+garden-b	turn 6, sentence 3	sg-2028603986	The tomatoes did well, the squash did too well, the carrots were a com
+garden-b	turn 6, sentence 4	sg-1458c174de	I planted way too much in a space that turned out to be smaller than i
+garden-b	turn 6, sentence 5	sg-ad04ade9e2	By July I could not walk between my own rows.
+garden-b	turn 6, sentence 6	sg-6bf68c9d8a	What has gone better than expected is that I like being there even whe
+garden-b	turn 7, sentence 1	sg-689c181591	What was the hardest part?
+garden-b	turn 8, sentence 1	sg-e6a3f991ef	Water, without question, and not for the reason you would think.
+garden-b	turn 8, sentence 2	sg-af67e7ce05	The physical part is fine.
+garden-b	turn 8, sentence 3	sg-5caeeb1e8c	It is that there is a schedule, and I did not understand the schedule 
+garden-b	turn 8, sentence 4	sg-8f04a75448	I could tell something was off because people would go quiet when I wa
+garden-b	turn 8, sentence 5	sg-7bd354b6ec	Eventually a woman explained it to me at the gate, quite kindly, and i
+garden-b	turn 8, sentence 6	sg-38aa5a9832	I was mortified.
+garden-b	turn 8, sentence 7	sg-a023b2be80	The information was on the corkboard, which I had never read, because 
+garden-b	turn 9, sentence 1	sg-6900a3ba4d	Was that covered in the orientation?
+garden-b	turn 10, sentence 1	sg-9983e9078d	It probably was.
+garden-b	turn 10, sentence 2	sg-100f2e6ca3	The orientation is one Saturday morning in March and it is about ninet
+garden-b	turn 10, sentence 3	sg-d42bdeadc5	Dues, the maintenance deadline, the workday requirement, the water sch
+garden-b	turn 10, sentence 4	sg-293c8aaf9d	I remember maybe a fifth of it, and I remember the parts that were abo
+garden-b	turn 10, sentence 5	sg-d711c8afa8	Nothing was written down that I could take home.
+garden-b	turn 10, sentence 6	sg-2589280114	There is a handbook, apparently, and I found out about it in July.
+garden-b	turn 11, sentence 1	sg-9ae7b20314	How did you find out about it?
+garden-b	turn 12, sentence 1	sg-ef013ef008	Somebody mentioned it in passing, the way you would mention something 
+garden-b	turn 12, sentence 2	sg-c206b9666c	I asked where it was and got a slightly confused answer, and then a li
+garden-b	turn 12, sentence 3	sg-4d072c0b65	It is a good handbook.
+garden-b	turn 12, sentence 4	sg-c54a8cf04a	It answers almost every question I spent the spring being confused abo
+garden-b	turn 12, sentence 5	sg-2b079eb99f	If I had read it in March I would have avoided the entire water situat
+garden-b	turn 13, sentence 1	sg-f538d774cf	Have you gotten to know other members?
+garden-b	turn 14, sentence 1	sg-b969356101	A few, and it took longer than I expected.
+garden-b	turn 14, sentence 2	sg-66aa4b96fd	I go in the evenings after work, which is the busy time, so there are 
+garden-b	turn 14, sentence 3	sg-d02e6d52a9	I do not think that was unfriendliness.
+garden-b	turn 14, sentence 4	sg-fd9f2a1a57	I think everyone assumed someone else had already welcomed me.
+garden-b	turn 14, sentence 5	sg-7eadfb3273	The people I know now I met through the workday in April, which forced
+garden-b	turn 15, sentence 1	sg-63fc40d006	What was the workday like?
+garden-b	turn 16, sentence 1	sg-16fdf085d8	Genuinely fun, which I did not anticipate.
+garden-b	turn 16, sentence 2	sg-57a1a0d9f4	I was on a crew spreading wood chips on the paths with three other peo
+garden-b	turn 16, sentence 3	sg-1764a41c2e	You cannot spread wood chips for four hours in silence.
+garden-b	turn 16, sentence 4	sg-80799b8042	By the end I knew who they were and what they grew and which parts of 
+garden-b	turn 16, sentence 5	sg-5106763354	That was more useful than the orientation by a wide margin, and it was
+garden-b	turn 17, sentence 1	sg-b5736dba97	Have you had any conflict?
+garden-b	turn 18, sentence 1	sg-67498d9491	Not directly, and I have been aware of conflict happening near me.
+garden-b	turn 18, sentence 2	sg-14d1c6fb30	There is a disagreement about the two raised beds by the gate that see
+garden-b	turn 18, sentence 3	sg-eba44b6591	I do not fully understand it and I have deliberately stayed out of it,
+garden-b	turn 18, sentence 4	sg-994ffc1fb4	What I notice is that nobody explains the history to you.
+garden-b	turn 18, sentence 5	sg-6c36969a77	You catch about a third of a conversation and you can tell there are y
+garden-b	turn 19, sentence 1	sg-6597b2a6d4	Does that make it harder to participate?
+garden-b	turn 20, sentence 1	sg-1228172c18	Yes, and I think that is the main thing separating me from the people 
+garden-b	turn 20, sentence 2	sg-d533c88905	It is not gardening knowledge.
+garden-b	turn 20, sentence 3	sg-7b938cff09	I can look that up.
+garden-b	turn 20, sentence 4	sg-d4fd0a5d72	It is that every rule has a story attached, and the story is what tell
+garden-b	turn 20, sentence 5	sg-59786232ea	The maintenance deadline sounds harsh on paper.
+garden-b	turn 20, sentence 6	sg-985c14bbd9	Then somebody tells you about a plot that sat abandoned all summer and
+garden-b	turn 20, sentence 7	sg-1986aae330	Nobody hands you that.
+garden-b	turn 20, sentence 8	sg-fd0a46bf94	You pick it up in fragments over a year.
+garden-b	turn 21, sentence 1	sg-11f51df262	Will you renew for next season?
+garden-b	turn 22, sentence 1	sg-fd7f7424bd	Yes, and I was not sure in June.
+garden-b	turn 22, sentence 2	sg-c11f6d93bd	June was the low point.
+garden-b	turn 22, sentence 3	sg-367f21fe99	Everything needed water, the squash was out of control, I had a work d
+garden-b	turn 22, sentence 4	sg-8b26b63f79	When I came back it looked like a failure, and I sat on the bench by t
+garden-b	turn 22, sentence 5	sg-2502e98817	What changed it was that a neighbor two plots down came over and said 
+garden-b	turn 22, sentence 6	sg-e54746b1df	Then he helped me cut the squash back.
+garden-b	turn 22, sentence 7	sg-b43f9ca40d	Twenty minutes of his time and I am renewing.
+garden-b	turn 23, sentence 1	sg-4770d5e3a4	What would you tell someone starting next spring?
+garden-b	turn 24, sentence 1	sg-5ceb02e8ad	Read the handbook before you plant anything.
+garden-b	turn 24, sentence 2	sg-cbea79cdb2	Plant half of what you want to plant.
+garden-b	turn 24, sentence 3	sg-f4b8187db7	Go to the workday even if you have a reason not to.
+garden-b	turn 24, sentence 4	sg-9b4d61268a	And ask a question early, because the longer you wait the more embarra
+garden-b	turn 24, sentence 5	sg-8157203f72	I spent six weeks watering on the wrong days rather than asking a ques
+garden-b	turn 25, sentence 1	sg-b0772c788a	Anything the garden could do differently?
+garden-b	turn 26, sentence 1	sg-73ca70591c	Send the handbook with the offer email.
+garden-b	turn 26, sentence 2	sg-2c00f54a3b	That is the whole answer and it costs nothing.
+garden-b	turn 26, sentence 3	sg-b5919d130b	Everything I was confused about was written down somewhere I did not k
+garden-b	turn 26, sentence 4	sg-6fd0b1ea87	There is a real gap between the information existing and the informati
+garden-b	turn 27, sentence 1	sg-478c69dcca	Thank you, this is very useful.
+garden-b	turn 28, sentence 1	sg-1d4ce408e2	Happy to help.
+garden-b	turn 28, sentence 2	sg-6dec3f2baf	Ask me again next year and I expect I will have completely different c

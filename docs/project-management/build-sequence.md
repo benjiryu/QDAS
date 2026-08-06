@@ -1,14 +1,20 @@
 # Build Sequence
 
 - Status: Working document
-- Version: 0.2
-- Last updated: 2026-08-03
+- Version: 0.3
+- Last updated: 2026-08-05
+
+Progress: Phase 0 complete except the lint additions noted in 0.4. Tasks 1 to 4 complete. Task 5 is next.
+
+Update this line when a task lands. An agent reading a stale progress line will rebuild finished work.
 
 Ordered tasks for building slice 2 with a repository-level coding agent. Each task is small enough to review, has a stated definition of done, and leaves the repository working.
 
 The instruction that matters most: never ask for the prototype. Ask for one behavior with acceptance criteria. An agent given a large open task will invent core product behavior, and inventions are expensive to find later because they look like decisions.
 
 ## Phase 0. Environment
+
+Complete. Retained because anyone repeating the setup needs it, and because 0.1 is the step whose omission cost a full restore.
 
 ### 0.1 Commit before running anything
 
@@ -42,7 +48,7 @@ The generator asks several questions. Exact prompts vary by version.
 | Prompt | Answer | Why |
 |---|---|---|
 | Directory is not empty | Ignore files and continue | "Remove existing files" deletes the specifications. Choosing it once cost a full restore |
-| Package name | `qdas-prototype` | npm package names cannot contain uppercase letters, so it cannot derive one from `QDAS` |
+| Package name | lowercase, no spaces. This repository used `qdas-package` | npm package names cannot contain uppercase letters, so it cannot derive one from `QDAS` |
 | Linter and formatter | ESLint and Prettier | ESLint carries `eslint-plugin-jsx-a11y`, which catches accessibility mistakes at lint time rather than in a session. Prettier keeps agent diffs showing behavior changes rather than reformatting |
 | Anything else | Conventional default | No remaining option affects the specifications |
 
@@ -57,6 +63,8 @@ npx playwright install
 ```
 
 Add the jsx-a11y recommended config to `eslint.config.js`. It will not catch focus behavior, announcement correctness, or anything about workflow, but it removes a class of avoidable mistakes before they reach a participant.
+
+Outstanding: `eslint-plugin-jsx-a11y`, Prettier, and `@vitest/ui` are listed here but are not in `package.json`, and `eslint.config.js` does not extend the jsx-a11y config. Phase 0 is otherwise complete. Finish these before Task 5, since the lint rules are worth having in place before the first markup-heavy task.
 
 ### 0.5 Confirm it runs
 
@@ -117,6 +125,8 @@ Nothing here is a feature. All of it blocks features.
 
 ### Task 1. Application shell
 
+Complete, commit `8f46a78`.
+
 ```
 Build the application shell only. No features.
 
@@ -136,6 +146,8 @@ Add a unit test asserting the landmark and heading structure of each route.
 Done when: `npm run build` passes, the routes render, and tab order reaches the skip link first.
 
 ### Task 2. Live region service
+
+Complete, commit `6af29f8`. The manual check remains outstanding: fire five rapid announcements in VoiceOver with the caption panel on and confirm all five speak.
 
 ```
 Implement the shared announcement service at src/a11y/announcer.ts, per
@@ -160,6 +172,8 @@ This task is worth extra care. Dropped announcements are the failure most likely
 
 ### Task 3. Synthetic seed fixture
 
+Complete.
+
 ```
 Create a synthetic transcript and codebook fixture in src/data/seed/, matching
 the shape requirements in docs/testing/seed-data.md section 4.
@@ -171,6 +185,7 @@ the shape requirements in docs/testing/seed-data.md section 4.
 - At least one pair of similarly named codes
 - 15+ excerpts with code assignments attributed to a second coder
 - At least 4 pairs of overlapping excerpts with differing boundaries
+- 2+ sources in the project. Assignment and navigation are degenerate with one
 - Types from src/domain/types.ts. Stable opaque identifiers.
 
 Content is invented and about a neutral topic. This fixture is committed and
@@ -183,6 +198,8 @@ Generate this rather than hand-writing it. Realistic length is the point; a shor
 
 ### Task 4. Domain layer for segments and excerpts
 
+Complete. If the excerpt-to-segment state derivation below is missing, add it before Task 5.
+
 ```
 Implement pure domain functions in src/domain/. No React, no DOM.
 
@@ -194,6 +211,9 @@ Implement pure domain functions in src/domain/. No React, no DOM.
 - Excerpt size description, sentences and turn count, per
   docs/patterns/excerpt-selection.md section 5.1
 - The delta between two excerpt ranges: what text entered or left
+- Derive per-segment display state from stored excerpts: which segments are
+  coded, and which fall inside two or more excerpts and are therefore
+  coded-multiple. Task 5 renders these and nothing else produces them
 
 Unit test each. Boundary cases: first segment, last segment, single-segment
 excerpt, contraction past the counterpart boundary, expansion across a turn.
@@ -217,11 +237,13 @@ sections 1 and 7. Display only, no navigation commands yet.
 - Coded segments carry a non-color indicator alongside color
 - coded-multiple visually distinct from coded
 
-Add a Playwright test asserting a screen reader reads one turn as continuous
-prose rather than as separate per-sentence objects.
+Add a Playwright test asserting the accessibility tree shape: one focusable
+node per turn containing its sentences, and no per-sentence focusable elements.
 ```
 
 Done when: at 400% zoom nothing scrolls horizontally, and VoiceOver reads a full turn without per-sentence interruption.
+
+The automated test asserts structure, not speech. No tool can observe what a screen reader says, so the continuous-reading criterion in transcript-segment.md section 10 stays manual.
 
 ### Task 6. Segment navigation and position
 
@@ -232,8 +254,13 @@ Implement navigation per docs/patterns/transcript-segment.md sections 2, 4, 5, 6
 - Commands wired from src/config/keybindings.ts. Never hardcode a chord
 - Every command has a visible control
 - Scroll never sets the active segment
-- Position ribbon derived from the active segment, not from scroll
+- Position ribbon derived from the active segment, not from scroll and not from
+  audio time. Per D-009 it reports reading position, so it is not labelled
+  "Progress", which reads as completion
 - Return to active segment control appears when it scrolls out of view
+- activeSegmentId persists per user per source and is restored on source entry,
+  per transcript-segment.md sections 2.1, 6 and 8. Task 13 tests this and
+  nothing else builds it
 - Announcements through the shared service, per the table in section 6
 
 Acceptance criteria: "Scroll does not move the active segment" and
@@ -259,11 +286,20 @@ You do not have latitude on behavior. Implement exactly:
 - Commands and availability per section 4, including the Escape rule in 4.1
 - Delta announcements per section 5
 - Focus behavior per section 6, including that reading context does not move focus
-- A toolbar position that is fixed and does not follow the selection
+- The toolbar does not move with the selection. Where it sits is yours; that it
+  stays put between invocations is not
 
 If any of the above seems wrong, say so rather than changing it.
 
-Do not implement code selection. On confirm, announce and stop.
+Do not implement code selection. Three rows in those specifications are defined
+in terms of a panel that does not exist yet, so defer them to Task 8 and use
+this interim behavior instead:
+
+- On confirm, announce the confirmed range and move focus to the excerpt
+  toolbar. The specified destination is the panel search field
+- Escape maps to excerpt.discard while no panel exists. Once Task 8 lands,
+  Escape belongs to the panel, per excerpt-selection.md section 4.1
+- The confirmed to adjusting transition applies without the panel-closing half
 
 Add tests for every acceptance criterion in section 11 that does not depend on
 code selection.
@@ -288,7 +324,18 @@ Implement code selection per docs/patterns/code-selection.md sections 2 to 5.
 - Checking a parent does not check its children
 - Order read from stored canonicalOrderIndex
 
-Do not implement definitions, provisional codes, notes, or save yet.
+Also implement the panel-open focus destination in code-selection.md section 9:
+the panel opens with focus in the search field, which is the destination
+excerpt-selection.md section 6 names for confirm. Wire confirm to open it.
+
+Include region 5, recently used codes, collapsed by default per showRecentCodes.
+
+Do not implement definitions, provisional codes, notes, save, or the
+uncertainty control yet. Their regions occupy their positions in the section 3
+order so later tasks add content without moving anything. Regions 4 and 7 are
+conditional and must stay absent rather than empty: search results appear only
+with an active query, proposed codes only when the project permits them. An
+always-present empty region is one more thing to browse past.
 
 Acceptance criteria: "Search does not reorder the codebook", "Stable code order",
 "Parent does not cascade", "Query survives selection".
@@ -301,8 +348,10 @@ Add code definitions and provisional code creation per
 docs/patterns/code-selection.md sections 6 and 7.
 
 - Definitions are inline disclosures, not nested overlays
-- A definition shows short definition, full definition, inclusion criteria, and
-  exclusion criteria. Not examples: they are out of scope per D-019
+- A definition shows short definition, full definition, inclusion criteria,
+  exclusion criteria, status, and codebook version, per code-selection.md
+  section 6. Not examples: out of scope per D-019, and hidden during independent
+  coding for a methodological reason per D-022
 - Closing a definition returns focus to the control that opened it, with the
   search query and every pending selection intact
 - Created codes are provisional, enter pending immediately, and appear in the
@@ -350,10 +399,21 @@ Done when: the test passes. This is the single highest-value regression test in 
 
 ## Phase 3. Session readiness
 
-### Task 12. Accessibility smoke test harness
+### Task 12. Data reset
 
 ```
-Add a Playwright suite covering docs/accessibility-contract.md section 4.
+Add a single command that returns seeded data to a known state.
+
+Nothing else in the sequence creates this, and item 12 of the pre-session smoke
+test depends on it. A participant must never meet the previous participant's
+codes.
+```
+
+### Task 13. Accessibility smoke test harness
+
+```
+Add a Playwright suite covering the automatable part of
+docs/accessibility-contract.md section 4.
 
 - axe scan on each route, no critical or serious violations
 - Full coding workflow completed by keyboard alone
@@ -361,12 +421,11 @@ Add a Playwright suite covering docs/accessibility-contract.md section 4.
 - Every interactive element has an accessible name
 - No keyboard traps
 - Reflow at 400% with no horizontal scrolling
-- Test data resets to a known state via a single command
 ```
 
-Automated checks will catch a fraction of real problems and none of the workflow ones. The manual list in the contract is still run before every session.
+Six of the contract's twelve items are automatable here. Focus entry and return, announcement behaviour, non-colour state, single-panel completion, chord verification, and data reset stay manual or belong to other tasks. Automated checks catch a fraction of real problems and none of the workflow ones.
 
-### Task 13. Regression suite
+### Task 14. Regression suite
 
 Automate the transitions whose failure would invalidate a session:
 
@@ -379,22 +438,90 @@ Automate the transitions whose failure would invalidate a session:
 - Save failure preserving everything
 - Focus restoration at every transition
 
-### Task 14. Participant scenarios
+### Task 15. Transcript converter and local data loader
+
+```
+Two pieces, both currently unbuilt and both required before real material can be
+used in a session.
+
+The converter, in scripts/, per docs/testing/seed-data.md section 3:
+- Parse speaker turns from a source document
+- Split each turn into sentences
+- Assign stable opaque identifiers to every turn and sentence
+- Preserve speaker identity and timestamps
+- Emit JSON matching src/domain/types.ts
+- Re-running on unchanged input produces identical identifiers. Without that,
+  every excerpt recorded in a prior session breaks
+
+The loader:
+- Reads converted sources from data-local/ at runtime when present
+- Falls back to the synthetic fixture when the directory is absent, so the
+  repository is runnable by anyone without data access
+
+Write and test both against synthetic input only.
+```
+
+Running the converter over real transcripts, and the manual spot-check of its sentence splitting, are done by a person outside any agent session. D-025 and `CLAUDE.md` both hold that an agent does not read real transcript content, because content in an agent's context is content sent to a model provider. That constraint is unaffected by the data agreement.
+
+### Task 16. Participant scenarios
 
 Write `docs/testing/participant-scenarios.md`: the tasks a participant is asked
-to perform, in order, with the observable behavior that counts as completion.
+to perform, in order, with the observable behaviour that counts as completion.
 
 Write these before session one and after the workflow is real, so the scenarios
 describe what exists rather than what was hoped for.
 
+Per D-002, include a task that requires expanding an excerpt backward across a
+speaker turn boundary. That is where sentence-level and turn-level addressing
+diverge most, and it is the evidence that decision waits on. Record which
+`flagPresets` configuration each session ran under; a navigation finding is not
+interpretable without it.
+
+### Task 17. Deployment
+
+Nothing else in the sequence stands the prototype up anywhere, and participants
+reach it by URL in their own browser with their own assistive technology. That
+is not a convenience: a screen-shared or remote-controlled demo would test the
+team's setup rather than the participant's, and screen sharing is the thing this
+project identified as inaccessible in the first place.
+
+```
+Configure deployment to Netlify or Cloudflare Pages from the repository.
+
+- SPA fallback so a deep link or a mid-task reload does not 404. Routes are real
+  paths such as /projects/p-1/sources/s-1. On Netlify this is a _redirects file
+  containing: /* /index.html 200
+- Confirm the build serves at the root, so no Vite base path is needed
+- Confirm each deploy gets its own immutable URL
+```
+
+GitHub Pages is not the choice here. Pages from a private repository requires a
+paid plan, and the alternative is making the repository public, which exposes
+the specifications and the decision log. Netlify and Cloudflare Pages both
+deploy from a private repository on their free tiers.
+
+The immutable per-deploy URL matters more than it sounds. `prototype-scope.md`
+calls for a named version per research round, and a session has to run against a
+frozen build while development continues on main. One URL that always reflects
+the latest push would let the instrument change mid-round.
+
+Access control depends on B-3. Until that is answered, deploy the synthetic
+fixture only. A private repository protects the source, not the deployed site.
+
 ## Before the first session
 
-- Verify chords against JAWS, NVDA, and VoiceOver on real hardware. Reassign in
-  `src/config/keybindings.ts` if any collide
-- Resolve B-1 in `unresolved-questions.md`, the AFB data agreement
-- Convert the real transcripts offline, spot-check the sentence splitting, and
-  place output in `data-local/`
-- Run the full smoke test in `accessibility-contract.md` section 4
+- Verify chords against the participant's own screen reader and browser, not
+  only VoiceOver. Per D-024 the development smoke test runs in VoiceOver, which
+  does not surface browse-mode key interception; NVDA is free and runs on any
+  Windows machine or virtual machine. Reassign in `src/config/keybindings.ts` if
+  anything collides
+- Resolve B-3, whether the agreement covers deploying real transcripts to a
+  public URL. B-1 is settled: real deidentified material is approved for
+  sessions per D-025
+- Run the Task 15 converter over the real transcripts and spot-check the
+  sentence splitting by hand. Both steps are performed by a person, not in an
+  agent session, per D-025. Place the output in `data-local/`
+- Run the full twelve-item smoke test in `accessibility-contract.md` section 4
 - Deploy and name the version, 0.1 baseline coding
 - Record which flag preset the session runs under
 

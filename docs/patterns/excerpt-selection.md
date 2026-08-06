@@ -99,7 +99,9 @@ Boundaries cannot cross. Contracting a boundary past its counterpart is not a va
 
 ### 4.1 Escape
 
-Escape maps to `excerpt.discard` only in `anchored` and `adjusting`.
+Escape maps to `excerpt.discard` only in `anchored` and `adjusting`, and only while the code panel is closed.
+
+Escape is the one chord whose meaning depends on context, so it is not a single row in the binding table. `resolveEscape(panelOpen)` in `src/config/keybindings.ts` returns `codes.cancel` when the panel is open and `excerpt.discard` when it is not. Components call that rather than branching on Escape themselves.
 
 In `confirmed` with the code panel open, Escape belongs to the panel and closes it without discarding the excerpt. Discarding a confirmed excerpt requires the explicit toolbar control, because Escape at that point is far more likely to mean "close this panel" than "throw away the range I just defined." Confirmation is required when discarding a confirmed excerpt that has pending codes.
 

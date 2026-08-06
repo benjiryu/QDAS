@@ -135,6 +135,24 @@ export function bindingsFor(platform: Platform): Record<Command, Chord> {
   return platform === 'mac' ? macBindings : windowsLinuxBindings;
 }
 
+/**
+ * Escape is the one chord whose meaning depends on context, so it cannot be a
+ * single row in the tables above.
+ *
+ * excerpt-selection.md section 4.1 gives Escape to `excerpt.discard` in
+ * `anchored` and `adjusting`. code-selection.md section 2.1 gives it to
+ * `codes.cancel` while the panel is open. Both are correct: with the panel
+ * open, Escape far more likely means "close this" than "throw away the range I
+ * just defined", and with no panel there is nothing else for it to mean.
+ *
+ * The tables bind Escape to `codes.cancel`, because a duplicate would trip
+ * `assertNoDuplicateChords`. Resolve it through this function rather than
+ * reading the table directly, and never branch on Escape inside a component.
+ */
+export function resolveEscape(panelOpen: boolean): Command {
+  return panelOpen ? 'codes.cancel' : 'excerpt.discard';
+}
+
 export function matches(event: KeyboardEvent, chord: Chord): boolean {
   return (
     event.key.toLowerCase() === chord.key.toLowerCase() &&

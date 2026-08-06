@@ -1,0 +1,160 @@
+# title: Community garden interview, plot holder with six seasons
+# kind: transcript
+# projectId: pr-c5a91d7e40
+# note: Synthetic. Invented for this repository. No real research material.
+
+[00:00:08] Interviewer: Thanks for making the time today. To start, could you tell me how you first got involved with the garden?
+
+[00:00:19] Marisol: I moved into the neighborhood in the spring of my second year at the clinic, and I walked past the fence every single morning on the way to the bus. For about four months I just looked at it. There was a hand-painted sign on the gate with a phone number, and I told myself every week that I would call it. What finally made me call was a tomato plant that had grown through the chain link and was hanging out over the sidewalk. Somebody had tied it back with a strip of blue fabric so it would not get broken by people walking past. That small act of care made me think there were people in there who would probably talk to a stranger. So I called the number, and a woman named Perla answered, and she told me the waiting list was two years long. I put my name down anyway. It ended up being fourteen months, which I understand is fast for this city.
+
+[00:01:22] Interviewer: What was the wait like?
+
+[00:01:26] Marisol: Honestly it was frustrating, because a garden is not something you can want in the abstract. You want it in April when the weather turns and you have nowhere to put your hands. I bought containers for my balcony that first year and grew peppers and basil and one very sad cucumber. It kept me going, but a balcony faces one direction and mine faced north. By the second spring I was checking my email constantly. When the offer came it was in November, which is the worst possible month to be handed a piece of dirt.
+
+[00:02:11] Interviewer: Why the worst month?
+
+[00:02:15] Marisol: Because there is nothing to do and everything to imagine. I had a twenty by twenty foot plot that had been abandoned for most of a season, so it was mostly bindweed and one collapsed trellis. I spent that whole winter reading about soil amendments and drawing layouts on graph paper. Every layout I drew was for a garden with about four times the labor I actually had available. That is a mistake I have watched almost every new member make since. You plan for the person you are in February, and you garden as the person you are in July.
+
+[00:03:04] Interviewer: Say more about that difference.
+
+[00:03:09] Marisol: In February you have infinite energy and no mosquitoes. You are reading catalogs at your kitchen table with a cup of coffee, and the garden in your head is weeded and mulched and perfectly staked. In July the reality is that it is ninety four degrees at six in the evening, you came straight from work, and there are three days of watering to catch up on because the weekend got away from you. The gap between those two people is where most of the failure happens. It is not that people lack knowledge. It is that they planned for a version of themselves who had six free hours on a Saturday. I now tell newcomers to plant half of what they think they can handle, and I have never once had someone take that advice the first year.
+
+[00:04:12] Interviewer: How did you learn what to actually do in the plot?
+
+[00:04:18] Marisol: Almost entirely from the people on either side of me. There is a formal orientation, and it is fine, but it happens once in March and covers rules more than growing. What actually taught me was Hector, who had the plot to my north and had been there nineteen years. He never gave me a lesson in his life. He would just walk past while I was doing something wrong and stop and look at it, and I would say what, and he would say nothing, and then eventually he would say something like, that is going to want more room than you gave it. Then he would keep walking. The first season I thought he was being difficult. By the third season I understood that he was letting me decide whether to take the advice, which is a very different thing from telling me what to do. I have tried to copy that with newer members and I am not as good at it. I explain too much.
+
+[00:05:36] Interviewer: Were there other sources of learning?
+
+[00:05:41] Marisol: The garden runs workshops three or four times a season, usually on a Saturday morning. Seed starting in February, pruning in June, seed saving in September. They are useful and they are also completely different from learning by being next to someone. A workshop teaches you the general case. Hector taught me my plot, which drains badly on the west end and gets shaded by the ash tree after four in the afternoon. No workshop can tell you that. There is also a shelf of books in the tool shed that nobody has organized in a decade, and a group text that is mostly people asking whether it is too late to plant something.
+
+[00:06:32] Interviewer: You mentioned rules. What are the main ones?
+
+[00:06:38] Marisol: The big ones are about maintenance and about water. Every plot has to be planted by the middle of May and kept reasonably weeded, and if it is not, you get a notice, and after two notices it can be reassigned. Water is on a schedule during July and August because the pressure at the far end of the site is terrible if everyone runs hoses at once. There are rules about what you can plant, mostly about height, because a row of sunflowers on the south edge of your plot will shade the person behind you for six weeks. No pesticides that are not on the approved list. Dogs on leash. The gate stays locked, and you do not give the code to anyone who is not a member, which sounds unfriendly but exists because we lost a lot of tools in one bad summer.
+
+[00:07:44] Interviewer: How are those rules decided?
+
+[00:07:49] Marisol: There is a steering committee of seven people who are elected in October, and there is a general meeting twice a year that maybe a third of members attend. In practice the committee decides and the general meeting ratifies. I have been on the committee twice, and I would say that is a fair description and also not a criticism, because getting a hundred and forty people to agree on anything is not realistic. What I would criticize is that the people who show up to meetings are disproportionately the people who have been there longest. So the rules tend to reflect what long-time members find annoying. The maintenance deadline is a good example. Mid May makes sense if you have been gardening for fifteen years and start your seeds in a basement in January. If you are new and working two jobs, mid May is aggressive.
+
+[00:09:02] Interviewer: Has that come up?
+
+[00:09:06] Marisol: It came up two years ago and it got heated. A newer member, who I will not name, got a reassignment notice in June for a plot that was half planted. She had started chemotherapy in April. Nobody on the committee knew that, because there is no mechanism for anyone to know that, and there is no way to ask without prying. She was extremely upset, and I think rightly. What came out of it was a hardship pause that any member can request once per season, no explanation required. You email the committee, you say you are requesting a pause, and your plot is exempt from the maintenance rule for eight weeks. That was one of the better things we have done. It took a bad incident to get there, which is how most of our rules have happened.
+
+[00:10:21] Interviewer: Can we talk about water? You mentioned it twice.
+
+[00:10:27] Marisol: Water is the thing that generates the most conflict on the site, by a wide margin. Physically there are four spigots for sixty two plots, and they were installed when the site had half as many. The far northwest corner has almost no pressure after ten in the morning in August. So there is a schedule, odd plots on odd days, and the schedule is the closest thing we have to a real law. People who violate it get talked about in a way that people who violate the weeding rule do not. Part of that is fairness and part of it is that water is the difference between having a season and not having one. I have seen genuinely kind people become quite sharp about a hose.
+
+[00:11:29] Interviewer: How do people handle it when there is a conflict?
+
+[00:11:35] Marisol: Badly, mostly, and then it resolves anyway. The first move is almost always indirect. Somebody complains to a third person, and the third person mentions it to the committee, and the committee sends a general reminder to everyone about the water schedule. That reminder is understood by every single person to be aimed at one specific individual. It works about half the time. When it does not work, someone eventually has a direct conversation, usually at the spigot, usually with more heat than the situation needs. There is no formal complaint process, which I have gone back and forth on. A formal process would be fairer and it would also make the place feel like a homeowners association. The current system relies on everyone being embarrassed by the same things, which works until you have people who did not grow up here and do not read the signals the same way.
+
+[00:13:04] Interviewer: What do you mean by that?
+
+[00:13:09] Marisol: The garden has changed a lot in who is in it. When I joined, it was mostly people who had been in the neighborhood twenty and thirty years, and a lot of Portuguese and Cape Verdean families who had gardened their whole lives. Now there are many more people my age and younger who moved here in the last five years, and a lot of them are gardening for the first time. Those two groups have very different ideas of what the space is for. For the older members it is food production and it is serious. There are people there who grow enough to matter to their grocery budget, and they think a plot with a bench in it and four kinds of flowers is a waste of good soil. For the newer members it is often about being outside and having a project and meeting people. Neither of those is wrong. But the indirect way conflict gets handled assumes everyone shares an idea of what is obviously correct, and that is not true anymore.
+
+[00:14:38] Interviewer: How does that tension show up day to day?
+
+[00:14:44] Marisol: In small comments, mostly. Someone will say, very pleasantly, that they see you are trying flowers this year. There is a whole sentence underneath that. It shows up in what people share. The older members share seeds and seedlings constantly, and the sharing has rules that nobody says out loud. You do not take without asking, you do not take the last of anything, and you reciprocate within the same season if you can. I have watched newer members accept a bag of seedlings and never bring anything back, and they have no idea that a bill came with it. Not a real bill. An expectation. When they do not reciprocate, they get quietly moved out of the sharing circle, and they never learn why.
+
+[00:15:52] Interviewer: Has anyone tried to make that explicit?
+
+[00:15:58] Marisol: I brought it up at a committee meeting once and it did not go anywhere. The reaction was essentially that people should just be decent to each other, which is true and unhelpful. There is a real reluctance to write down anything social. Rules about hoses are fine. Rules about generosity feel wrong to people, and I understand that, because the moment you write it down it stops being generosity. But the cost of leaving it unwritten falls entirely on the newest people, who are also the least likely to have anyone explain it to them. That is the pattern with most of what makes the garden work. The unwritten parts are the parts that matter, and they are invisible exactly to the people who need them most.
+
+[00:17:10] Interviewer: You mentioned physical access earlier. Can you say more?
+
+[00:17:17] Marisol: The site is not accessible in any meaningful way for a lot of people. The paths between plots are packed dirt and they are about thirty inches wide, so a wheelchair does not go down them. There are two raised beds near the gate that were built with grant money about eight years ago, and they are described as the accessible beds. They are four feet off the ground, which is good, and they are also the only two, and they are the closest plots to the parking area, so they are also the most desirable plots on the site for everybody. There has been friction about who gets them. My view is that they should be allocated on need and reviewed every year. There are people who think that is unfair because the waiting list should be the waiting list. That argument comes up about every two years and has never been settled.
+
+[00:18:41] Interviewer: What happened the last time it came up?
+
+[00:18:47] Marisol: It came up when a member had a stroke and could not use his plot anymore. He had been there eleven years. There was a proposal to move him to one of the raised beds, and the person in that bed had been in it for three seasons and did not want to move, and had no medical need for it, and had also gotten it fair and square off the list. Both of those positions are defensible. What we did was nothing, and he left the garden, and I still think about that. The proposal that came out of it was that when an accessible bed turns over it goes to need first, and that passed, but it only takes effect on turnover. Those beds turn over about once every four years.
+
+[00:19:57] Interviewer: Are there other access issues beyond the beds?
+
+[00:20:04] Marisol: The gate is heavy and it has a latch that needs two hands. The tool shed has a step up into it. There is no seating anywhere except one bench near the compost, which is the least pleasant place on the site to sit. And the notices are all on a corkboard by the gate, printed small, which assumes you can stand there and read them. When we moved most communication to email that helped some people and hurt others, because a number of our older members are not on email and now find out about things last. We have not solved that. Right now there is one person who prints the emails and pins them up, which works because she is reliable, and will stop working the day she stops.
+
+[00:21:16] Interviewer: Let us talk about your own plot. What do you grow?
+
+[00:21:23] Marisol: Tomatoes, which I grow far too many of, and I know it. Beans, both bush and pole. Greens in the spring and fall, mostly chard and kale because they forgive neglect. Garlic in the fall, which is the single most satisfying thing to grow because you plant it in October, forget about it, and it comes up in April with no help from you. Peppers, which have never once done as well as I want. Herbs along the north edge where it is shady. And two rows of zinnias that I plant every year and that Hector has commented on every year for six years.
+
+[00:22:20] Interviewer: What does he say?
+
+[00:22:24] Marisol: He says, you are still doing the flowers. Every June. And I say, I am still doing the flowers. And that is the entire conversation, and we have had it six times, and it is genuinely affectionate at this point. The first year I think he meant it. Now it is a joke that we both maintain. That is the actual texture of the place. Things that started as friction become the thing you look forward to.
+
+[00:23:02] Interviewer: How much time does the plot take?
+
+[00:23:08] Marisol: In the shoulder seasons, maybe two hours a week. From late June through August it is more like five or six, and it is not optional time, because if you skip a week in July you do not get back to where you were. That is the thing people underestimate. A garden is not a hobby you can do when you feel like it, or rather it is, but then you have a plot of weeds and a notice from the committee. The watering is the inflexible part. Everything else can slide a week. Water cannot slide two days in August.
+
+[00:24:11] Interviewer: How do you fit that around work?
+
+[00:24:17] Marisol: I go in the mornings before my shift, which means five thirty or six. That is partly practical and partly that I like the site empty. There is a period between about five thirty and seven where there might be three people there and nobody talks to anyone, and it is the best part of my week. In the evenings it is a completely different place, and it is social, and some days I want that and many days I do not. I have thought about the fact that I chose the hours that let me avoid the community aspect of a community garden. I am not sure what to make of that.
+
+[00:25:24] Interviewer: What do you do with what you grow?
+
+[00:25:30] Marisol: I eat a lot of it, I give a lot of it away, and I waste some of it, which I do not like admitting. There is a donation bin by the gate that goes to a food pantry on Thursdays, and in August it is overflowing with zucchini that nobody wants including the pantry. There is a real mismatch there. What the pantry actually wants is things that store and things people know how to cook. What we produce in surplus is exactly the things that do not store. I have suggested we coordinate what people plant so the donation is more useful, and it went nowhere, because telling people what to plant in their own plot crosses a line for most members. Probably correctly.
+
+[00:26:44] Interviewer: You said you waste some.
+
+[00:26:49] Marisol: I do. There is a stretch in August where everything comes at once and I cannot keep up, and I am also working extra shifts because that is when everyone else takes vacation. So there are weeks where I go in, water, pick what I can carry, and leave things on the plants that then split or rot. The first year that made me feel terrible. Now I understand it as part of the cycle, and I compost it, and it goes back into the soil. But there is a version of me that expected to be more efficient than this, and that version would be disappointed.
+
+[00:27:52] Interviewer: Has your relationship to the garden changed over six seasons?
+
+[00:27:59] Marisol: Completely. The first two years it was a project with a goal, which was to be good at it. I read constantly and I measured things and I kept a notebook with planting dates and yields. I still have those notebooks and they are slightly embarrassing. Around year three something shifted and it became a place I go rather than a thing I do. I stopped keeping the notebook. My yields probably went down. I would not go back. The notebook version of me was gardening in order to have gardened, and the current version is just there.
+
+[00:29:04] Interviewer: What caused the shift?
+
+[00:29:09] Marisol: I think it was the year my mother was ill. I was driving up to see her most weekends and I did not have the energy to be optimizing anything. So the plot got the minimum, and the minimum turned out to be enough for it to keep going, which surprised me. Plants are much less fragile than a beginner believes. That was also the year I found out what the garden does when someone is struggling. People watered my plot without being asked and without telling me. I came back after ten days and it was clearly watered, and nobody ever said a word about it, and I have never found out for certain who did it. I have a guess.
+
+[00:30:23] Interviewer: How did that land for you?
+
+[00:30:29] Marisol: It undid me a bit, honestly. I had spent two years thinking of the place as somewhere I had a transactional membership. I paid dues, I followed rules, I got dirt. And then this thing happened that was entirely outside that, and nobody wanted credit for it, which meant I could not even reciprocate directly. All I could do was do it for someone else later, which I have, twice. That is when I understood the sharing rules I was describing earlier. They are not about the seedlings. The seedlings are the visible part of a system for finding out who will show up.
+
+[00:31:38] Interviewer: Do you think new members find that out?
+
+[00:31:44] Marisol: Some do and it takes them years. Some never do and they leave after two seasons thinking it was a place where you rent dirt. The turnover in the first two years is high, and I do not think the garden has ever looked seriously at why. The assumption is that people discover it is more work than they thought, and that is true for some of them. But I think a number of them leave because nothing ever happened to them there. Nobody stopped at their plot. They came, they gardened alone, they went home. If you have a bad first season and no one has spoken to you, there is no reason to renew.
+
+[00:32:54] Interviewer: Has anything been tried to address that?
+
+[00:33:01] Marisol: There was a mentor program for one season, about four years ago. Every new member was assigned to a long-time member. It was well intentioned and it mostly did not work, because being assigned to someone is not the same as knowing them, and both people felt awkward and obligated. Attendance at the paired meetups was low. What I noticed, though, is that three of those pairs did stick, and those three new members are all still here. So the failure rate was high and the successes were real. The committee looked at the low participation and cancelled it. I think that was the wrong read. The right read is that it worked one time in five and that is still a good return for the effort involved.
+
+[00:34:18] Interviewer: Would you run it again?
+
+[00:34:23] Marisol: I would run it differently. I would not pair people. I would put four new members and two experienced members on a task together, like building a trellis or turning the compost, and let people find each other. The pairing made it a relationship, and you cannot assign a relationship. A task is much lower stakes. You can work next to someone for two hours and not talk, and it is still fine, and sometimes you do talk. That is how I actually met everyone I know there, which was through the workday in April that everybody is required to attend.
+
+[00:35:34] Interviewer: Tell me about the workday.
+
+[00:35:39] Marisol: Every member owes six hours of common work per season, and most of it happens on two Saturdays in April. You sign up for a crew and you do things that benefit the whole site rather than your own plot. Repairing the fence, spreading wood chips on the paths, cleaning out the shed, fixing the spigots. It is genuinely the best thing the garden does and I would defend it against anyone who wants it removed, and people do want it removed. The complaint is that it is inflexible and that some people cannot do physical labor. Both of those are legitimate. There are alternative hours you can do, like taking minutes at meetings or managing the seed library, but the culture treats those as lesser, and everyone knows it.
+
+[00:36:58] Interviewer: How does that show up?
+
+[00:37:04] Marisol: If you spent your six hours moving wood chips, people know it, because they saw you. If you spent them doing the newsletter at your kitchen table, nobody saw anything. There is a status difference and nobody would ever admit to it. I have done both. The year I did the newsletter I felt like I had gotten away with something, which is ridiculous, because the newsletter took longer than the wood chips. Physical labor in a shared space is legible in a way that administrative work is not, and that is not unique to us.
+
+[00:38:11] Interviewer: What would you change about the garden if you could change one thing?
+
+[00:38:19] Marisol: More water access points, which is boring and is the correct answer. Almost every fight is a water fight underneath. If there were eight spigots instead of four, the schedule could be looser, the far corner would be viable, and about half the interpersonal friction I have described would simply not occur. It is a plumbing problem that everybody experiences as a character problem. We talk about it as people being inconsiderate. It is a pressure differential.
+
+[00:39:22] Interviewer: Why has that not happened?
+
+[00:39:27] Marisol: Money and permission. The land is owned by the city and leased to the garden association for a dollar a year on a five year term. Any permanent improvement needs city approval, and the approval process for anything involving water is long. There was a grant application two years ago that got most of the way and then stalled when the lease came up for renewal, because the city would not approve an improvement on a lease that was expiring. The lease was renewed. Nobody restarted the grant. That is not anyone's fault exactly. It is that the volunteer who was carrying it moved away, and there was no handoff, and the whole thing lived in her head and her personal email.
+
+[00:40:44] Interviewer: Does that happen often?
+
+[00:40:49] Marisol: Constantly, and it is the thing that most limits what the garden can do. Everything runs on individuals, and when an individual stops, the function stops with them, and often nobody notices for a year. The seed library was excellent for three years and then the person running it had a baby and now it is a box of unlabeled envelopes. The website was updated regularly until it was not, and the last post on it is from a spring three years ago announcing a workshop. There is no institutional memory. There is a shared drive that four people can access and none of them can remember what is in it.
+
+[00:41:58] Interviewer: Has anyone tried to build that memory?
+
+[00:42:05] Marisol: The committee keeps minutes, and the minutes are the closest thing. But minutes record decisions and not reasons. I can go back and read that in a certain year we voted to move the maintenance deadline from June first to May fifteenth. I cannot find out why, and everyone who was in the room has a different memory of it. So every few years someone proposes moving it back, and the argument gets had again from scratch, and people who were there get frustrated in a way that reads as territorial to the newer members. It is not territorial. It is exhausting to relitigate something when you cannot produce the evidence that settled it the first time.
+
+[00:43:20] Interviewer: That is a good description of a problem a lot of groups have.
+
+[00:43:27] Marisol: I have started writing things down for that reason. Not officially. I keep a document with dates and what happened and what the argument was on each side. It started as a way to stop myself from misremembering. Now two other people ask me for it before meetings, which is either useful or a sign that I have made myself into another single point of failure. Probably both.
+
+[00:44:22] Interviewer: We are getting close to time. Is there anything about the garden that you think an outsider would misunderstand?
+
+[00:44:32] Marisol: That it is peaceful. People walk past the fence and see a quiet green place with vegetables in it, and it looks like an escape from conflict. It is not. It is a place with sixty two plots and a hundred and forty people and four water spigots and a lot of unspoken rules, and it is as political as any workplace I have been in. What is different is that the stakes are low enough that the politics do not destroy anything. Nobody loses their livelihood over the water schedule. So you get all the behavior of a human institution with almost none of the consequences, which is either a good description of a hobby or a good description of a place to practice being in a group. I think it is the second one, and I think it is why I am still there after six seasons of what an outsider would consider a lot of nonsense about hoses.
+
+[00:46:04] Interviewer: Anything you wish I had asked?
+
+[00:46:10] Marisol: You did not ask what it smells like in the first week of May, and that is genuinely half of why anyone does this. Also you did not ask about the crows, and there is a crow situation. But I suspect that is not what your study is about.
+
+[00:46:38] Interviewer: We can come back to the crows. Thank you, this has been extremely helpful.
+
+[00:46:46] Marisol: Thank you for asking. It is more interesting to talk about than I expected, and I have said several things out loud that I had not put together before, particularly about the unwritten parts being invisible to the people who need them. I am going to think about that.
