@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
+import { AnnouncementLog } from './AnnouncementLog';
 import { announcer as defaultAnnouncer } from './announcer';
 import type { Announcer } from './announcer';
 import { AnnouncerContext } from './announcerContext';
@@ -74,6 +75,14 @@ export function AnnouncerProvider({
         aria-atomic="true"
         data-testid="live-region-assertive"
       />
+
+      {/*
+        Development only, per docs/testing/manual-testing.md section 4. Vite
+        replaces this condition with false when building for production, so the
+        panel and its stylesheet leave the bundle entirely. Rendered here, and
+        not inside the application, so it sits outside every landmark.
+      */}
+      {import.meta.env.DEV ? <AnnouncementLog announcer={announcer} /> : null}
     </AnnouncerContext.Provider>
   );
 }

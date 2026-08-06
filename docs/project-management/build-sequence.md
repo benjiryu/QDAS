@@ -66,6 +66,18 @@ Add the jsx-a11y recommended config to `eslint.config.js`. It will not catch foc
 
 Outstanding: `eslint-plugin-jsx-a11y`, Prettier, and `@vitest/ui` are listed here but are not in `package.json`, and `eslint.config.js` does not extend the jsx-a11y config. Phase 0 is otherwise complete. Finish these before Task 5, since the lint rules are worth having in place before the first markup-heavy task.
 
+`eslint-plugin-jsx-a11y` fails to install against ESLint 10 with an `ERESOLVE` peer conflict. The plugin declares support only through ESLint 9 and has not shipped a v10 peer range, though it works with v10 in practice. Resolve it with an override in `package.json` rather than `--legacy-peer-deps`, which is a flag every future install has to remember:
+
+```json
+"overrides": {
+  "eslint-plugin-jsx-a11y": {
+    "eslint": "$eslint"
+  }
+}
+```
+
+If it resists, drop it and record that here. The plugin catches static JSX mistakes; every failure mode this prototype turns on, focus return, announcement queuing, reflow, and boundary state, is invisible to static linting.
+
 ### 0.5 Confirm it runs
 
 ```bash

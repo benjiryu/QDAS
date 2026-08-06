@@ -46,10 +46,12 @@ export function AppShell() {
       <div className="app-body">
         {/*
           Project-level navigation renders on every route, including /projects
-          where no project is in context. Its items are not specified: docs/pages
-          is empty and A-2 in unresolved-questions.md, which project navigation
-          item owns transcript coding, is open. The landmark is present and
-          labeled; the items wait on a page specification.
+          where no project is in context. Its items are still not specified:
+          docs/pages is empty. D-015 closed A-2 by removing the question rather
+          than answering it, since coding is an action on the open source and
+          not a separate destination, so no navigation item owns transcript
+          coding. What the region does list awaits a page specification. The
+          landmark is present and labeled in the meantime.
         */}
         <nav aria-label="Project" className="project-nav">
           <p className="placeholder">Project navigation items are not yet specified.</p>
