@@ -4,7 +4,7 @@
 
 - Status: Draft for team review
 - Version: 0.1
-- Last updated: 2026-08-03
+- Last updated: 2026-08-05
 - Related workflows: code-selection-and-assignment, excerpt-selection, notes-and-memos
 - Related patterns: excerpt-selection, transcript-segment, code-definition (not yet written), pending-assignment (not yet written), status-feedback (not yet written)
 - Research evidence: magnification interview with Carmel (stable code ordering), co-design workshop (codebook reference without losing position), competitive analysis (dropdown-based assignment as a friction point)
@@ -30,15 +30,27 @@ Let a researcher find one or more codes, check their definitions, apply them to 
 
 **Search is required.** The current draft gives the popup a create-a-code field and a hierarchical checkbox list, with no way to search. With a codebook of realistic size, browse-only navigation will consume most of a participant session, and the finding will be about scrolling rather than about coding. Search is the first control in the panel.
 
-**The panel is not anchored to the selected text.** The current draft places a popup adjacent to the selection. Under magnification this means the panel appears in a different screen location for every excerpt, which is the predictability problem Carmel raised. This pattern specifies a fixed-position panel instead. The decision needs team sign-off and is recorded in section 12.
+**The panel is not anchored to the selected text.** The current draft places a popup adjacent to the selection. Under magnification this means the panel appears in a different screen location for every excerpt, which is the predictability problem Carmel raised. Resolved by D-026: a dialog centered in the viewport, which lands in the same place every time.
 
 ## 2. Container
 
-A non-modal panel in a fixed position, present in the DOM only while open.
+A dialog centered in the viewport, with the surrounding view dimmed, present in the DOM only while open. Per D-026, superseding the non-modal side panel in D-003.
 
-Non-modal rather than modal, because the user needs to re-read the excerpt and its surrounding context while choosing codes, and a modal that traps focus makes that a separate trip. The transcript remains reachable and readable while the panel is open. The excerpt stays confirmed and visibly marked throughout.
+Centered in the viewport rather than in the document, so a magnified user panned into a corner still finds it in the same place every time. That sameness is the property the anchored popup failed.
 
-Panel placement is a `codebookPresentation` flag with three values, so that the recommended side panel, a full-page variant, and the anchored popup currently in the Figma prototype can be compared in session rather than argued about in advance. The fixed-position rule in section 11 applies to `sidePanel` and `fullPage`. Under `anchoredPopup` the panel follows the selection by definition, which is precisely the property being tested.
+The dialog traps focus, as a dialog should. Because it does, three things that the earlier non-modal design got for free have to be built into it:
+
+- **The excerpt is readable inside the dialog**, in full, not only summarized. A coder who realizes mid-selection that they need to re-read the passage must not have to cancel out to do it.
+- **Context before and context after are retrievable from inside the dialog**, working from stored excerpt state rather than from the live transcript.
+- **A control returns to boundary adjustment.** It closes the dialog, moves the excerpt to `adjusting`, and preserves the pending assignment. Boundary chords will not reach the application through a focus trap, so this control is the only route back, and realizing the boundaries are wrong is the most common reason to back out of code selection.
+
+The dialog resizes and scrolls internally. It does not hold fixed dimensions: the Hi-Fi frame is 441 by 568, which cannot fit at 400 percent zoom.
+
+The dimmed backdrop is decoration. No state is conveyed by it, and it does not reduce the contrast of anything still legible behind it.
+
+Build this with React Aria Components. Focus trapping, focus restore on close, escape handling, and scroll locking are among the few controls genuinely hard to hand-roll correctly, which is the case `CLAUDE.md` reserves React Aria for.
+
+Placement remains a `codebookPresentation` flag with three values, so the comparison recorded against B-2 can still be run: the centered modal, a full-page variant, and the fixed side panel.
 
 ### 2.1 Commands
 
@@ -48,6 +60,7 @@ Panel placement is a `codebookPresentation` flag with three values, so that the 
 | `codes.cancel` | Panel open | Discard pending codes and draft note, close panel, excerpt stays `confirmed` |
 | `codes.focusSearch` | Panel open | Move focus to the search field without clearing it |
 | `codes.clearSearch` | Query is non-empty | Clear query, remove results region, focus search field |
+| `codes.adjustBoundaries` | Dialog open | Close dialog, excerpt to `adjusting`, pending assignment preserved |
 
 Escape maps to `codes.cancel`. This is the panel's binding while it is open; excerpt-selection.md section 4.1 gives up its claim on Escape for exactly this reason.
 
@@ -57,8 +70,8 @@ Chords follow the platform-conditional mapping in transcript-segment.md section 
 
 ## 3. Regions, in fixed order
 
-1. Panel heading, naming the excerpt by size and start speaker
-2. Excerpt summary, with a control to re-read the full excerpt
+1. Dialog heading, naming the excerpt by size and start speaker
+2. The excerpt, readable in full, with controls for context before and context after
 3. Search field
 4. Search results, present only when a query is active
 5. Recently used codes, collapsed by default
@@ -67,7 +80,8 @@ Chords follow the platform-conditional mapping in transcript-segment.md section 
 8. Create a code
 9. Pending assignment
 10. Note
-11. Save, Cancel
+11. Uncertainty control
+12. Adjust boundaries, Save, Cancel
 
 This order never changes. Sections 4, 5, and 7 appear and disappear, but the sections that remain never reorder around them. Search results appear in their own region rather than filtering the canonical codebook in place, so the codebook's structure stays where the user learned it.
 
@@ -254,8 +268,8 @@ Note
 ## 15. Prototype configuration
 
 ```text
-codebookPresentation:  sidePanel | fullPage | anchoredPopup
-  v0.1 assumption: sidePanel
+codebookPresentation:  centeredModal | fullPage | sidePanel
+  v0.1 assumption: centeredModal, per D-026
 
 codeListEntry:  searchFirst | browseFirst
   v0.1 assumption: searchFirst
@@ -275,8 +289,7 @@ showCodeFrequencies:  administratorOnly | reviewPhase | always
 
 ## 16. Unresolved questions
 
-**Side panel, full page, or the anchored popup already in Figma?**
-Owner: team, needs a decision before build. Evidence needed: task-based comparison with magnification and screen reader participants rather than preference ranking. Temporary assumption: side panel at a fixed position, on the reasoning that an anchored popup moves with the selection and defeats learned location. This contradicts the current Figma prototype and should be recorded in the decision log either way. Implementation can proceed behind the flag.
+**Placement: resolved by D-026.** A dialog centered in the viewport with a dimmed backdrop. The full-page and side-panel variants stay behind the flag so the comparison in B-2 remains runnable.
 
 **Search-first or browse-first?**
 Owner: team. Evidence needed: session one. Temporary assumption: search field focused on open, with the full codebook visible below so browsing costs nothing. Implementation can proceed.

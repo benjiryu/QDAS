@@ -83,11 +83,13 @@ describe('queueing', () => {
     vi.advanceTimersByTime(CLEAR_GAP_MS);
     expect(polite.textContent).toBe('first');
 
-    // Issued while "first" is still on screen, and by assumption still speaking.
+    // Both issued while "first" is still on screen, and by assumption still
+    // speaking. Neither may overwrite the other on the way through.
     announcer.announce('second');
+    announcer.announce('third');
     expect(polite.textContent).toBe('first');
 
-    expect(spokenFrom(polite)).toEqual(['second']);
+    expect(spokenFrom(polite)).toEqual(['second', 'third']);
   });
 
   it('drops nothing under sustained load', () => {

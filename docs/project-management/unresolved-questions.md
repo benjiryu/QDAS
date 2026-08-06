@@ -10,47 +10,19 @@ Resolved entries are retained with their resolution so that a settled question i
 
 ### Blocking
 
-**B-1. Does the AFB data agreement cover using real deidentified material in a participant session?**
+**B-3. Does the AFB agreement cover deploying real transcripts to a public URL?**
 
-Owner: Benji with Dr. Silverman. Evidence: terms of the current arrangement, and whether UCI IRB review covers this use.
+Owner: Benji with Dr. Silverman. Opened by D-025, which secured session use, and by the deployment question.
 
-*Narrowed by the synthetic fixture, not closed by it.* The original question had three parts. Building against a synthetic fixture settles two of them: development use and LLM agent exposure both stop being questions, because no real material is present while the prototype is built and the agent never reads a real transcript. Development is unblocked and stays unblocked.
+A private repository protects the source. It does not protect a deployed site: anyone with the URL can open it. A prototype built with real transcripts and deployed for a remote session puts deidentified interview material on the open internet with no authentication, which is a materially wider exposure than showing a transcript to a participant during a session. The two are easy to conflate and worth separating explicitly.
 
-The third part survives untouched. Loading real deidentified transcripts for a session means showing one person's interview to a different person, and that is the part that needs the agreement checked. No fixture removes it, because the fixture is precisely what is being replaced at that moment.
+Options, in order of how much they ask of AFB:
 
-*Two components with different risk profiles.* Worth separating rather than treating as one permission:
+- Deploy the synthetic fixture and use real data only where the session is run on a machine the team controls. Costs the ecological validity that D-025 just bought back.
+- Deploy real data behind access control. Cloudflare Access is free for up to fifty users and gates a site by email address, which fits a participant study.
+- Confirm the agreement covers public deployment. Least work if the answer is yes, and the answer should be obtained rather than assumed.
 
-- **Transcripts.** Interview text carries re-identification risk that survives name removal, higher in a small community. This is the sensitive half.
-- **The codebook.** Code names, definitions, and criteria are analytic apparatus rather than participant speech, and likely carry far less risk. Confirming the codebook separately may be quick, and it is the half that drives the search and browse findings the code panel is being tested for.
-
-*A fallback that de-risks the schedule.* Session one can run entirely on the synthetic fixture if the fixture meets the shape requirements in `seed-data.md` section 4. What that costs is ecological validity: a qualitative researcher given invented text may code it as an exercise rather than bringing real analytic judgment, and that is a genuine threat to workflow findings. A middle path is the synthetic transcript with the real codebook, which recovers most of the codebook realism at much lower risk.
-
-The decision to make deliberately: whether session one waits on B-1 or runs on the fixture. Waiting produces better data. Running does not stall the research.
-
-**B-2. Panel placement: side panel, full page, or anchored popup?**
-
-Owner: team, with evidence from session one. Assumption: fixed side panel, per D-003. All three values exist behind `codebookPresentation`, so implementation is not blocked.
-
-*Why this one is worth the attention.* Code selection is the highest-frequency interaction in the workflow after navigation itself. A coder may open this panel eighty times in a session, so any cost built into it is paid eighty times. It is also the clearest case in the project where the three access modes pull in different directions, which makes it the first real test of the commitment to one shared workflow with adapted presentation rather than separate products.
-
-*The three options and what each actually costs.*
-
-**Fixed side panel.** The transcript stays readable while codes are chosen, so re-reading the excerpt in context costs nothing. A fixed location is learnable, which is the property Carmel's interview identified as load-bearing. The costs: the transcript column narrows, and at high zoom two side-by-side regions cannot both be visible, so the layout has to collapse to sequential anyway. If it is built as literally side-by-side without that collapse, it fails the no-horizontal-panning rule.
-
-**Full page.** Structurally the simplest, and probably the strongest at 400 percent zoom, because there are no competing regions at all. The cost is that the transcript is gone while coding, so "read the excerpt again" has to work from stored excerpt state rather than from the live source, and retrieving surrounding context becomes a second trip. It also imposes a full view transition on a high-frequency action, which is where the eighty-times figure starts to matter.
-
-**Anchored popup**, as currently in Figma. Proximity to the passage is a real advantage for sighted users, and eye travel is minimal. The cost falls almost entirely on magnification: the panel lands somewhere different for every excerpt, and at high zoom the user may not see the anchor and the panel together, so each invocation begins with re-locating the panel. Focus return is also harder to keep predictable when the panel's position moves.
-
-*What would settle it.* Not a preference ranking. Asking which one people like produces the one that looks best in a screenshot, and this is a question about repeated cost rather than first impression. The comparison has to be task-based:
-
-- The same coding task under two configurations, order counterbalanced across participants.
-- Measures: whether the task completes, how many actions it takes to apply two codes and check one definition, whether the participant can state their transcript position afterward, whether they land back where they expect, and self-reported effort.
-- Run at the participant's own zoom level and with their own assistive technology. This question is close to meaningless tested at 100 percent zoom with no screen reader.
-- Two configurations per participant, not three. Three is too long, and fatigue will dominate the third.
-
-*A cheaper decision available now.* The anchored popup already conflicts with a recorded research finding, and the team could reasonably drop it to a two-way comparison before build. That would remove one presentation from the implementation and testing burden. The argument for keeping it is that it is what the Figma shows and the sighted benefit is genuine. Worth deciding deliberately rather than by default, because carrying three presentations means building and maintaining three.
-
-*What it blocks downstream.* Focus entry and return destinations, whether the transcript remains readable during code selection, whether excerpt re-reading needs a stored copy, and the review workspace later, which will likely reuse whatever pattern wins. F-7 is entangled with this: what reflows depends on whether there are two regions to begin with.
+Assumption until answered: real data is not deployed to an unauthenticated public URL. Implementation is unaffected either way, since the loader reads from `data-local/` regardless of what is in it.
 
 ### Awaiting evidence from a session or from a design pass
 
@@ -59,6 +31,12 @@ Owner: team, with evidence from session one. Assumption: fixed side panel, per D
 **F-9. Figma frame hygiene.** Owner: Benji. The frame named `Project` contains the login form, the frame named `Log in` holds only the wordmark, and three hidden `Home` frames carry conflicting taxonomies from different generations. Not behavioral. Resolution: clean before the MSE handoff.
 
 ## Resolved
+
+### Data and hosting
+
+**B-1. RESOLVED, D-025.** A data agreement is secured with AFB. Real deidentified transcripts and the real codebook may be used in participant sessions. D-007 still stands: real data stays out of version control, committed fixtures stay synthetic, and development runs against the fixture. Public deployment is carved out as B-3.
+
+**B-2. RESOLVED, D-026.** Code selection is a dialog centered in the viewport with the surrounding view dimmed. Supersedes D-003. Consequences for excerpt re-reading, context retrieval, and the route back to boundary adjustment are recorded in D-026.
 
 ### Transcript and segmentation
 
@@ -141,3 +119,28 @@ Owner: team, with evidence from session one. Assumption: fixed side panel, per D
 **F-6. RESOLVED.** An active segment indicator is specified, visually distinct from the focus ring and from excerpt highlighting.
 
 **F-8. RESOLVED.** Timestamps are visible to sighted and magnification users and are not announced automatically. `timestampVerbosity` governs speech only.
+
+## Appendix: retained analysis
+
+### B-2, code panel placement
+
+Resolved by D-026 as a dialog centered in the viewport. The analysis is kept because the comparison it describes remains runnable behind `codebookPresentation`, and because the reasoning about repeated cost applies to any future change here.
+
+*Why this one was worth the attention.* Code selection is the highest-frequency interaction in the workflow after navigation itself. A coder may open it eighty times in a session, so any cost built into it is paid eighty times. It is also the clearest case in the project where the three access modes pull in different directions, which makes it the first real test of the commitment to one shared workflow with adapted presentation rather than separate products.
+
+*The options and what each costs.*
+
+**Centered modal**, the chosen option. Lands in the same viewport position on every invocation, which is the predictability property the anchored popup failed. Single unambiguous focus context. The cost is that it traps focus, so re-reading the excerpt and retrieving context have to be rebuilt inside the dialog, and the route back to boundary adjustment needs an explicit control. Those consequences are specified in D-026.
+
+**Fixed side panel.** The transcript stays readable while codes are chosen, so re-reading the excerpt in context costs nothing. A fixed location is learnable. The costs: the transcript column narrows, and at high zoom two side-by-side regions cannot both be visible, so the layout has to collapse to sequential anyway.
+
+**Full page.** Structurally the simplest, and probably the strongest at 400 percent zoom, because there are no competing regions. The cost is that the transcript is gone while coding, and a full view transition is imposed on a high-frequency action.
+
+**Anchored popup**, as in the earlier Figma. Proximity to the passage helps sighted users and eye travel is minimal. The cost falls on magnification: the panel lands somewhere different for every excerpt, so each invocation begins with re-locating it. Rejected.
+
+*What would settle a future comparison.* Not a preference ranking. Asking which one people like produces the one that looks best in a screenshot, and this is a question about repeated cost rather than first impression.
+
+- The same coding task under two configurations, order counterbalanced across participants.
+- Measures: whether the task completes, how many actions it takes to apply two codes and check one definition, whether the participant can state their transcript position afterward, whether they land back where they expect, and self-reported effort.
+- Run at the participant's own zoom level and with their own assistive technology. This question is close to meaningless tested at 100 percent zoom with no screen reader.
+- Two configurations per participant, not three. Fatigue will dominate the third.

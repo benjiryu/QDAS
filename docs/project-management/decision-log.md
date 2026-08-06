@@ -34,7 +34,9 @@ Consequence for D-016: word-level reading is free only because turns are continu
 
 ## D-003 Code panel is not anchored to the selected text
 
-Date: 2026-08 | Workflow: code assignment | Status: proposed, contradicts the Figma prototype
+Date: 2026-08 | Workflow: code assignment | Status: SUPERSEDED by D-026
+
+Retained for its reasoning, which D-026 carries forward. The conclusion that the panel must not follow the selection still holds; the fixed non-modal side panel it proposed does not.
 
 The code selection panel occupies a fixed position rather than appearing adjacent to the selected excerpt.
 
@@ -76,7 +78,7 @@ Known cost: Ctrl+Alt is AltGr on non-US layouts, acceptable for a US-based study
 
 ## D-007 Real AFB data stays out of version control
 
-Date: 2026-08 | Workflow: all | Status: proposed, blocked pending AFB confirmation
+Date: 2026-08 | Workflow: all | Status: approved. No longer blocked; see D-025
 
 Deidentified AFB transcripts and codebook load from a gitignored local directory. Committed fixtures are synthetic.
 
@@ -84,7 +86,7 @@ Reason: the repository will be shared with a UCI MSE team and hosted remotely. G
 
 Displaces: the handoff document's assumption of synthetic data throughout, which the team has revised in favor of real deidentified material for realism.
 
-Blocked by: confirmation that the existing agreement covers development use, agent exposure, and display to research participants.
+Unblocked by D-025. The agreement is secured, and this decision stands regardless: permission to use the data is not a reason to commit it, because git history is permanent and the MSE team who will clone the repository are not party to the agreement.
 
 ## D-008 Commit before running any generator in the repository
 
@@ -329,3 +331,49 @@ Coverage this does not provide, stated so that a clean pass is not over-read:
 Consequence: item 11 of the pre-session smoke test, chord verification against the participant's own screen reader and browser, remains a per-session gate and is not satisfied by the development smoke test. NVDA is free and runs on any Windows machine or virtual machine, which makes closing this gap cheap for participants who use it.
 
 Closes T-5 for development. The session gate stays open by design.
+
+## D-025 Real deidentified AFB data is approved for participant sessions
+
+Date: 2026-08 | Workflow: all | Status: approved, with one sub-question carved out
+
+A data agreement is secured with AFB. Real deidentified transcripts and the real codebook may be used in participant sessions.
+
+Closes B-1 as a session gate. The prototype no longer has to run session one on the synthetic fixture, and the ecological validity concern recorded against that fallback goes away.
+
+What does not change:
+
+- **D-007 stands.** Real data still stays out of version control. Permission to use the data is not a reason to commit it, because git history is permanent and the repository will be cloned by a UCI MSE team who are not party to the agreement. Real material continues to load from gitignored `data-local/`.
+- **Committed fixtures stay synthetic.** Tests, CI, and any contributor without data access continue to run against the fixture.
+- **The agent still does not read real transcripts.** Development happens against the fixture. This was never only a permission question; it is also a practical one, since transcript content in an agent's context is content sent to a model provider.
+
+Carved out, because permission to show a transcript to a participant is not the same permission as publishing one:
+
+- **Public web deployment is a separate question.** A deployed prototype is reachable by anyone with the URL even when the repository is private. If the session build contains real transcripts, those transcripts are on the open internet without authentication. Whether the agreement covers that is recorded as B-3.
+
+## D-026 Code selection is a centered modal dialog
+
+Date: 2026-08 | Workflow: code assignment | Status: approved, supersedes D-003
+
+The code selection panel opens as a dialog centered in the viewport, with the surrounding view dimmed. It closes on save and close, or on exit.
+
+Supersedes D-003, which specified a fixed non-modal side panel, and closes B-2.
+
+Reason: a viewport-centered dialog lands in the same place on every invocation, which satisfies the predictability finding from the magnification interview that the anchored popup failed. It also gives an unambiguous single focus context.
+
+Consequences, because this reverses the non-modal choice that several specified behaviors depended on:
+
+**The transcript is no longer reachable while coding.** `code-selection.md` chose non-modal specifically so a coder could re-read the excerpt and retrieve surrounding context without leaving the panel. A dialog traps focus, correctly, so those behaviors have to move inside the dialog and work from stored excerpt state:
+
+- The excerpt text is readable inside the dialog, not only summarized.
+- Context before and context after are retrievable from inside the dialog.
+- Without both, a coder who realizes mid-selection that they need to re-read the passage has to cancel out and start again.
+
+**The route from confirmed back to boundary adjustment has to change.** `excerpt-selection.md` had a boundary command invoked from `confirmed` close the panel and return to `adjusting`. A focus-trapping dialog will not receive those chords. The dialog therefore carries an explicit control that closes it and returns to boundary adjustment, preserving pending codes. That recovery path is not optional; realizing the boundaries are wrong is the most common reason to back out of code selection.
+
+**Dialog size is not fixed.** The Hi-Fi panel is 441 by 568. At 400 percent zoom that cannot fit, so the dialog resizes and scrolls internally rather than holding fixed dimensions. Centering is relative to the viewport, not the document, so a magnified user panned into a corner still finds it.
+
+**Dimming is decoration, not information.** No state may be conveyed by the backdrop alone, and the dimmed backdrop must not reduce the contrast of anything a user still needs to read.
+
+**Use React Aria Components here.** A dialog with correct focus trapping, restore-on-close, escape handling, and scroll locking is one of the few genuinely hard controls to hand-roll, and `CLAUDE.md` reserves React Aria for exactly this case.
+
+**Flag values change.** `codebookPresentation` becomes `centeredModal | fullPage | sidePanel`, defaulting to `centeredModal`. The alternatives are retained because the test design recorded against B-2 remains valid, and this is a high-frequency interaction where a comparison is still worth running.

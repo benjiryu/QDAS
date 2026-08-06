@@ -18,7 +18,7 @@ export type PostCodingReturn =
   | 'excerptEndSegment'
   | 'nextSegment'
   | 'nextUncodedSegment';
-export type CodebookPresentation = 'sidePanel' | 'fullPage' | 'anchoredPopup';
+export type CodebookPresentation = 'centeredModal' | 'fullPage' | 'sidePanel';
 export type CodeListEntry = 'searchFirst' | 'browseFirst';
 export type CodeFrequencyVisibility = 'administratorOnly' | 'reviewPhase' | 'always';
 export type LayoutPreference = 'singlePanel' | 'multiPanel';
@@ -38,7 +38,7 @@ export interface PrototypeFlags {
   /** Where focus lands after a successful save. */
   postCodingReturn: PostCodingReturn;
 
-  /** Placement of the code selection panel. See B-2 and decision D-003. */
+  /** Placement of the code selection dialog. See D-026, which supersedes D-003. */
   codebookPresentation: CodebookPresentation;
   codeListEntry: CodeListEntry;
   showRecentCodes: boolean;
@@ -67,7 +67,7 @@ export const defaultFlags: PrototypeFlags = {
   deltaTruncationWords: 25,
   postCodingReturn: 'excerptStartSegment',
 
-  codebookPresentation: 'sidePanel',
+  codebookPresentation: 'centeredModal',
   codeListEntry: 'searchFirst',
   showRecentCodes: true,
   showExamplesDuringIndependentCoding: false,
@@ -85,7 +85,7 @@ export const defaultFlags: PrototypeFlags = {
  */
 export const flagPresets: Record<string, Partial<PrototypeFlags>> = {
   baseline: {},
-  anchoredPopup: { codebookPresentation: 'anchoredPopup' },
+  sidePanelCodebook: { codebookPresentation: 'sidePanel' },
   fullPageCodebook: { codebookPresentation: 'fullPage' },
   turnLevelNavigation: {
     transcriptNavigationUnit: 'speakerTurn',
