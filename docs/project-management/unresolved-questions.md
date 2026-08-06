@@ -24,6 +24,10 @@ Options, in order of how much they ask of AFB:
 
 Assumption until answered: real data is not deployed to an unauthenticated public URL. Implementation is unaffected either way, since the loader reads from `data-local/` regardless of what is in it.
 
+### Awaiting a design pass
+
+**F-12. The Figma shows a centered modal; the specification says non-modal fixed panel.** Owner: Benji. Opened by D-027. The design needs updating back: fixed panel, no dimmed backdrop, transcript live alongside. Not a behavioral question, but an unrecorded contradiction between design and specification is exactly what gets quietly reversed at a design review.
+
 ### Awaiting evidence from a session or from a design pass
 
 **F-7. What is the reflow behavior?** Owner: Benji. The Hi-Fi has a fixed 384 pixel sidebar with no collapsed state, and Coded data places three regions side by side. Neither survives 400 percent zoom under the single-panel rule. Evidence needed: a design decision about what collapses, what becomes sequential, and in what order. Assumption: sidebar collapses, code panel becomes a full-width region in the same reading position, logical order unchanged. Implementation can proceed on the assumption; the design needs to catch up.
@@ -36,7 +40,7 @@ Assumption until answered: real data is not deployed to an unauthenticated publi
 
 **B-1. RESOLVED, D-025.** A data agreement is secured with AFB. Real deidentified transcripts and the real codebook may be used in participant sessions. D-007 still stands: real data stays out of version control, committed fixtures stay synthetic, and development runs against the fixture. Public deployment is carved out as B-3.
 
-**B-2. RESOLVED, D-026.** Code selection is a dialog centered in the viewport with the surrounding view dimmed. Supersedes D-003. Consequences for excerpt re-reading, context retrieval, and the route back to boundary adjustment are recorded in D-026.
+**B-2. RESOLVED, D-027.** Code selection is a non-modal panel in a fixed position. D-026 briefly made it a centered modal; D-027 reversed that and reinstated D-003. The reversal is recorded rather than erased, because the reason for it is evidence about the pattern: modality was never required for predictable placement, and it cost the live transcript and the boundary-recovery route.
 
 ### Transcript and segmentation
 
@@ -117,6 +121,8 @@ Assumption until answered: real data is not deployed to an unauthenticated publi
 **F-5. RESOLVED.** Code group identity carries a text or shape channel in addition to color.
 
 **F-6. RESOLVED.** An active segment indicator is specified, visually distinct from the focus ring and from excerpt highlighting.
+
+**F-10 and F-11. RESOLVED, D-027.** The code dialog lacked excerpt text and a boundary-recovery control. Both were consequences of modality, and returning to a non-modal panel removes the cause rather than satisfying the requirement: the excerpt is readable in the live transcript, and boundary commands reach the application directly.
 
 **F-8. RESOLVED.** Timestamps are visible to sighted and magnification users and are not announced automatically. `timestampVerbosity` governs speech only.
 

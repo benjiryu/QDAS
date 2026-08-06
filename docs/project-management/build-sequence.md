@@ -276,13 +276,11 @@ Done when: you can hear the end of a passage, expand backward twice, check the c
 ```
 Implement code selection per docs/patterns/code-selection.md sections 2 to 5.
 
-- A dialog centered in the viewport with a dimmed backdrop, per D-026. Use
-  React Aria Components for focus trap, focus restore, escape, and scroll lock
-- The excerpt readable in full inside the dialog, with context before and after
-- An Adjust boundaries control that closes the dialog, returns the excerpt to
-  adjusting, and preserves pending codes. Boundary chords cannot reach through
-  a focus trap, so this is the only route back
-- The dialog resizes and scrolls internally; it does not hold fixed dimensions
+- A non-modal panel in a fixed position, per D-027. Not a dialog, no focus
+  trap, no dimmed backdrop. The transcript stays reachable while it is open
+- The panel is a labeled region so it is findable in browse mode
+- Escape cancels wherever focus sits; codes.focusSearch returns focus to it
+- The panel resizes and scrolls internally; it does not hold fixed dimensions
 - Region order per section 3, never reordering
 - Native checkboxes in nested lists, not a tree widget
 - Search results in their own region above the canonical codebook, which stays

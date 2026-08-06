@@ -34,9 +34,9 @@ Consequence for D-016: word-level reading is free only because turns are continu
 
 ## D-003 Code panel is not anchored to the selected text
 
-Date: 2026-08 | Workflow: code assignment | Status: SUPERSEDED by D-026
+Date: 2026-08 | Workflow: code assignment | Status: superseded by D-026, then reinstated by D-027
 
-Retained for its reasoning, which D-026 carries forward. The conclusion that the panel must not follow the selection still holds; the fixed non-modal side panel it proposed does not.
+The position this decision took is the current one. D-026 briefly replaced it with a centered modal; D-027 reversed that and returned here. The round trip is recorded rather than erased, because the reason for the reversal is evidence about the pattern.
 
 The code selection panel occupies a fixed position rather than appearing adjacent to the selected excerpt.
 
@@ -352,7 +352,7 @@ Carved out, because permission to show a transcript to a participant is not the 
 
 ## D-026 Code selection is a centered modal dialog
 
-Date: 2026-08 | Workflow: code assignment | Status: approved, supersedes D-003
+Date: 2026-08 | Workflow: code assignment | Status: SUPERSEDED by D-027. Retained because its consequence analysis is what produced the reversal
 
 The code selection panel opens as a dialog centered in the viewport, with the surrounding view dimmed. It closes on save and close, or on exit.
 
@@ -376,4 +376,34 @@ Consequences, because this reverses the non-modal choice that several specified 
 
 **Use React Aria Components here.** A dialog with correct focus trapping, restore-on-close, escape handling, and scroll locking is one of the few genuinely hard controls to hand-roll, and `CLAUDE.md` reserves React Aria for exactly this case.
 
+**The design does not yet meet this.** The updated Figma has neither the excerpt text nor an adjust-boundaries control in the dialog. Tracked as F-10 and F-11. Both are consequences of modality rather than oversights, and Task 8 cannot be built to specification until the design supplies them or the container changes.
+
 **Flag values change.** `codebookPresentation` becomes `centeredModal | fullPage | sidePanel`, defaulting to `centeredModal`. The alternatives are retained because the test design recorded against B-2 remains valid, and this is a high-frequency interaction where a comparison is still worth running.
+
+## D-027 Code selection returns to a fixed non-modal panel
+
+Date: 2026-08 | Workflow: code assignment | Status: approved. Supersedes D-026 and reinstates D-003
+
+The code selection panel is non-modal and occupies a fixed position. The backdrop is not dimmed.
+
+Reason: D-026 chose a centered modal for predictable placement, and predictable placement was the right goal. Modality was not required to reach it. A fixed non-modal panel lands in the same place every time and keeps the transcript live, which a focus trap forecloses.
+
+What the reversal recovers, both of which D-026 had to reintroduce as new work and which the updated Figma did not carry:
+
+- **Reading the excerpt.** A coder mid-selection who wants to check whether the last sentence is included reads it in the transcript. Under the modal, with the transcript dimmed and focus trapped, the only route was to cancel and start again, and a screen reader user had no route at all.
+- **Returning to boundary adjustment.** Boundary commands reach the application directly, so the `confirmed` to `adjusting` transition works as originally specified. The modal required inventing a dedicated recovery control because chords cannot cross a focus trap.
+
+Closes F-10 and F-11 by removing their cause rather than by satisfying them.
+
+Consequences of non-modality that the pattern now handles explicitly:
+
+- The panel is a labeled region, findable in browse mode without tabbing.
+- `codes.focusSearch` returns focus to the panel from anywhere, which matters because focus can legitimately sit in the transcript while the panel is open.
+- Escape cancels the panel wherever focus sits, so a user who moved into the transcript is not stranded.
+- No dimming. A dimmed backdrop asserts the content behind is unavailable; with focus untrapped that is false for a keyboard or screen reader user. Visual and interaction modality have to agree.
+
+What this costs: no single unambiguous focus context. A user can be in the panel or in the transcript while both are active, and the pattern relies on the labeled region and the return-to-panel command to keep that navigable. That is the trade accepted.
+
+Flag values: `codebookPresentation` becomes `sidePanel | fullPage | centeredModal`, defaulting to `sidePanel`. The modal stays in the enum, but comparing it in a session is no longer free, because it would first need the excerpt readout and boundary-recovery control that D-026 identified.
+
+The updated Figma shows the centered modal and now contradicts this decision. Tracked as F-12.

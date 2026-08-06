@@ -30,27 +30,27 @@ Let a researcher find one or more codes, check their definitions, apply them to 
 
 **Search is required.** The current draft gives the popup a create-a-code field and a hierarchical checkbox list, with no way to search. With a codebook of realistic size, browse-only navigation will consume most of a participant session, and the finding will be about scrolling rather than about coding. Search is the first control in the panel.
 
-**The panel is not anchored to the selected text.** The current draft places a popup adjacent to the selection. Under magnification this means the panel appears in a different screen location for every excerpt, which is the predictability problem Carmel raised. Resolved by D-026: a dialog centered in the viewport, which lands in the same place every time.
+**The panel is not anchored to the selected text.** The current draft places a popup adjacent to the selection. Under magnification this means the panel appears in a different screen location for every excerpt, which is the predictability problem Carmel raised. Resolved by D-027: a non-modal panel in a fixed position.
 
 ## 2. Container
 
-A dialog centered in the viewport, with the surrounding view dimmed, present in the DOM only while open. Per D-026, superseding the non-modal side panel in D-003.
+A non-modal panel in a fixed position, present in the DOM only while open. Per D-027, which supersedes D-026 and reinstates D-003.
 
-Centered in the viewport rather than in the document, so a magnified user panned into a corner still finds it in the same place every time. That sameness is the property the anchored popup failed.
+Fixed position, so the panel lands in the same place on every invocation. That is the predictability property the anchored popup failed, and it does not require modality to achieve.
 
-The dialog traps focus, as a dialog should. Because it does, three things that the earlier non-modal design got for free have to be built into it:
+Non-modal, so the transcript stays reachable and readable while codes are chosen. This is the property D-026 gave up and the reason it was reversed: a coder mid-selection who wants to check whether the last sentence is included can simply read it, and the route from a confirmed excerpt back to boundary adjustment stays open because boundary commands still reach the application.
 
-- **The excerpt is readable inside the dialog**, in full, not only summarized. A coder who realizes mid-selection that they need to re-read the passage must not have to cancel out to do it.
-- **Context before and context after are retrievable from inside the dialog**, working from stored excerpt state rather than from the live transcript.
-- **A control returns to boundary adjustment.** It closes the dialog, moves the excerpt to `adjusting`, and preserves the pending assignment. Boundary chords will not reach the application through a focus trap, so this control is the only route back, and realizing the boundaries are wrong is the most common reason to back out of code selection.
+The backdrop is not dimmed. Dimming tells a sighted user the content behind is unavailable, and with focus untrapped that would be untrue for a keyboard or screen reader user, who can move into it. Visual modality and interaction modality have to agree.
 
-The dialog resizes and scrolls internally. It does not hold fixed dimensions: the Hi-Fi frame is 441 by 568, which cannot fit at 400 percent zoom.
+Consequences of being non-modal that the pattern has to handle:
 
-The dimmed backdrop is decoration. No state is conveyed by it, and it does not reduce the contrast of anything still legible behind it.
+- **The panel is a labeled region**, so a screen reader user browsing the document can find it without tabbing.
+- **`codes.focusSearch` returns focus to the panel** from anywhere, which matters more here than it would in a dialog because focus can legitimately be in the transcript while the panel is open.
+- **Escape cancels the panel** wherever focus sits, so a user who has moved into the transcript is not stranded with an open panel and no way to dismiss it.
 
-Build this with React Aria Components. Focus trapping, focus restore on close, escape handling, and scroll locking are among the few controls genuinely hard to hand-roll correctly, which is the case `CLAUDE.md` reserves React Aria for.
+The panel resizes and scrolls internally rather than holding fixed dimensions. The Hi-Fi frame is 441 by 568, which cannot fit at 400 percent zoom.
 
-Placement remains a `codebookPresentation` flag with three values, so the comparison recorded against B-2 can still be run: the centered modal, a full-page variant, and the fixed side panel.
+Placement remains a `codebookPresentation` flag, so the comparison recorded against B-2 can still be run: the fixed side panel, a full-page variant, and the centered modal. Testing the modal variant requires first building the excerpt readout and boundary-recovery control that D-026 needed, so it is not a free comparison.
 
 ### 2.1 Commands
 
@@ -60,9 +60,10 @@ Placement remains a `codebookPresentation` flag with three values, so the compar
 | `codes.cancel` | Panel open | Discard pending codes and draft note, close panel, excerpt stays `confirmed` |
 | `codes.focusSearch` | Panel open | Move focus to the search field without clearing it |
 | `codes.clearSearch` | Query is non-empty | Clear query, remove results region, focus search field |
-| `codes.adjustBoundaries` | Dialog open | Close dialog, excerpt to `adjusting`, pending assignment preserved |
 
-Escape maps to `codes.cancel`. This is the panel's binding while it is open; excerpt-selection.md section 4.1 gives up its claim on Escape for exactly this reason.
+Escape maps to `codes.cancel` and works wherever focus sits while the panel is open. excerpt-selection.md section 4.1 gives up its claim on Escape for exactly this reason.
+
+There is no separate adjust-boundaries command. The panel is non-modal, so the boundary commands in `excerpt-selection.md` section 4 reach the application directly and the excerpt toolbar remains visible and operable.
 
 Save is unavailable with an empty pending assignment. Its unavailable state carries a programmatic reason, since a disabled control with no explanation is a dead end for a screen reader user.
 
@@ -70,8 +71,8 @@ Chords follow the platform-conditional mapping in transcript-segment.md section 
 
 ## 3. Regions, in fixed order
 
-1. Dialog heading, naming the excerpt by size and start speaker
-2. The excerpt, readable in full, with controls for context before and context after
+1. Panel heading, naming the excerpt by size and start speaker
+2. Excerpt summary, with a control to re-read the full excerpt. A summary rather than the full text, because the transcript is reachable and the panel already carries eleven regions
 3. Search field
 4. Search results, present only when a query is active
 5. Recently used codes, collapsed by default
@@ -81,7 +82,7 @@ Chords follow the platform-conditional mapping in transcript-segment.md section 
 9. Pending assignment
 10. Note
 11. Uncertainty control
-12. Adjust boundaries, Save, Cancel
+12. Save, Cancel
 
 This order never changes. Sections 4, 5, and 7 appear and disappear, but the sections that remain never reorder around them. Search results appear in their own region rather than filtering the canonical codebook in place, so the codebook's structure stays where the user learned it.
 
@@ -268,8 +269,8 @@ Note
 ## 15. Prototype configuration
 
 ```text
-codebookPresentation:  centeredModal | fullPage | sidePanel
-  v0.1 assumption: centeredModal, per D-026
+codebookPresentation:  sidePanel | fullPage | centeredModal
+  v0.1 assumption: sidePanel, per D-027
 
 codeListEntry:  searchFirst | browseFirst
   v0.1 assumption: searchFirst
@@ -289,7 +290,7 @@ showCodeFrequencies:  administratorOnly | reviewPhase | always
 
 ## 16. Unresolved questions
 
-**Placement: resolved by D-026.** A dialog centered in the viewport with a dimmed backdrop. The full-page and side-panel variants stay behind the flag so the comparison in B-2 remains runnable.
+**Placement: resolved by D-027.** A non-modal panel in a fixed position. The full-page and centered-modal variants stay behind the flag so the comparison in B-2 remains runnable, with the caveat that the modal variant needs the excerpt readout and boundary-recovery control built first.
 
 **Search-first or browse-first?**
 Owner: team. Evidence needed: session one. Temporary assumption: search field focused on open, with the full codebook visible below so browsing costs nothing. Implementation can proceed.

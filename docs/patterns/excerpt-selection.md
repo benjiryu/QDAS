@@ -59,8 +59,7 @@ There is no `cancelled` state. Cancelling returns to `idle` and creates no recor
 | `anchored` or `adjusting` | Cancel | `idle` | Range discarded; focus returns to origin segment |
 | `adjusting` | Revert | `anchored` | Range reset to origin segment; announce reset |
 | `confirmed` | Close code selection | `confirmed` | Range preserved; focus returns to excerpt toolbar |
-| `confirmed` | Adjust boundaries, from the code dialog | `adjusting` | Dialog closes, range reopened for editing, pending codes preserved |
-| `confirmed` | Any boundary change, dialog not open | `adjusting` | Range reopened for editing |
+| `confirmed` | Any boundary change | `adjusting` | Range reopened for editing; code selection closes with pending codes preserved |
 | `confirmed` | Discard excerpt | `idle` | Range and any pending codes discarded; focus returns to origin segment |
 | `confirmed` | Save with at least one code | `saved` | Excerpt and assignments persisted |
 
@@ -88,9 +87,9 @@ Commands are logical names. Chords follow the platform-conditional mapping in tr
 | `excerpt.confirm` | `anchored`, `adjusting` | Range is valid |
 | `excerpt.discard` | `anchored`, `adjusting`, `confirmed` | |
 
-Invoking a boundary command from `confirmed` moves the excerpt to `adjusting`, preserving pending codes.
+Invoking a boundary command from `confirmed` moves the excerpt to `adjusting` and closes code selection, preserving pending codes.
 
-Per D-026 code selection is a focus-trapping dialog, so boundary chords do not reach the application while it is open. The route back to adjustment from inside the dialog is the explicit `codes.adjustBoundaries` control in `code-selection.md` section 2.1. This is the only route, and it has to exist: realizing the boundaries are wrong is the most common reason to back out of code selection.
+This route depends on code selection being non-modal, per D-027. A focus-trapping dialog would swallow these chords, which is what forced D-026 to invent a separate recovery control and is part of why it was reversed.
 
 Backward expansion is bound at the same cost as forward expansion, one chord, no mode switch. Given the research finding, backward is the expected first move and should never be the more expensive one.
 
@@ -102,7 +101,7 @@ Boundaries cannot cross. Contracting a boundary past its counterpart is not a va
 
 Escape maps to `excerpt.discard` only in `anchored` and `adjusting`.
 
-In `confirmed` with the code dialog open, Escape belongs to the dialog and closes it without discarding the excerpt. Discarding a confirmed excerpt requires the explicit toolbar control, because Escape at that point is far more likely to mean "close this panel" than "throw away the range I just defined." Confirmation is required when discarding a confirmed excerpt that has pending codes.
+In `confirmed` with the code panel open, Escape belongs to the panel and closes it without discarding the excerpt. Discarding a confirmed excerpt requires the explicit toolbar control, because Escape at that point is far more likely to mean "close this panel" than "throw away the range I just defined." Confirmation is required when discarding a confirmed excerpt that has pending codes.
 
 ## 5. Announcements
 
@@ -213,7 +212,7 @@ The excerpt stores boundaries, not copied text. Copied text detaches from the so
 
 **Closing code selection preserves the range.** Given a confirmed excerpt with code selection open, when the user presses Escape, then the panel closes, the excerpt remains confirmed, and focus returns to the excerpt toolbar.
 
-**Boundaries are reachable after confirming.** Given a confirmed excerpt with two pending codes and the code dialog open, when the user activates Adjust boundaries, then the dialog closes, the excerpt enters `adjusting`, and both pending codes are preserved.
+**Boundaries are reachable after confirming.** Given a confirmed excerpt with two pending codes and the code panel open, when the user expands the start backward, then the panel closes, the excerpt enters `adjusting`, and both pending codes are preserved.
 
 **Discard from adjustment creates nothing.** Given an excerpt in `adjusting`, when the user discards it, then no excerpt record exists and focus returns to the segment where the excerpt began.
 
