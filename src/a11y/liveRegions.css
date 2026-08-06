@@ -1,0 +1,16 @@
+/*
+ * The two live regions are visually hidden and must stay in the accessibility
+ * tree. `display: none`, `visibility: hidden`, and `hidden` all remove them
+ * from it, and a removed live region announces nothing.
+ */
+.live-region {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
