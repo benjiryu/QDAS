@@ -2,6 +2,8 @@ import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, it } from 'vitest';
 import App from '../App';
+import { AnnouncerProvider, createAnnouncer } from '../a11y';
+import { createSeedFixture } from '../data/seed';
 import { MAIN_CONTENT_ID } from './AppShell';
 
 /**
@@ -12,17 +14,30 @@ import { MAIN_CONTENT_ID } from './AppShell';
  * failure here means a route stopped meeting the structural floor.
  */
 
+// The project and source routes resolve real seeded records, so their headings
+// are the project name and the source title rather than placeholders.
+const fixture = createSeedFixture();
+const seededProject = fixture.project;
+const seededSource = fixture.sources[0];
+
 const routes = [
   { path: '/projects', heading: 'Projects' },
-  { path: '/projects/p-1', heading: 'Project p-1' },
-  { path: '/projects/p-1/sources/s-1', heading: 'Source s-1' },
+  { path: `/projects/${seededProject.projectId}`, heading: seededProject.name },
+  {
+    path: `/projects/${seededProject.projectId}/sources/${seededSource.sourceId}`,
+    heading: seededSource.title,
+  },
 ] as const;
 
 function renderRoute(path: string) {
+  // The source route announces on entry, so the provider that owns the live
+  // regions has to be present, exactly as it is at the app root.
   return render(
-    <MemoryRouter initialEntries={[path]}>
-      <App />
-    </MemoryRouter>,
+    <AnnouncerProvider announcer={createAnnouncer()}>
+      <MemoryRouter initialEntries={[path]}>
+        <App />
+      </MemoryRouter>
+    </AnnouncerProvider>,
   );
 }
 

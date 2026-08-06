@@ -407,3 +407,82 @@ What this costs: no single unambiguous focus context. A user can be in the panel
 Flag values: `codebookPresentation` becomes `sidePanel | fullPage | centeredModal`, defaulting to `sidePanel`. The modal stays in the enum, but comparing it in a session is no longer free, because it would first need the excerpt readout and boundary-recovery control that D-026 identified.
 
 The updated Figma shows the centered modal and now contradicts this decision. Tracked as F-12.
+
+## D-028 Right-click keeps the native browser menu
+
+Date: 2026-08 | Workflow: excerpt selection, code assignment | Status: approved
+
+The application does not override the browser context menu. Right-click does what the browser does.
+
+A custom context menu may be added later, scoped as an accelerator for sighted and magnification users. It is never a primary route.
+
+Reason: overriding the context menu removes functionality some users depend on, including spell check, dictionary lookup, extensions, and speech commands installed at the browser or system level. That cost is paid by everyone, to add a second path to commands the excerpt toolbar already provides.
+
+Consistent with the interaction principles: assistive technology and the browser handle their own affordances, and the platform adds only what they cannot understand. A context menu duplicating existing controls is not that.
+
+Conditions on the accelerator, if it is built:
+
+- Every command in it is also reachable from the excerpt toolbar. It adds no capability.
+- It responds to Shift+F10 and the applications key, not only to a pointer event. A menu that opens only on right-click is a mouse-only path and fails keyboard operability.
+- It is understood to carry the anchored-popup problem that D-003 and D-027 rejected: a context menu appears at the pointer, so it lands somewhere different every time and may open outside the visible region at high magnification. That is tolerable for an accelerator and was not tolerable for the primary code panel.
+- Scoped to sighted and magnification use, consistent with E-2 treating the mouse route as secondary. The screen reader workflow never depends on it.
+
+Closes the right-click half of the question raised against the toolbar specification. Two related gaps stay open, recorded as F-13 and F-14.
+
+## D-029 Two controls enter the coding flow, not one context-sensitive control
+
+Date: 2026-08 | Workflow: excerpt selection, code assignment | Status: approved
+
+The coding toolbar carries two separate controls, both always present.
+
+- **Start excerpt.** Anchors an excerpt at the active segment. Maps to `excerpt.begin`.
+- **Code this excerpt.** Locks the range and opens the code panel. Maps to `excerpt.confirm`.
+
+Each is disabled when unavailable, and the disabled state exposes its reason programmatically, per accessibility contract section 2.6.
+
+Reason: a single `Code` button would mean "begin an excerpt here" to a keyboard user with no range in progress, and "confirm this selection and open the panel" to a mouse user who has just dragged across three sentences. One control with two meanings depending on how the user arrived is the kind of thing the predictability principle exists to prevent, and it is worse for a screen reader user, who cannot see which situation they are in.
+
+Two stable controls also give phase feedback for free. Which control is available tells the user whether an excerpt is in progress, without asking.
+
+Resolves the ambiguity in the Hi-Fi top toolbar, which shows a single `Code` button. Note is a separate question, recorded as F-14.
+
+## D-030 A saved excerpt can be reopened to change its codes
+
+Date: 2026-08 | Workflow: code assignment | Status: approved
+
+Selecting a coded excerpt reopens the code panel with that excerpt's existing codes already in the pending assignment. The coder adds or removes codes and saves.
+
+Reason: applying a code and immediately wanting to add a second is ordinary. Without this, `saved` is a terminal state and the only route to a second code is to build a duplicate excerpt over the same range, which corrupts the comparison data that review depends on.
+
+### Reaching it without a mouse
+
+Highlight plus click is the sighted route. Coded segments are not focusable, per D-002, so a command is required for parity:
+
+`excerpt.open` opens the saved excerpt containing the active segment. Available whenever the active segment falls inside at least one saved excerpt.
+
+Where the active segment falls inside two or more excerpts, the `coded-multiple` case the fixture already contains, the command does not guess. It presents the overlapping excerpts as a list identified by range and code count, and the coder chooses. The same disambiguation applies to a click landing on overlapping highlights.
+
+### What the panel does differently
+
+- The pending assignment opens pre-populated with the saved assignments rather than empty.
+- The opening announcement states that existing codes are loaded and how many, so a screen reader user does not mistake them for codes they just added.
+- Save writes the difference rather than creating a new set.
+- Focus still lands in the search field.
+
+### Removal supersedes rather than deletes
+
+Removing a saved code sets `CodeAssignment.status` to `superseded`. The row is retained.
+
+Reason: the project's standing commitment is that the system preserves before-and-after history rather than overwriting earlier results. A removed assignment is evidence about how interpretation changed, and it is exactly what review and reflexivity need. Deleting it makes "what did this coder originally apply here" unanswerable.
+
+This costs nothing in v0.1, where nothing reads `superseded`, and means the data is already correct when slice 3 arrives. Codes checked and unchecked before a save were never written and leave no trace.
+
+### Removing the last code
+
+Save stays unavailable with an empty pending assignment, per the existing rule. Removing every code and saving is therefore not a route to deleting an excerpt.
+
+Deleting a coded excerpt is a separate explicit action, and is not built in v0.1. A destructive action reached by emptying a list and pressing Save is too easy to perform by accident.
+
+### What this does not open
+
+Boundary editing on a saved excerpt stays deferred, per E-4. Reopening changes codes only. The excerpt returns to `confirmed` with its range locked, and the boundary commands are unavailable until the edit path is specified.

@@ -4,7 +4,7 @@ import { Link } from 'react-router';
 export function NotFoundPage() {
   return (
     <>
-      <h1>Page not found</h1>
+      <h1 tabIndex={-1}>Page not found</h1>
       <p>
         <Link to="/projects">Go to Projects</Link>
       </p>

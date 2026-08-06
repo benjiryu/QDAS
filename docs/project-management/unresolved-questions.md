@@ -26,6 +26,10 @@ Assumption until answered: real data is not deployed to an unauthenticated publi
 
 ### Awaiting a design pass
 
+**F-13. The excerpt toolbar and the coding toolbar are two objects and the specifications treat them as one.** Owner: Benji. `excerpt-selection.md` specifies an excerpt toolbar holding the boundary controls, fixed position, not following the selection. The Hi-Fi has a separate top bar reading `Code | Note`, which D-012 and D-015 lean on without specifying. D-029 settles what the two controls do; where they live, and whether they are one bar or two, is a design question.
+
+**F-14. The top bar carries a Note button and the code panel carries a note region.** Owner: Benji. Either these are two different things or one is redundant, and nothing says which. `code-selection.md` region 10 is a note on the excerpt; a top-bar Note during coding has no specified target. Related to N-4, the deferred file-wide notes surface.
+
 **F-12. The Figma shows a centered modal; the specification says non-modal fixed panel.** Owner: Benji. Opened by D-027. The design needs updating back: fixed panel, no dimmed backdrop, transcript live alongside. Not a behavioral question, but an unrecorded contradiction between design and specification is exactly what gets quietly reversed at a design review.
 
 ### Awaiting evidence from a session or from a design pass

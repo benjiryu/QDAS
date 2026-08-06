@@ -4,7 +4,7 @@
 - Version: 0.3
 - Last updated: 2026-08-05
 
-Progress: Phase 0 complete except the lint additions noted in 0.4. Tasks 1 to 4 complete. Task 5 is next.
+Progress: Phase 0 complete except the lint additions noted in 0.4. Tasks 1 to 5 complete. Task 5a is next.
 
 Update this line when a task lands. An agent reading a stale progress line will rebuild finished work.
 
@@ -257,6 +257,42 @@ Done when: at 400% zoom nothing scrolls horizontally, and VoiceOver reads a full
 
 The automated test asserts structure, not speech. No tool can observe what a screen reader says, so the continuous-reading criterion in transcript-segment.md section 10 stays manual.
 
+### Task 5a. Minimal route into a source
+
+Lettered rather than numbered because it was inserted after the sequence was written, and renumbering would break references in commits and the decision log.
+
+Steps 1 and 2 of the completion criteria in `prototype-scope.md` are "enter the application and identify their assigned work" and "open an assigned transcript". No task built either. The transcript is currently reachable only by typing a source identifier into the address bar, which blocks manual review of every remaining task as well as any participant session.
+
+`prototype-scope.md` puts "Home and dashboard beyond a minimal route into a project" out of scope, so the minimal route is in scope and this is the whole of it.
+
+```
+Fill the placeholder content on the projects and project routes so a source can
+be reached by keyboard from the application root.
+
+/projects
+- List the projects in the fixture, each a link to its project route
+
+/projects/:projectId
+- Project name as the h1, already present
+- List the sources assigned to the current user, each a link to its source
+  route, showing title, kind, and segment count
+- State the coding round and the user's role in plain text
+
+This is a functional route, not the designed Home page. No dashboard, no
+cards, no progress summaries, no counts of other coders' work. Home is
+specified after the downstream workflows are concrete, so that its contents
+lead to real tasks rather than hypothetical ones.
+
+Per D-010 no code frequency appears here. Per R-4 no other coder's identity or
+assignments appear during independent coding.
+
+Focus on entry goes to the h1 of each route, per the accessibility contract
+section 2.4. Add a unit test asserting a source is reachable from /projects by
+following links alone.
+```
+
+Done when: you can tab from the application root to a transcript without touching the address bar.
+
 ### Task 6. Segment navigation and position
 
 ```
@@ -391,6 +427,36 @@ Complete the coding workflow per docs/patterns/code-selection.md sections 8, 9,
 - Pending codes survive a return to boundary adjustment
 
 Acceptance criteria: all remaining criteria in code-selection.md section 14.
+```
+
+### Task 10a. Reopening a coded excerpt
+
+Lettered for the same reason as Task 5a: inserted after numbering, and renumbering would break references.
+
+```
+Implement D-030, reopening a saved excerpt to change its codes.
+
+- excerpt.open opens the saved excerpt containing the active segment. Available
+  in idle whenever the active segment falls inside at least one saved excerpt
+- Clicking a coded highlight does the same thing
+- Where the active segment falls inside two or more saved excerpts, present them
+  as a list identified by range and code count and let the coder choose. Do not
+  guess. The fixture contains overlapping pairs, so this path is reachable
+- The excerpt enters confirmed with its range locked. Boundary commands stay
+  unavailable: reopening changes codes, not boundaries, per E-4
+- The panel opens with the saved assignments already in the pending assignment
+- The opening announcement states that existing codes are loaded and how many,
+  so a screen reader user does not mistake them for codes they just applied
+- Removing a saved code sets CodeAssignment.status to superseded. Do not delete
+  the row
+- Save remains unavailable with an empty pending assignment. Emptying and saving
+  is not a delete route; deletion is a separate action and is not in v0.1
+- Cancel leaves the saved assignments untouched
+
+Tests: reopen an excerpt and confirm its codes load; add a code and confirm both
+persist; remove a code and confirm the row is superseded rather than gone;
+confirm the overlap case offers a choice; confirm boundary commands are
+unavailable while reopened.
 ```
 
 ### Task 11. Failure recovery

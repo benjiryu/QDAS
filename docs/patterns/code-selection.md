@@ -61,7 +61,7 @@ Placement remains a `codebookPresentation` flag, so the comparison recorded agai
 | `codes.focusSearch` | Panel open | Move focus to the search field without clearing it |
 | `codes.clearSearch` | Query is non-empty | Clear query, remove results region, focus search field |
 
-Escape maps to `codes.cancel` and works wherever focus sits while the panel is open. Because Escape means something different with the panel closed, it is resolved by `resolveEscape(panelOpen)` in `src/config/keybindings.ts` rather than read from the chord table. See excerpt-selection.md section 4.1.
+Escape maps to `codes.cancel` and works wherever focus sits while the panel is open. Because Escape means something different with the panel closed, it is resolved by `resolveEscape(panelOpen)` in `src/config/keybindings.ts` rather than read from the chord table. See excerpt-selection.md section 4.2.
 
 There is no separate adjust-boundaries command. The panel is non-modal, so the boundary commands in `excerpt-selection.md` section 4 reach the application directly and the excerpt toolbar remains visible and operable.
 
@@ -138,6 +138,8 @@ Closing a definition returns focus to the control that opened it, with the query
 
 The pending assignment is a visible, named region, not an implicit state behind the Save button.
 
+When the panel opens on a saved excerpt, per D-030, it opens pre-populated with that excerpt's existing assignments rather than empty. The opening announcement states that existing codes are loaded and how many, so a screen reader user does not mistake them for codes they have just applied. Save then writes the difference rather than creating a new set.
+
 It lists every pending code with a remove control, shows the count, and is announced on change. It persists while the user searches, browses, opens definitions, creates codes, and edits the note.
 
 It also carries an uncertainty control, per D-021. Marking the assignment uncertain sets `uncertaintyFlag` on every assignment written at save. The control has a visible label and a programmatic state, and its change is announced like any other pending change. Uncertainty does not affect review ordering in v0.1; whether it should is open as N-3 and belongs to slice 3.
@@ -146,7 +148,11 @@ Save writes one `CodeAssignment` per pending code, all sharing the excerpt, code
 
 Pending codes survive a return to boundary adjustment. If the user invokes a boundary command from `confirmed`, the panel closes and the pending list is held until the excerpt is confirmed again.
 
-Cancel discards all pending codes and the draft note, and creates no records. Cancel prompts for confirmation when the pending assignment is non-empty.
+Removing a code that was already saved sets its `CodeAssignment.status` to `superseded` rather than deleting the row. The project preserves before-and-after history rather than overwriting it, and a removed assignment is evidence about how interpretation changed. Codes checked and unchecked before a save were never written and leave no trace.
+
+Save stays unavailable with an empty pending assignment. Emptying the list and saving is therefore not a route to deleting an excerpt; deletion is a separate explicit action, not built in v0.1. A destructive action reached by clearing a list and pressing Save is too easy to perform by accident.
+
+Cancel discards all pending changes and the draft note, and creates no records. On a reopened excerpt, cancel leaves the saved assignments as they were. Cancel prompts for confirmation when there are unsaved changes.
 
 ## 9. Focus behavior
 
@@ -167,7 +173,8 @@ Cancel discards all pending codes and the draft note, and creates no records. Ca
 
 | Event | Automatic | On request |
 |---|---|---|
-| Panel opens | Panel name, excerpt size and start speaker, pending count if non-zero | Full excerpt text |
+| Panel opens, new excerpt | Panel name, excerpt size and start speaker | Full excerpt text |
+| Panel opens, saved excerpt | Panel name, excerpt size and start speaker, that existing codes are loaded and how many | Full excerpt text, code names |
 | Search returns | Result count | Result list |
 | Code checked | Code name, new pending count | Definition |
 | Code unchecked | Code name removed, new pending count | Pending list |

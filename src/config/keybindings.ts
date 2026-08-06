@@ -42,6 +42,7 @@ export type Command =
   | 'excerpt.revert'
   | 'excerpt.confirm'
   | 'excerpt.discard'
+  | 'excerpt.open'
   | 'codes.save'
   | 'codes.cancel'
   | 'codes.focusSearch'
@@ -88,6 +89,7 @@ const windowsLinuxBindings: Record<Command, Chord> = {
   'excerpt.revert': { key: 'z', ctrl: true, alt: true, shift: true },
   'excerpt.confirm': { key: 'Enter', ctrl: true, alt: true },
   'excerpt.discard': { key: 'Delete', ctrl: true, alt: true },
+  'excerpt.open': { key: 'o', ctrl: true, alt: true },
 
   'codes.save': { key: 'Enter', ctrl: true, alt: true, shift: true },
   'codes.cancel': { key: 'Escape' },
@@ -122,6 +124,7 @@ const macBindings: Record<Command, Chord> = {
   'excerpt.revert': { key: 'z', ctrl: true, shift: true, meta: true },
   'excerpt.confirm': { key: 'Enter', ctrl: true, shift: true },
   'excerpt.discard': { key: 'Delete', ctrl: true, shift: true },
+  'excerpt.open': { key: 'o', ctrl: true, shift: true },
 
   'codes.save': { key: 'Enter', ctrl: true, shift: true, meta: true },
   'codes.cancel': { key: 'Escape' },
@@ -139,7 +142,7 @@ export function bindingsFor(platform: Platform): Record<Command, Chord> {
  * Escape is the one chord whose meaning depends on context, so it cannot be a
  * single row in the tables above.
  *
- * excerpt-selection.md section 4.1 gives Escape to `excerpt.discard` in
+ * excerpt-selection.md section 4.2 gives Escape to `excerpt.discard` in
  * `anchored` and `adjusting`. code-selection.md section 2.1 gives it to
  * `codes.cancel` while the panel is open. Both are correct: with the panel
  * open, Escape far more likely means "close this" than "throw away the range I

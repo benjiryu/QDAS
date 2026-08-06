@@ -53,8 +53,32 @@ a {
   color: var(--link);
 }
 
+.route-list {
+  margin: 0 0 1rem;
+  padding-left: 1.25rem;
+}
+
+.route-list li {
+  margin-bottom: 0.5rem;
+}
+
+.route-meta {
+  color: var(--text-muted);
+}
+
 /* Indicators must stay visible at high magnification. Section 2.4. */
 :focus-visible {
   outline: 3px solid var(--focus);
   outline-offset: 2px;
+}
+
+/*
+ * A route heading receives focus on navigation, and where focus landed has to
+ * be visible. `:focus-visible` is unreliable for programmatic focus across
+ * browsers, so this uses `:focus`: a ring a mouse user sees briefly is a much
+ * smaller cost than a keyboard user unable to see where they are.
+ */
+h1:focus {
+  outline: 3px solid var(--focus);
+  outline-offset: 4px;
 }

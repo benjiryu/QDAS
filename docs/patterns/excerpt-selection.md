@@ -48,6 +48,8 @@ The accessibility contract in the same document already gives "after expanding a
 
 There is no `cancelled` state. Cancelling returns to `idle` and creates no record, so a distinct terminal state would never be observable.
 
+`saved` is not terminal. Per D-030 a coded excerpt reopens for code changes, returning to `confirmed` with its assignments preloaded. The range stays locked: reopening changes codes, not boundaries, and boundary editing on a saved excerpt is still deferred under E-4.
+
 ## 3. State transitions
 
 | Current | Action | Next | System result |
@@ -62,6 +64,7 @@ There is no `cancelled` state. Cancelling returns to `idle` and creates no recor
 | `confirmed` | Any boundary change | `adjusting` | Range reopened for editing; code selection closes with pending codes preserved |
 | `confirmed` | Discard excerpt | `idle` | Range and any pending codes discarded; focus returns to origin segment |
 | `confirmed` | Save with at least one code | `saved` | Excerpt and assignments persisted |
+| `saved` | Open the coded excerpt | `confirmed` | Range reloaded and locked; saved assignments load into the pending assignment; panel opens |
 
 The last four rows carry the recovery path. Closing code selection must not destroy the excerpt, because the most common reason to back out is realizing the boundaries are wrong, and the user then needs to reach adjustment without starting over. Pending codes survive that trip.
 
@@ -86,6 +89,7 @@ Commands are logical names. Chords follow the platform-conditional mapping in tr
 | `excerpt.revert` | `adjusting` | |
 | `excerpt.confirm` | `anchored`, `adjusting` | Range is valid |
 | `excerpt.discard` | `anchored`, `adjusting`, `confirmed` | |
+| `excerpt.open` | `idle` | The active segment falls inside at least one saved excerpt |
 
 Invoking a boundary command from `confirmed` moves the excerpt to `adjusting` and closes code selection, preserving pending codes.
 
@@ -97,7 +101,15 @@ Every command has a visible control. Controls sit in a fixed toolbar position th
 
 Boundaries cannot cross. Contracting a boundary past its counterpart is not a valid state; the command is unavailable and announces why on attempt.
 
-### 4.1 Escape
+### 4.1 Opening a saved excerpt
+
+`excerpt.open` is the keyboard route to the behaviour a sighted user gets by clicking a highlight. Coded segments are not focusable, per D-002, so a command is required for parity rather than optional.
+
+Where the active segment falls inside two or more saved excerpts, the `coded-multiple` case, the command does not guess. It presents the overlapping excerpts as a list identified by range and code count, and the coder chooses. A click landing on overlapping highlights disambiguates the same way.
+
+Reopening does not unlock boundaries. The excerpt enters `confirmed` with the range fixed and the boundary commands unavailable.
+
+### 4.2 Escape
 
 Escape maps to `excerpt.discard` only in `anchored` and `adjusting`, and only while the code panel is closed.
 

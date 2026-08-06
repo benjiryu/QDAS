@@ -1,0 +1,210 @@
+/*
+ * Transcript display.
+ *
+ * Specification: docs/patterns/transcript-segment.md section 7.
+ *
+ * Sizing is in rem and ch so the layout reflows to a 320px viewport without
+ * horizontal scrolling, per accessibility contract 2.5.
+ */
+
+.transcript__turns {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-width: 70ch;
+}
+
+.transcript-turn {
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+/*
+ * Narrow first. Speaker and timestamp are inline leading text, in the same
+ * flow as the prose, so nothing has to be panned to sideways.
+ */
+.transcript-turn__meta {
+  font-weight: 700;
+}
+
+.transcript-turn__timestamp {
+  margin-left: 0.5ch;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.transcript-turn:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/*
+ * Wide only: the same DOM laid out as a column beside the prose. The separator
+ * that reads as leading text at narrow width is not needed once the speaker has
+ * a column of its own.
+ */
+@media (min-width: 48rem) {
+  .transcript-turn {
+    display: grid;
+    grid-template-columns: 9rem 1fr;
+    gap: 0 1rem;
+  }
+
+  .transcript-turn__meta {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .transcript-turn__timestamp {
+    margin-left: 0;
+  }
+
+  .transcript-turn__separator {
+    display: none;
+  }
+}
+
+/*
+ * Coded state carries a shape channel as well as a colour channel, per section
+ * 7 and accessibility contract 2.5. The underline is what survives greyscale,
+ * a colour vision difference, and a high-contrast mode that discards
+ * backgrounds; `coded` is a single underline and `coded-multiple` a double one,
+ * so overlapping coded ranges are distinguishable without reading colour.
+ *
+ * Underlines rather than borders or boxes, because they follow wrapped text
+ * across lines and do not change the line height, so the prose does not reflow
+ * when a sentence becomes coded.
+ */
+.transcript-segment[data-display-state='coded'] {
+  background: var(--coded-bg);
+  text-decoration: underline solid var(--coded-line) 3px;
+  text-underline-offset: 0.25em;
+}
+
+.transcript-segment[data-display-state='coded-multiple'] {
+  background: var(--coded-multiple-bg);
+  text-decoration: underline double var(--coded-line) 5px;
+  text-underline-offset: 0.3em;
+}
+
+:root {
+  --coded-bg: #fdf3d3;
+  --coded-multiple-bg: #efcf85;
+  --coded-line: #7a5a00;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --coded-bg: #2b2718;
+    --coded-multiple-bg: #4a3f22;
+    --coded-line: #e8c45f;
+  }
+}
+
+@media (forced-colors: active) {
+  /* Backgrounds are discarded here; the underline is the whole signal. */
+  .transcript-segment[data-display-state='coded'],
+  .transcript-segment[data-display-state='coded-multiple'] {
+    text-decoration-color: currentColor;
+  }
+}
+
+/*
+ * The active segment. Section 7 requires an indicator distinct from the browser
+ * focus ring and from excerpt highlighting, since three states have to be
+ * separable at a glance.
+ *
+ * A ring around the sentence, where coded state is an underline and focus is an
+ * outline on the turn. Shape, not only hue, so the three do not collapse into
+ * each other in greyscale or at high zoom. The active segment is also named in
+ * words in the position ribbon, which is the text channel contract 2.5 asks for.
+ */
+.transcript-segment[data-active='true'] {
+  box-shadow: 0 0 0 3px var(--active-ring);
+  border-radius: 2px;
+  background: var(--active-bg);
+}
+
+/* ---------- Position ribbon ---------- */
+
+.position-ribbon {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 1rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  margin-bottom: 0.75rem;
+}
+
+.position-ribbon__reading {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+}
+
+.position-ribbon__title {
+  font-weight: 700;
+}
+
+.position-ribbon__label {
+  color: var(--text-muted);
+}
+
+.position-ribbon__value {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Toolbar ---------- */
+
+.transcript-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.transcript-toolbar__button,
+.position-ribbon__return {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  padding: 0.4rem 0.6rem;
+  font: inherit;
+  color: inherit;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.transcript-toolbar__chord {
+  font-size: 0.75em;
+  color: var(--text-muted);
+}
+
+/*
+ * Unavailable, not removed. The control keeps its place, stays reachable, and
+ * says why when invoked, per contract 2.6. Opacity alone would be colour-only,
+ * so the state is also carried by the border style.
+ */
+.transcript-toolbar__button[aria-disabled='true'] {
+  border-style: dashed;
+  opacity: 0.7;
+}
+
+:root {
+  --active-ring: #1f6feb;
+  --active-bg: #dbeafe;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --active-ring: #79c0ff;
+    --active-bg: #17324f;
+  }
+}

@@ -1,0 +1,141 @@
+/*
+ * Excerpt selection.
+ *
+ * Specification: docs/patterns/excerpt-selection.md section 7. Presentation is
+ * open under D-018; these four things are not:
+ *
+ * - the pending range is distinct from a coded range and from the active segment
+ * - each boundary carries its own marker, so panning to one end tells you which
+ *   end you are looking at
+ * - the toolbar keeps one position and does not follow the selection
+ * - no state is carried by colour alone
+ *
+ * The channels in play, all different in shape as well as hue:
+ *   coded            underline, single or double
+ *   active segment   a ring around the sentence
+ *   excerpt range    a tinted band with a bar at each boundary
+ */
+
+.excerpt-toolbar {
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  align-items: center;
+}
+
+.excerpt-toolbar__status {
+  margin: 0;
+  flex: 1 1 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+
+.excerpt-toolbar__state {
+  font-weight: 700;
+}
+
+/* The state is spelled out, so it is never carried by styling alone. */
+.excerpt-toolbar__state[data-state='idle'] {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.excerpt-toolbar__size {
+  color: var(--text-muted);
+}
+
+.excerpt-toolbar__group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.excerpt-toolbar__button {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  padding: 0.4rem 0.6rem;
+  font: inherit;
+  color: inherit;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.excerpt-toolbar__chord {
+  font-size: 0.75em;
+  color: var(--text-muted);
+}
+
+.excerpt-toolbar__button[aria-disabled='true'] {
+  border-style: dashed;
+  opacity: 0.7;
+}
+
+/* ---------- The range in the transcript ---------- */
+
+.transcript-segment[data-excerpt='in-range'],
+.transcript-segment[data-excerpt='start'],
+.transcript-segment[data-excerpt='end'],
+.transcript-segment[data-excerpt='only'] {
+  background: var(--excerpt-bg);
+  box-shadow: 0 -2px 0 0 var(--excerpt-edge) inset, 0 2px 0 0 var(--excerpt-edge) inset;
+}
+
+/*
+ * The boundary markers. A thick bar on the leading edge of the first sentence
+ * and the trailing edge of the last, so either end identifies itself without
+ * the other being on screen.
+ */
+.transcript-segment[data-excerpt='start'],
+.transcript-segment[data-excerpt='only'] {
+  border-left: 5px solid var(--excerpt-edge);
+  padding-left: 3px;
+}
+
+.transcript-segment[data-excerpt='end'],
+.transcript-segment[data-excerpt='only'] {
+  border-right: 5px solid var(--excerpt-edge);
+  padding-right: 3px;
+}
+
+/*
+ * Confirmed is a heavier band than pending, since section 2 makes them
+ * different states and section 7 requires the pending range to be distinct.
+ */
+.transcript-turn [data-excerpt-state='confirmed'] {
+  background: var(--excerpt-confirmed-bg);
+}
+
+@media (forced-colors: active) {
+  /* Backgrounds are dropped here, so the boundary bars carry the whole signal. */
+  .transcript-segment[data-excerpt='start'],
+  .transcript-segment[data-excerpt='only'] {
+    border-left-color: currentColor;
+  }
+  .transcript-segment[data-excerpt='end'],
+  .transcript-segment[data-excerpt='only'] {
+    border-right-color: currentColor;
+  }
+}
+
+:root {
+  --excerpt-bg: #e6f4ea;
+  --excerpt-confirmed-bg: #c9e7d3;
+  --excerpt-edge: #1e7f43;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --excerpt-bg: #16301f;
+    --excerpt-confirmed-bg: #1d4630;
+    --excerpt-edge: #6fd08c;
+  }
+}
