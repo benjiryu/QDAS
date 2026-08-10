@@ -1,6 +1,10 @@
+import { useMemo, useState } from 'react';
 import { defaultFlags } from '../../config/flags';
 import type { PrototypeFlags } from '../../config/flags';
-import type { Id, ResolvedSource, SegmentDisplayStates } from '../../domain';
+import { describeExcerptSize, excerptSize, requireTurnOf } from '../../domain';
+import type { Code, Id, ResolvedSource, SegmentDisplayStates } from '../../domain';
+import { CodePanel } from '../codes/CodePanel';
+import { useCodePanel } from '../codes/useCodePanel';
 import { ExcerptToolbar } from '../excerpt/ExcerptToolbar';
 import { useExcerptSelection } from '../excerpt/useExcerptSelection';
 import { PositionRibbon } from './PositionRibbon';
@@ -24,6 +28,8 @@ interface TranscriptWorkspaceProps {
   resolved: ResolvedSource;
   displayStates: SegmentDisplayStates;
   userId: Id;
+  /** The project codebook, for code selection. */
+  codes: Code[];
   flags?: PrototypeFlags;
 }
 
@@ -31,9 +37,18 @@ export function TranscriptWorkspace({
   resolved,
   displayStates,
   userId,
+  codes,
   flags = defaultFlags,
 }: TranscriptWorkspaceProps) {
   const navigation = useTranscriptNavigation({ resolved, displayStates, userId, flags });
+
+  /**
+   * Whether code selection is open. Held here because Escape resolves against
+   * it: with the panel open Escape cancels the panel, and with it closed Escape
+   * discards a pending excerpt. `resolveEscape` in the binding module decides,
+   * and both features read the same answer.
+   */
+  const [panelOpen, setPanelOpen] = useState(false);
 
   const excerpt = useExcerptSelection({
     resolved,
@@ -43,6 +58,30 @@ export function TranscriptWorkspace({
     // Confirming or cancelling an excerpt sets the active segment, per
     // transcript-segment.md section 2.1.
     onSetActiveSegment: navigation.setActiveSegment,
+    panelOpen,
+    onConfirm: () => setPanelOpen(true),
+    onClosePanel: () => setPanelOpen(false),
+  });
+
+  const excerptSummary = useMemo(() => {
+    if (!excerpt.selection.range) return null;
+    return describeExcerptSize(excerptSize(resolved, excerpt.selection.range));
+  }, [excerpt.selection.range, resolved]);
+
+  const excerptSpeaker = excerpt.startSegmentId
+    ? (requireTurnOf(resolved, excerpt.startSegmentId).speaker?.label ?? null)
+    : null;
+
+  const panel = useCodePanel({
+    codes,
+    isOpen: panelOpen,
+    excerptSummary,
+    onCancel: () => {
+      setPanelOpen(false);
+      // Section 9: cancel returns focus to the command strip, with the excerpt
+      // still confirmed.
+      excerpt.firstControlRef.current?.focus();
+    },
   });
 
   return (
@@ -61,6 +100,15 @@ export function TranscriptWorkspace({
         excerptStartSegmentId={excerpt.startSegmentId}
         excerptEndSegmentId={excerpt.endSegmentId}
         excerptState={excerpt.selection.state}
+      />
+      {/* D-033: below the transcript at narrow width, alongside it when there
+          is room, in the same logical order either way. */}
+      <CodePanel
+        panel={panel}
+        flags={flags}
+        excerptSummary={excerptSummary}
+        excerptSpeaker={excerptSpeaker}
+        onReadExcerpt={() => excerpt.run('excerpt.read')}
       />
     </>
   );

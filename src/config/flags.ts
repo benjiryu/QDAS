@@ -57,6 +57,12 @@ export interface PrototypeFlags {
 
   layoutPreference: LayoutPreference;
 
+  /**
+   * Native drag selection is adopted into the app-owned range on the next
+   * strip control, per D-034. Off restores pure command entry for comparison.
+   */
+  adoptNativeSelection: boolean;
+
   /** Forces the next save to fail, for testing recovery. Not a research variable. */
   simulateSaveFailure: boolean;
 }
@@ -80,6 +86,8 @@ export const defaultFlags: PrototypeFlags = {
 
   layoutPreference: 'singlePanel',
 
+  adoptNativeSelection: true,
+
   simulateSaveFailure: false,
 };
 
@@ -96,6 +104,7 @@ export const flagPresets: Record<string, Partial<PrototypeFlags>> = {
     excerptInitialRange: 'activeSpeakerTurn',
   },
   verboseBoundaries: { boundaryChangeAnnouncement: 'fullRange' },
+  commandEntryOnly: { adoptNativeSelection: false },
 };
 
 export function resolveFlags(presetName = 'baseline'): PrototypeFlags {

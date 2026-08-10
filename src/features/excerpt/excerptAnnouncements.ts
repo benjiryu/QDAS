@@ -60,8 +60,8 @@ export function reverted(startText: string, size: ExcerptSize): string {
 }
 
 export function confirmed(size: ExcerptSize): string {
-  // Code selection is a later task, so this announces and stops.
-  return `Excerpt confirmed. ${describeExcerptSize(size)}. Code selection is not built yet.`;
+  // The code panel announces itself as it opens, per code-selection section 10.
+  return `Excerpt confirmed. ${describeExcerptSize(size)}.`;
 }
 
 export function discarded(): string {

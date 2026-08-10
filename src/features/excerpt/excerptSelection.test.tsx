@@ -51,6 +51,7 @@ function renderWorkspace(flags = defaultFlags) {
       <TranscriptWorkspace
         resolved={resolved}
         displayStates={displayStates}
+        codes={fixture.codes}
         userId="us-test"
         flags={flags}
       />
@@ -309,14 +310,16 @@ describe('the state machine in the interface', () => {
     expect(lastAnnouncement()).toMatch(/reverted/i);
   });
 
-  it('confirms, announces, and stops, since code selection is a later task', () => {
+  it('confirms and opens code selection, per section 6', () => {
     renderWorkspace();
     beginAtThirdSentence();
     chord('excerpt.confirm');
 
     expect(state()).toBe('confirmed');
-    expect(lastAnnouncement()).toMatch(/confirmed/i);
-    expect(lastAnnouncement()).toMatch(/not built yet/i);
+    expect(announced().some((message) => /excerpt confirmed/i.test(message))).toBe(true);
+    // Section 6 sends focus to the code panel's search field on confirm.
+    expect(screen.getByRole('region', { name: /code selection/i })).toBeInTheDocument();
+    expect(screen.getByRole('searchbox', { name: /search the codebook/i })).toHaveFocus();
   });
 
   it('reopens a confirmed excerpt for adjustment on a boundary command', () => {

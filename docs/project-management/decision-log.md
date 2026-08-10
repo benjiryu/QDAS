@@ -524,3 +524,45 @@ At 320 effective pixels the order is: collapsed source sidebar as a disclosure, 
 Reason: deriving wide from narrow guarantees the logical order never differs between the two, which is what the accessibility contract actually requires. Designing wide first is how a side panel ends up with no coherent narrow form, which is where the Hi-Fi currently is.
 
 Closes F-7. F-12, updating the Figma, now has concrete direction: draw the 320 stack first, then the wide variant, no modal, no dimming.
+
+## D-034 Native selection is an entry route into the application-owned range
+
+Date: 2026-08 | Workflow: excerpt selection | Status: approved. Makes E-2 concrete; revisits and reaffirms D-001
+
+### The reflection that produced this
+
+The team compared the prototype against Word's F8 extend mode and asked whether building an application-owned range had drifted from augmenting native selection into replacing it.
+
+The comparison clarified rather than reversed the decision. Word's F8 is itself a modal, unit-based expansion system, not raw selection; the difference is ownership, and Word can let the platform own the range because an editable document has a system caret every screen reader tracks. A read-only web transcript has neither: in browse mode, NVDA and JAWS hold selection in their virtual buffer, and the application often cannot observe it. The posture Word takes is not available here without `role="application"` or `contenteditable`, both of which take more from screen reader users than they give.
+
+The nearer analogy is Excel, which AFB's own workaround is built on. Excel's model is an active cell and range extension by whole units, application-owned and announced. D-001 and D-002 are that model applied to transcript sentences. The familiarity argument cuts toward the current design, not away from it.
+
+What the reflection did surface: native selection should be a first-class way in for the users whose selection the application can observe.
+
+### The rule
+
+One range, owned by the application. Three ways to set it, one way to adjust it.
+
+- **Command route**, unchanged, primary for screen reader users because it is the only route the application can verify: `excerpt.begin` anchors at the active segment.
+- **Pointer route**: a native drag selection inside the transcript is adopted when the user invokes either strip control.
+- Magnification users take either route; the pointer route is expected to dominate.
+
+After entry, everything is identical for everyone: same states, same boundary commands, same announcements, same panel.
+
+### Adoption behavior
+
+- **Start excerpt** with an observable non-collapsed selection inside the transcript: adopt it as the range and enter `anchored`, with the adopted range as origin. `anchored` is generalized to mean the range sits at its origin, whether that origin is the active segment or an adopted selection.
+- **Code this excerpt** in `idle` with an observable selection: adopt and confirm in one action, opening the panel. One click from drag to codebook, which is the mouse user's expectation.
+- **Snapping never shrinks.** The adopted range is every sentence the selection touches, expanded outward to whole-sentence boundaries. A selection covering half a sentence takes the sentence.
+- **The announcement names the snap**: adopted range size, and that boundaries were extended to whole sentences when they were.
+- **The native selection is cleared on adoption.** From that moment the application's range indicator is the only visible selection. Two simultaneous selection visuals is the parallel-concept confusion made worse.
+- **Adoption is opportunistic, never required.** If no observable selection exists, which is the normal case in browse mode, both controls behave exactly as D-029 specified. No behavior anywhere depends on the application seeing a native selection.
+- Selections reaching outside the transcript region clamp to the transcript's sentences. A collapsed selection is not a selection; clicking already sets the active segment.
+
+Availability change to D-029: **Code this excerpt** is enabled in `idle` when an observable selection exists inside the transcript, with adoption as its action. Otherwise its disabled reason stands.
+
+Flag: `adoptNativeSelection`, default true, so the behavior can be switched off for a comparative session.
+
+### What would reopen this
+
+Session evidence that the snap surprises sighted users into fighting it, or that screen reader participants attempt browse-mode selection and are confused that it does nothing. The second is partially mitigated: where a browse-mode selection does surface as an observable DOM selection, adoption works for it too.

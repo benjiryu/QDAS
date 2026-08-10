@@ -42,7 +42,7 @@ export function SourcePage() {
       codeAssignments: fixture.codeAssignments,
     });
 
-    return { resolved, displayStates };
+    return { resolved, displayStates, codes: fixture.codes };
   }, [sourceId]);
 
   if (!view) {
@@ -61,6 +61,7 @@ export function SourcePage() {
         key={view.resolved.source.sourceId}
         resolved={view.resolved}
         displayStates={view.displayStates}
+        codes={view.codes}
         userId={CURRENT_CODER_ID}
       />
     </>

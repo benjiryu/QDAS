@@ -108,6 +108,15 @@ interface Options {
   containerRef: React.RefObject<HTMLDivElement | null>;
   /** Confirming or cancelling sets the active segment, per transcript-segment 2.1. */
   onSetActiveSegment?: (segmentId: Id) => void;
+  /** Escape belongs to the code panel while it is open, per section 4.1. */
+  panelOpen?: boolean;
+  /** Confirm opens code selection, per section 3 and code-selection section 9. */
+  onConfirm?: () => void;
+  /**
+   * A boundary command from `confirmed` closes the panel, and so does discard.
+   * Pending codes are held by the panel, per code-selection section 8.
+   */
+  onClosePanel?: () => void;
 }
 
 export function useExcerptSelection({
@@ -116,6 +125,9 @@ export function useExcerptSelection({
   flags,
   containerRef,
   onSetActiveSegment,
+  panelOpen = false,
+  onConfirm,
+  onClosePanel,
 }: Options): ExcerptSelectionApi {
   const announcer = useAnnouncer();
   const [selection, dispatch] = useReducer(excerptReducer, IDLE);
@@ -252,7 +264,12 @@ export function useExcerptSelection({
       }
 
       const delta = excerptDelta(resolved, current, next);
+      const wasConfirmed = selection.state === 'confirmed';
       dispatch({ type: 'boundaryChange', range: next });
+
+      // Section 4: invoking a boundary command from `confirmed` reopens the
+      // excerpt for editing and closes code selection, holding pending codes.
+      if (wasConfirmed) onClosePanel?.();
 
       announcer.announce(
         boundaryChanged(
@@ -268,7 +285,7 @@ export function useExcerptSelection({
         next.startSegmentId !== current.startSegmentId ? next.startSegmentId : next.endSegmentId;
       scrollBoundaryIntoView(movedBoundary);
     },
-    [announcer, flags, resolved, scrollBoundaryIntoView, selection.range],
+    [announcer, flags, onClosePanel, resolved, scrollBoundaryIntoView, selection.range, selection.state],
   );
 
   /* ---------- Commands ---------- */
@@ -390,17 +407,18 @@ export function useExcerptSelection({
 
         case 'excerpt.confirm': {
           dispatch({ type: 'confirm' });
-          // Code selection is a later task, so this announces and stops. Section
-          // 6 sends focus to the panel's search field; with no panel, focus stays
-          // where the user left it rather than moving somewhere arbitrary.
           announcer.announce(confirmed(excerptSize(resolved, range!)));
           onSetActiveSegment?.(range!.startSegmentId);
+          // Section 6 sends focus to the code panel's search field; the panel
+          // owns that move, and this opens it.
+          onConfirm?.();
           return;
         }
 
         case 'excerpt.discard': {
           const origin = originSegmentId;
           dispatch({ type: 'discard' });
+          onClosePanel?.();
           announcer.announce(discarded());
           if (origin) onSetActiveSegment?.(origin);
           // Section 6: focus returns to the origin segment's turn container,
@@ -421,6 +439,8 @@ export function useExcerptSelection({
       flags.excerptInitialRange,
       focusOriginTurn,
       focusedTurnId,
+      onClosePanel,
+      onConfirm,
       onSetActiveSegment,
       resolved,
       selection,
@@ -446,9 +466,8 @@ export function useExcerptSelection({
 
       // Escape is the one chord whose meaning depends on context, so the
       // resolution lives in the binding module rather than in a branch here.
-      // The code panel does not exist yet, so it is never open.
-      const command =
-        matched === 'codes.cancel' ? resolveEscape(false) : matched;
+      // With the panel open it means cancel, which the panel owns.
+      const command = matched === 'codes.cancel' ? resolveEscape(panelOpen) : matched;
 
       if (!(CHORD_COMMANDS as readonly Command[]).includes(command)) return;
 
@@ -465,7 +484,7 @@ export function useExcerptSelection({
 
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [bindings, run, selection.state]);
+  }, [bindings, panelOpen, run, selection.state]);
 
   return {
     selection,

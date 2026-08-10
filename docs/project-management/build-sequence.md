@@ -4,7 +4,7 @@
 - Version: 0.3
 - Last updated: 2026-08-05
 
-Progress: Phase 0 complete except the lint additions noted in 0.4. Tasks 1 to 5 complete. Task 5a is next.
+Progress: Tasks 1 through 8 built per the working tree; verify against git log and update. Task 7b, native selection adoption, is next.
 
 Update this line when a task lands. An agent reading a stale progress line will rebuild finished work.
 
@@ -357,6 +357,42 @@ code selection.
 ```
 
 Done when: you can hear the end of a passage, expand backward twice, check the context before, and still be exactly where you were.
+
+### Task 7b. Native selection adoption
+
+Implements D-034 and excerpt-selection.md section 4.0. Lettered for the same
+reason as 5a and 10a.
+
+```
+Implement native selection adoption per docs/patterns/excerpt-selection.md
+section 4.0 and decision D-034.
+
+- Observe the document selection via selectionchange and window.getSelection().
+  Map the selection's start and end nodes to segment ids through the segment
+  DOM structure; anchorNode/focusNode order is not document order, so normalize
+- Start excerpt with an observable non-collapsed selection inside the
+  transcript: adopt it, snapped outward to whole sentences, and enter anchored
+  with the adopted range as origin. Announce adopted size and that boundaries
+  were extended, when they were
+- Code this excerpt in idle with an observable selection: adopt, snap, confirm,
+  open the panel, one action. Update its enabled state and disabled reason
+- Clear the native selection on adoption via selection.removeAllRanges()
+- Selections reaching outside the transcript clamp to transcript sentences.
+  Collapsed selections are ignored. Selection in the code panel or strip is not
+  a transcript selection
+- Read adoptNativeSelection from flags; when false, controls behave per D-029
+  with no selection observation at all
+- Do not preventDefault any selection event and do not touch user-select.
+  Native selection keeps working natively until the moment of adoption
+
+Tests: partial-sentence drag adopts whole sentences and never shrinks; a drag
+across a turn boundary adopts across it; adoption clears the native selection;
+Code this excerpt from a drag lands confirmed with the panel open and focus in
+the search field; with the flag off, no selection listener is attached; with no
+selection, both controls behave exactly as before this task.
+```
+
+Done when: drag across two and a half sentences, click Code this excerpt, and land in the panel with a three-sentence excerpt announced, while the command route is byte-for-byte unchanged.
 
 ### Task 8. Code panel, search and browse
 

@@ -53,6 +53,7 @@ function renderWorkspace(flags = defaultFlags) {
       <TranscriptWorkspace
         resolved={resolved}
         displayStates={displayStates}
+        codes={fixture.codes}
         userId={USER_ID}
         flags={flags}
       />
