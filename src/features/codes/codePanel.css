@@ -160,3 +160,80 @@
 .code-panel[data-presentation='fullPage'] {
   max-height: none;
 }
+
+/* ---------- Shared utilities ---------- */
+
+/*
+ * Available to a screen reader and not shown, so the visible word stays short
+ * while the accessible name still says which code it belongs to.
+ */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.code-panel__create button {
+  font: inherit;
+  color: inherit;
+  padding: 0.15rem 0.4rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* ---------- Creating a provisional code, per section 7 ---------- */
+
+.code-panel__create {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.code-panel__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  width: 100%;
+}
+
+.code-panel__field input,
+.code-panel__field textarea {
+  font: inherit;
+  padding: 0.3rem;
+  width: 100%;
+  max-width: 24rem;
+  box-sizing: border-box;
+}
+
+.code-panel__error {
+  margin: 0;
+  padding: 0.35rem 0.5rem;
+  border: 2px solid var(--error, #a2231d);
+  border-radius: 4px;
+  color: var(--error, #a2231d);
+}
+
+.code-panel__note {
+  margin: 0 0 0.35rem;
+  color: var(--text-muted);
+}
+
+/* A proposed code is marked in words, never by colour alone. */
+.code-panel__swatch[data-color-token='code-color-provisional'] {
+  --code-color: var(--text-muted);
+}
+
+@media (prefers-color-scheme: dark) {
+  .code-panel__error {
+    --error: #ff9d94;
+  }
+}

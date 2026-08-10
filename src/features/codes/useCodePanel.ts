@@ -19,6 +19,21 @@ import type { CodeNode, CodeSearchResult } from './codeTree';
 /** How many session-recent codes region 5 keeps. */
 const RECENT_LIMIT = 5;
 
+/** Opaque identifier for a code the coder proposes during a session. */
+function newCodeId(): Id {
+  const random =
+    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID().replace(/-/g, '').slice(0, 10)
+      : Math.random().toString(16).slice(2, 12);
+  return `cd-${random}`;
+}
+
+export interface NewCodeDraft {
+  name: string;
+  shortDefinition: string;
+  fullDefinition: string;
+}
+
 export interface CodePanelApi {
   isOpen: boolean;
   query: string;
@@ -30,6 +45,31 @@ export interface CodePanelApi {
   isPending: (codeId: Id) => boolean;
   toggle: (codeId: Id, checked: boolean) => void;
   recentCodes: Code[];
+  /** Every code, canonical and proposed, for resolving names and definitions. */
+  codeById: Map<Id, Code>;
+  /** Codes created this session. Never part of the canonical codebook. */
+  proposedCodes: Code[];
+  createProvisionalCode: (draft: NewCodeDraft) => Code | null;
+  /** One note per excerpt, plain text, no type. D-011 and D-020. */
+  noteText: string;
+  setNoteText: (text: string) => void;
+  /** D-021. Set on every assignment written at save; affects no ordering. */
+  uncertain: boolean;
+  setUncertain: (uncertain: boolean) => void;
+  /** Save is unavailable while nothing is pending, and says why. Section 8. */
+  canSave: boolean;
+  saveUnavailableReason: string | null;
+  save: () => void;
+  /** Cancel asks first when there are unsaved changes. Section 8. */
+  cancelPending: boolean;
+  requestCancel: () => void;
+  keepEditing: () => void;
+  /** Removes a pending code and moves focus per section 9. */
+  removePending: (codeId: Id) => void;
+  /** Called by the workspace once records exist. Nothing clears before then. */
+  clearAfterSave: () => void;
+  /** Focus lands on the pending region after a code is created, per section 9. */
+  setPendingElement: (node: HTMLElement | null) => void;
   cancel: () => void;
   focusSearch: () => void;
   /**
@@ -42,18 +82,27 @@ export interface CodePanelApi {
 
 interface Options {
   codes: Code[];
+  projectId: Id;
   isOpen: boolean;
   /** Announced when the panel opens: excerpt size and start speaker, per section 10. */
   excerptSummary: string | null;
   /** Cancel closes the panel and returns focus to the command strip, per section 9. */
   onCancel: () => void;
+  /**
+   * Writes the records and performs the return. The panel collects the pending
+   * assignment; where it is written and where the user lands belong to the
+   * workspace that owns the transcript.
+   */
+  onSave?: (pending: { codeIds: Id[]; noteText: string; uncertain: boolean }) => void;
 }
 
 export function useCodePanel({
   codes,
+  projectId,
   isOpen,
   excerptSummary,
   onCancel,
+  onSave,
 }: Options): CodePanelApi {
   const announcer = useAnnouncer();
   const searchRef = useRef<HTMLInputElement | null>(null);
@@ -61,11 +110,23 @@ export function useCodePanel({
     searchRef.current = node;
   }, []);
 
+  const pendingRef = useRef<HTMLElement | null>(null);
+  const setPendingElement = useCallback((node: HTMLElement | null) => {
+    pendingRef.current = node;
+  }, []);
+
   const [query, setQueryState] = useState('');
   const [pendingCodeIds, setPendingCodeIds] = useState<Id[]>([]);
   const [recentCodeIds, setRecentCodeIds] = useState<Id[]>([]);
+  const [proposedCodes, setProposedCodes] = useState<Code[]>([]);
+  const [noteText, setNoteText] = useState('');
+  const [uncertain, setUncertainState] = useState(false);
+  const [cancelPending, setCancelPending] = useState(false);
 
-  const codeById = useMemo(() => new Map(codes.map((code) => [code.codeId, code])), [codes]);
+  const codeById = useMemo(
+    () => new Map([...codes, ...proposedCodes].map((code) => [code.codeId, code])),
+    [codes, proposedCodes],
+  );
   const tree = useMemo(() => buildCodeTree(codes), [codes]);
   const results = useMemo(() => searchCodes(tree, query), [query, tree]);
 
@@ -169,15 +230,155 @@ export function useCodePanel({
     [announcer, codeById],
   );
 
-  const cancel = useCallback(() => {
-    // Section 2.1: discard pending codes, close the panel, excerpt stays
-    // confirmed. The draft note joins this when the note region is built.
+  /**
+   * Creates a provisional code, per section 7.
+   *
+   * It goes into the pending assignment immediately and into the Proposed codes
+   * region. It never joins the canonical codebook: that structure does not
+   * change until a qualitative lead approves the code, so the index that would
+   * place it there does not exist yet.
+   */
+  const createProvisionalCode = useCallback(
+    (draft: NewCodeDraft): Code | null => {
+      const name = draft.name.trim();
+      const shortDefinition = draft.shortDefinition.trim();
+      if (name === '' || shortDefinition === '') return null;
+
+      const code: Code = {
+        codeId: newCodeId(),
+        projectId,
+        parentCodeId: null,
+        name,
+        shortDefinition,
+        fullDefinition: draft.fullDefinition.trim(),
+        inclusionCriteria: '',
+        exclusionCriteria: '',
+        // D-019: examples stay in the model, unwritten and unread in v0.1.
+        examples: [],
+        synonyms: [],
+        colorToken: 'code-color-provisional',
+        status: 'provisional',
+        // No canonical position until approval. Domain model: the index is
+        // computed once at import or approval, and this code has neither.
+        canonicalOrderIndex: -1,
+      };
+
+      setProposedCodes((current) => [...current, code]);
+      setPendingCodeIds((current) => {
+        const next = [...current, code.codeId];
+        announcer.announce(
+          `${code.name} created as provisional and added to pending. ${next.length} pending.`,
+        );
+        return next;
+      });
+      setRecentCodeIds((current) => [code.codeId, ...current].slice(0, RECENT_LIMIT));
+
+      // Section 9: focus lands on the pending assignment region.
+      pendingRef.current?.focus?.();
+      return code;
+    },
+    [announcer, projectId],
+  );
+
+  const setUncertain = useCallback(
+    (next: boolean) => {
+      setUncertainState(next);
+      // Announced like any other change to the pending assignment, per D-021.
+      announcer.announce(
+        next
+          ? 'Assignment marked uncertain.'
+          : 'Assignment no longer marked uncertain.',
+      );
+    },
+    [announcer],
+  );
+
+  const canSave = pendingCodeIds.length > 0;
+  const saveUnavailableReason = canSave
+    ? null
+    : 'Save is unavailable because no codes are pending. Check at least one code.';
+
+  const save = useCallback(() => {
+    if (pendingCodeIds.length === 0) {
+      announcer.announce(
+        'Save is unavailable because no codes are pending. Check at least one code.',
+      );
+      return;
+    }
+    onSave?.({ codeIds: pendingCodeIds, noteText, uncertain });
+  }, [announcer, noteText, onSave, pendingCodeIds, uncertain]);
+
+  /**
+   * Clears everything this panel was holding. Called after a save has been
+   * written, never before: nothing is discarded until the records exist.
+   */
+  const clearAfterSave = useCallback(() => {
     setPendingCodeIds([]);
+    setNoteText('');
+    setUncertainState(false);
     setQueryState('');
+    setCancelPending(false);
+    announcedFor.current = null;
+  }, []);
+
+  /** Section 2.1: discard pending codes and the draft note, close the panel,
+      leave the excerpt confirmed. No records are created. */
+  const cancelNow = useCallback(() => {
+    setPendingCodeIds([]);
+    setNoteText('');
+    setUncertainState(false);
+    setQueryState('');
+    setCancelPending(false);
     announcedFor.current = null;
     announcer.announce('Code selection cancelled. The excerpt is still confirmed.');
     onCancel();
   }, [announcer, onCancel]);
+
+  /**
+   * Cancel asks first when there is unsaved work, because it destroys pending
+   * codes and a draft note. Confirmation is announced assertively: contract 2.3
+   * reserves the assertive region for exactly this and for save failures.
+   */
+  const requestCancel = useCallback(() => {
+    const hasUnsavedWork = pendingCodeIds.length > 0 || noteText.trim() !== '';
+    if (!hasUnsavedWork) {
+      cancelNow();
+      return;
+    }
+    setCancelPending(true);
+    announcer.announce(
+      `Discard ${pendingCodeIds.length} pending ${
+        pendingCodeIds.length === 1 ? 'code' : 'codes'
+      }${noteText.trim() === '' ? '' : ' and your note'}? Nothing is discarded until you confirm.`,
+      'assertive',
+      'destructiveConfirmation',
+    );
+  }, [announcer, cancelNow, noteText, pendingCodeIds]);
+
+  const keepEditing = useCallback(() => {
+    setCancelPending(false);
+    announcer.announce('Still editing. Nothing was discarded.');
+  }, [announcer]);
+
+  const removePending = useCallback(
+    (codeId: Id) => {
+      const index = pendingCodeIds.indexOf(codeId);
+      toggle(codeId, false);
+
+      // Section 9: focus the next pending code, or the region heading once the
+      // list is empty, rather than leaving focus on a control that is gone.
+      queueMicrotask(() => {
+        const remaining = pendingCodeIds.filter((id) => id !== codeId);
+        const nextId = remaining[index] ?? remaining[remaining.length - 1];
+        const next = nextId
+          ? document.querySelector<HTMLElement>(`[data-remove-pending="${nextId}"]`)
+          : null;
+        (next ?? pendingRef.current)?.focus?.();
+      });
+    },
+    [pendingCodeIds, toggle],
+  );
+
 
   /* ---------- Chords ---------- */
 
@@ -201,7 +402,9 @@ export function useCodePanel({
       if (matched === 'codes.cancel') {
         if (resolveEscape(true) !== 'codes.cancel') return;
         event.preventDefault();
-        cancel();
+        // Escape asks first when there is unsaved work, exactly as the Cancel
+        // control does. It is the same command.
+        requestCancel();
         return;
       }
 
@@ -225,7 +428,7 @@ export function useCodePanel({
 
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [bindings, cancel, clearQuery, focusSearch, isOpen, query]);
+  }, [bindings, clearQuery, focusSearch, isOpen, query, requestCancel]);
 
   /* ---------- Closing ---------- */
 
@@ -248,7 +451,23 @@ export function useCodePanel({
     isPending,
     toggle,
     recentCodes,
-    cancel,
+    codeById,
+    proposedCodes,
+    createProvisionalCode,
+    noteText,
+    setNoteText,
+    uncertain,
+    setUncertain,
+    canSave,
+    saveUnavailableReason,
+    save,
+    clearAfterSave,
+    cancelPending,
+    requestCancel,
+    keepEditing,
+    removePending,
+    setPendingElement,
+    cancel: cancelNow,
     focusSearch,
     setSearchElement,
   };

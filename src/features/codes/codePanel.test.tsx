@@ -8,7 +8,7 @@ import { bindingsFor, detectPlatform } from '../../config/keybindings';
 import type { Chord, Command } from '../../config/keybindings';
 import { createSeedFixture } from '../../data/seed';
 import { clearSourcePositions } from '../../data/sourcePositionStore';
-import { deriveSegmentDisplayStates, resolveSource } from '../../domain';
+import { resolveSource } from '../../domain';
 import { TranscriptWorkspace } from '../transcript/TranscriptWorkspace';
 import { buildCodeTree, flattenCodeTree } from './codeTree';
 
@@ -26,11 +26,6 @@ const resolved = resolveSource({
   turns: fixture.turns,
   speakers: fixture.speakers,
 });
-const displayStates = deriveSegmentDisplayStates(resolved, {
-  excerpts: fixture.excerpts,
-  codeAssignments: fixture.codeAssignments,
-});
-
 /**
  * Derived straight from the stored `canonicalOrderIndex`, not from the function
  * under test. The fixture stores the index hierarchy-first, so sorting by it is
@@ -59,8 +54,12 @@ function renderWorkspace(flags = defaultFlags) {
     <AnnouncerProvider announcer={announcer}>
       <TranscriptWorkspace
         resolved={resolved}
-        displayStates={displayStates}
+        seedExcerpts={fixture.excerpts}
+        seedAssignments={fixture.codeAssignments}
+        codingRoundId={fixture.codingRound.codingRoundId}
+        codebookVersionId={fixture.codebookVersion.codebookVersionId}
         codes={fixture.codes}
+        projectId={fixture.project.projectId}
         userId="us-test"
         flags={flags}
       />

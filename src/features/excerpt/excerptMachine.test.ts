@@ -7,19 +7,35 @@ import type { ExcerptSelection } from './excerptMachine';
 const range = { startSegmentId: 's4', endSegmentId: 's4' };
 const wider = { startSegmentId: 's3', endSegmentId: 's5' };
 
-const anchored: ExcerptSelection = { state: 'anchored', range, originSegmentId: 's4' };
-const adjusting: ExcerptSelection = { state: 'adjusting', range: wider, originSegmentId: 's4' };
+const anchored: ExcerptSelection = {
+  state: 'anchored',
+  range,
+  originSegmentId: 's4',
+  originRange: range,
+};
+const adjusting: ExcerptSelection = {
+  state: 'adjusting',
+  range: wider,
+  originSegmentId: 's4',
+  originRange: range,
+};
 const confirmedSelection: ExcerptSelection = {
   state: 'confirmed',
   range: wider,
   originSegmentId: 's4',
+  originRange: range,
 };
 
 describe('the transition table', () => {
   it('idle, begin, anchored', () => {
     const next = excerptReducer(IDLE, { type: 'begin', range, originSegmentId: 's4' });
 
-    expect(next).toEqual({ state: 'anchored', range, originSegmentId: 's4' });
+    expect(next).toEqual({
+      state: 'anchored',
+      range,
+      originSegmentId: 's4',
+      originRange: range,
+    });
   });
 
   it('anchored, boundary change, adjusting', () => {
@@ -27,6 +43,7 @@ describe('the transition table', () => {
       state: 'adjusting',
       range: wider,
       originSegmentId: 's4',
+      originRange: range,
     });
   });
 
@@ -42,7 +59,7 @@ describe('the transition table', () => {
   });
 
   it('adjusting, revert, anchored, with the range back at the origin', () => {
-    const next = excerptReducer(adjusting, { type: 'revert', range });
+    const next = excerptReducer(adjusting, { type: 'revert' });
 
     expect(next.state).toBe('anchored');
     expect(next.range).toEqual(range);
@@ -82,8 +99,8 @@ describe('transitions the specification does not define', () => {
   });
 
   it('reverts only from adjusting, since anchored has nothing to revert', () => {
-    expect(excerptReducer(anchored, { type: 'revert', range })).toBe(anchored);
-    expect(excerptReducer(confirmedSelection, { type: 'revert', range })).toBe(confirmedSelection);
+    expect(excerptReducer(anchored, { type: 'revert' })).toBe(anchored);
+    expect(excerptReducer(confirmedSelection, { type: 'revert' })).toBe(confirmedSelection);
   });
 
   it('does not confirm from idle or re-confirm', () => {

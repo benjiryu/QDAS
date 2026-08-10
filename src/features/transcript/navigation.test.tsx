@@ -26,6 +26,7 @@ const resolved = resolveSource({
   turns: fixture.turns,
   speakers: fixture.speakers,
 });
+/** The coded state the workspace derives, for asserting against. */
 const displayStates = deriveSegmentDisplayStates(resolved, {
   excerpts: fixture.excerpts,
   codeAssignments: fixture.codeAssignments,
@@ -52,8 +53,12 @@ function renderWorkspace(flags = defaultFlags) {
     <AnnouncerProvider announcer={announcer}>
       <TranscriptWorkspace
         resolved={resolved}
-        displayStates={displayStates}
+        seedExcerpts={fixture.excerpts}
+        seedAssignments={fixture.codeAssignments}
+        codingRoundId={fixture.codingRound.codingRoundId}
+        codebookVersionId={fixture.codebookVersion.codebookVersionId}
         codes={fixture.codes}
+        projectId={fixture.project.projectId}
         userId={USER_ID}
         flags={flags}
       />

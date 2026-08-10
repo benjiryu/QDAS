@@ -6,12 +6,12 @@
 - Version: 0.1
 - Last updated: 2026-08-05
 - Related workflows: code-selection-and-assignment, excerpt-selection, notes-and-memos
-- Related patterns: excerpt-selection, transcript-segment, code-definition (not yet written), pending-assignment (not yet written), status-feedback (not yet written)
+- Related patterns: excerpt-selection, transcript-segment, pending-assignment (not yet written), status-feedback (not yet written). Definition display belongs to the Codebook destination, per D-035
 - Research evidence: magnification interview with Carmel (stable code ordering), co-design workshop (codebook reference without losing position), competitive analysis (dropdown-based assignment as a friction point)
 
 ## Purpose
 
-Let a researcher find one or more codes, check their definitions, apply them to a confirmed excerpt, and return to the transcript with position intact.
+Let a researcher find one or more codes, apply them to a confirmed excerpt, and return to the transcript with position intact.
 
 ## Owns
 
@@ -103,28 +103,28 @@ Each code row exposes:
 
 - Code name
 - Short definition
-- A control opening the full definition
 - Color, as a redundant channel only. Color never carries meaning that is not also in text.
+
+There is no definition control. Per D-035 the panel carries no definition display; the full definition, inclusion criteria, and exclusion criteria are read at the Codebook destination.
 
 ## 5. Search
 
-- Searches code name, short definition, full definition, parent path, and synonyms.
+- Searches code name, short definition, full definition, parent path, and synonyms. Definition text remains searchable even though it is not displayed in the panel, per D-035: a coder who remembers a phrase from a definition finds the code by typing it.
 - Results appear in their own region, above the canonical codebook, with a heading stating the result count.
 - Results show the parent path so a matched child code is identifiable without expanding the hierarchy.
 - The canonical codebook remains present and unchanged below the results.
-- The query persists while a definition is opened and closed.
 - The query persists while codes are checked, so a user can apply several codes from one search.
 - Clearing the query removes the results region and returns focus to the search field.
 
-## 6. Code definitions
+## 6. Definitions are not in this panel
 
-Opening a definition is a disclosure inside the code's own row, not a nested overlay. Nested overlays inside a panel create a focus return problem that is avoidable here.
+Per D-035 there is no definition control and no definition display here. The short definition on each code row is the only definition text the panel shows.
 
-The definition includes short definition, full definition, inclusion criteria, exclusion criteria, status, and codebook version.
+The full definition, inclusion criteria, and exclusion criteria are read at the Codebook destination, per D-013. Definitions remain in the domain model and remain searchable, per section 5.
 
-Examples are out of scope for v0.1 per D-019. `Code.examples` stays in the model, unwritten and unread. Definitions and the inclusion and exclusion criteria carry the disambiguation behavior the panel is being tested for, including the pair of similarly named codes in the seed fixture.
+The consequence is that the similar-code disambiguation case resolves outside the panel. Whether a confirmed excerpt and its pending assignment survive that trip is open as C-5 in `unresolved-questions.md`.
 
-Closing a definition returns focus to the control that opened it, with the query and every pending selection intact.
+Examples remain out of scope for v0.1 per D-019, and remain hidden from a coder during independent coding per D-022. `Code.examples` stays in the model, unwritten and unread.
 
 ## 7. Creating a provisional code
 
@@ -140,7 +140,7 @@ The pending assignment is a visible, named region, not an implicit state behind 
 
 When the panel opens on a saved excerpt, per D-030, it opens pre-populated with that excerpt's existing assignments rather than empty. The opening announcement states that existing codes are loaded and how many, so a screen reader user does not mistake them for codes they have just applied. Save then writes the difference rather than creating a new set.
 
-It lists every pending code with a remove control, shows the count, and is announced on change. It persists while the user searches, browses, opens definitions, creates codes, and edits the note.
+It lists every pending code with a remove control, shows the count, and is announced on change. It persists while the user searches, browses, creates codes, and edits the note.
 
 It also carries an uncertainty control, per D-021. Marking the assignment uncertain sets `uncertaintyFlag` on every assignment written at save. The control has a visible label and a programmatic state, and its change is announced like any other pending change. Uncertainty does not affect review ordering in v0.1; whether it should is open as N-3 and belongs to slice 3.
 
@@ -160,8 +160,6 @@ Cancel discards all pending changes and the draft note, and creates no records. 
 |---|---|
 | Panel opens | Search field |
 | Check or uncheck a code | Unchanged |
-| Open a definition | First element of the definition disclosure |
-| Close a definition | The control that opened it |
 | Create a code | Pending assignment region |
 | Remove a pending code | Next pending code, or the pending region heading if the list is now empty |
 | Save succeeds | Per `postCodingReturn`, default `excerptStartSegment` |
@@ -176,7 +174,7 @@ Cancel discards all pending changes and the draft note, and creates no records. 
 | Panel opens, new excerpt | Panel name, excerpt size and start speaker | Full excerpt text |
 | Panel opens, saved excerpt | Panel name, excerpt size and start speaker, that existing codes are loaded and how many | Full excerpt text, code names |
 | Search returns | Result count | Result list |
-| Code checked | Code name, new pending count | Definition |
+| Code checked | Code name, new pending count | Pending list |
 | Code unchecked | Code name removed, new pending count | Pending list |
 | Code created | Provisional status, added to pending | Pending list |
 | Save succeeds | Codes applied, count, return location | Assignment detail |
@@ -195,7 +193,7 @@ Save confirmation states the return location explicitly, because the user needs 
 
 ## 12. Persistence and error recovery
 
-Preserved across search, browse, definition open and close, and note editing: excerpt boundaries, transcript position, pending codes, search query, expanded definitions, draft note.
+Preserved across search, browse, and note editing: excerpt boundaries, transcript position, pending codes, search query, draft note.
 
 On save failure nothing is discarded. The excerpt stays confirmed, the pending codes stay pending, the note stays drafted, and retry is available.
 
@@ -252,8 +250,6 @@ Note
 ## 14. Acceptance criteria
 
 **Search does not reorder the codebook.** Given a query returning three codes, when the results appear, then the canonical codebook remains present below them in unchanged order.
-
-**Return from definition.** Given the user opens the third search result's definition, when the definition closes, then focus returns to the third result and the query is unchanged.
 
 **Multiple codes in one pass.** Given an open panel, when the user checks three codes, then all three appear in the pending assignment and the panel has not closed.
 

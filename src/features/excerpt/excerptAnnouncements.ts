@@ -55,6 +55,24 @@ export function begun(startText: string, size: ExcerptSize): string {
   return `Excerpt started at: ${startText} ${describeExcerptSize(size)}.`;
 }
 
+/**
+ * Adopting a native selection, per section 4.0 and D-034.
+ *
+ * Names the adopted size, and states that boundaries were extended to whole
+ * sentences when they were, so a user who dragged across part of a sentence
+ * hears that the sentence came in whole rather than discovering it later.
+ */
+export function adopted(size: ExcerptSize, extended: boolean): string {
+  const snap = extended ? ' Boundaries extended to whole sentences.' : '';
+  return `Excerpt started from your selection. ${describeExcerptSize(size)}.${snap}`;
+}
+
+/** Adopt and confirm in one action: the pointer route into the code panel. */
+export function adoptedAndConfirmed(size: ExcerptSize, extended: boolean): string {
+  const snap = extended ? ' Boundaries extended to whole sentences.' : '';
+  return `Excerpt confirmed from your selection. ${describeExcerptSize(size)}.${snap}`;
+}
+
 export function reverted(startText: string, size: ExcerptSize): string {
   return `Reverted to where the excerpt began: ${startText} ${describeExcerptSize(size)}.`;
 }

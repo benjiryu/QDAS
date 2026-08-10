@@ -566,3 +566,25 @@ Flag: `adoptNativeSelection`, default true, so the behavior can be switched off 
 ### What would reopen this
 
 Session evidence that the snap surprises sighted users into fighting it, or that screen reader participants attempt browse-mode selection and are confused that it does nothing. The second is partially mitigated: where a browse-mode selection does surface as an observable DOM selection, adoption works for it too.
+
+## D-035 Definition lookup is removed from the code panel
+
+Date: 2026-08 | Workflow: code assignment | Status: approved. Supersedes the definition disclosure specified in code-selection.md section 6 and closes F-3
+
+The code panel carries no per-code definition control and no definition display. Opening a definition is not an action available while coding.
+
+Reason: panel density. The panel already carries a heading, an excerpt summary, search, results, recent codes, the codebook, proposed codes, code creation, the pending assignment, a note, an uncertainty control, and save and cancel. A disclosure on every code row adds a control per code to a list of fifty, and a second layer of content inside a region a magnification user is already scrolling through in parts.
+
+What does not change:
+
+- **Definitions stay in the domain model.** `Code.shortDefinition`, `fullDefinition`, `inclusionCriteria`, and `exclusionCriteria` are unchanged, still authored in the seed fixture, and still required of every code.
+- **Definitions stay searchable.** Search continues to match against short and full definition text, so a coder who remembers a phrase from a definition still finds the code by typing it.
+- **Definitions stay viewable at the Codebook destination**, which D-013 already established as a place the codebook is read rather than a sidebar tree.
+
+Consequence, stated plainly because it is the cost: the similar-code disambiguation case now resolves at the Codebook destination rather than in the panel. The seed fixture's deliberately similar pairs, `Water access` and `Water access rules`, `New member support` and `New member onboarding`, are told apart by reading definitions somewhere other than where the coding happens.
+
+This makes a previously unasked question load-bearing: whether a confirmed excerpt and its pending assignment survive a trip to the Codebook destination and back. Recorded as C-5.
+
+### What would reopen this
+
+Session evidence that coders cannot distinguish similar codes without leaving the panel: a participant applying the wrong code of a similar pair, hesitating over one, or abandoning the round trip and guessing.

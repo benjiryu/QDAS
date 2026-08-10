@@ -80,6 +80,18 @@ export function TranscriptTurn({
   */
   function handleClick(event: React.MouseEvent<HTMLLIElement>) {
     if (!onActivateSegment) return;
+
+    // A drag ends with a click, whose target is the common ancestor of where it
+    // started and where it finished rather than a sentence. Treating that as a
+    // click would move the reading position to the turn's first sentence, announce
+    // it, and scroll there, all while the user is only selecting text. A selection
+    // still standing means this click is the tail of that gesture, not a request
+    // to move.
+    if (typeof document !== 'undefined') {
+      const selection = document.getSelection();
+      if (selection && selection.rangeCount > 0 && !selection.isCollapsed) return;
+    }
+
     const clicked = (event.target as HTMLElement).closest<HTMLElement>('[data-segment-id]');
     const segmentId = clicked?.dataset.segmentId ?? first?.segmentId;
     if (segmentId) onActivateSegment(segmentId);

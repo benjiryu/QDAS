@@ -30,8 +30,10 @@ const GROUPS: { label: string; commands: { command: ExcerptCommand; label: strin
   {
     label: 'Excerpt',
     commands: [
-      { command: 'excerpt.begin', label: 'Begin excerpt' },
-      { command: 'excerpt.confirm', label: 'Confirm' },
+      // Named as D-029 names them: two stable entry controls, never one
+      // context-sensitive control whose meaning depends on how you arrived.
+      { command: 'excerpt.begin', label: 'Start excerpt' },
+      { command: 'excerpt.confirm', label: 'Code this excerpt' },
       { command: 'excerpt.discard', label: 'Discard' },
     ],
   },

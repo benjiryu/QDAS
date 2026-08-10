@@ -29,6 +29,8 @@ import {
 } from '../../domain';
 import type { ExcerptRange, Id, ResolvedSource, TranscriptSegment } from '../../domain';
 import {
+  adopted,
+  adoptedAndConfirmed,
   begun,
   boundaryChanged,
   confirmed,
@@ -42,6 +44,7 @@ import {
 } from './excerptAnnouncements';
 import { canAdjust, excerptReducer, IDLE } from './excerptMachine';
 import type { ExcerptSelection } from './excerptMachine';
+import type { NativeSelectionApi } from './useNativeSelection';
 
 /**
  * Excerpt selection: the state machine wired to boundary operations, the
@@ -91,6 +94,8 @@ export interface CommandState {
 
 export interface ExcerptSelectionApi {
   selection: ExcerptSelection;
+  /** Records the save transition once the records exist. Section 3. */
+  markSaved: () => void;
   run: (command: ExcerptCommand) => void;
   availability: Record<ExcerptCommand, CommandState>;
   /** Focus lands here when an excerpt begins, per section 6. */
@@ -117,6 +122,11 @@ interface Options {
    * Pending codes are held by the panel, per code-selection section 8.
    */
   onClosePanel?: () => void;
+  /**
+   * The current native selection, when the application can observe one.
+   * Adoption is opportunistic: with none, every control behaves per D-029.
+   */
+  nativeSelection?: NativeSelectionApi;
 }
 
 export function useExcerptSelection({
@@ -128,9 +138,11 @@ export function useExcerptSelection({
   panelOpen = false,
   onConfirm,
   onClosePanel,
+  nativeSelection,
 }: Options): ExcerptSelectionApi {
   const announcer = useAnnouncer();
   const [selection, dispatch] = useReducer(excerptReducer, IDLE);
+  const adoptable = nativeSelection?.adoptable ?? null;
   const firstControlRef = useRef<HTMLButtonElement | null>(null);
 
   /** Which turn holds focus, so `excerpt.begin` can start from it. */
@@ -196,9 +208,14 @@ export function useExcerptSelection({
     };
 
     return {
+      // A selection is a third way in, alongside the active segment and a
+      // focused turn. D-034, section 4.0.
       'excerpt.begin': gate(
-        state === 'idle' && (activeSegmentId !== null || focusedTurnId !== null),
-        state === 'idle' ? EXCERPT_UNAVAILABLE.noPosition : EXCERPT_UNAVAILABLE.alreadyStarted,
+        (state === 'idle' || state === 'saved') &&
+          (activeSegmentId !== null || focusedTurnId !== null || adoptable !== null),
+        state === 'idle' || state === 'saved'
+          ? EXCERPT_UNAVAILABLE.noPosition
+          : EXCERPT_UNAVAILABLE.alreadyStarted,
       ),
       'excerpt.start.expand': boundary('excerpt.start.expand'),
       'excerpt.start.contract': boundary('excerpt.start.contract'),
@@ -212,15 +229,17 @@ export function useExcerptSelection({
       'excerpt.speakers': gate(live, EXCERPT_UNAVAILABLE.noExcerpt),
       'excerpt.timestamps': gate(live, EXCERPT_UNAVAILABLE.noExcerpt),
       'excerpt.revert': gate(state === 'adjusting', EXCERPT_UNAVAILABLE.notAdjusted),
+      // Enabled in `idle` when a selection exists, with adoption as its action:
+      // one click from drag to codebook. Otherwise its disabled reason stands.
       'excerpt.confirm': gate(
-        state === 'anchored' || state === 'adjusting',
+        state === 'anchored' || state === 'adjusting' || (state === 'idle' && adoptable !== null),
         state === 'confirmed'
           ? EXCERPT_UNAVAILABLE.alreadyConfirmed
           : EXCERPT_UNAVAILABLE.noExcerpt,
       ),
       'excerpt.discard': gate(live, EXCERPT_UNAVAILABLE.noExcerpt),
     };
-  }, [activeSegmentId, focusedTurnId, resolved, selection.range, selection.state]);
+  }, [activeSegmentId, adoptable, focusedTurnId, resolved, selection.range, selection.state]);
 
   /* ---------- Focus and scrolling helpers ---------- */
 
@@ -302,6 +321,25 @@ export function useExcerptSelection({
 
       switch (command) {
         case 'excerpt.begin': {
+          // A selection the application can see is adopted whole, snapped
+          // outward to sentence boundaries, and becomes the origin.
+          if (adoptable) {
+            dispatch({
+              type: 'begin',
+              range: adoptable.range,
+              originSegmentId: adoptable.range.startSegmentId,
+            });
+            announcer.announce(
+              adopted(
+                excerptSize(resolved, adoptable.range),
+                adoptable.extendedStart || adoptable.extendedEnd,
+              ),
+            );
+            nativeSelection?.clear();
+            firstControlRef.current?.focus?.();
+            return;
+          }
+
           // From the active segment, or from the last sentence of the turn
           // holding focus: a user who has just read a turn straight through is
           // at its end. transcript-segment.md section 2.3.
@@ -393,19 +431,42 @@ export function useExcerptSelection({
         }
 
         case 'excerpt.revert': {
-          const initial = createExcerptAt(resolved, originSegmentId!, flags.excerptInitialRange);
-          if (!initial) return;
-          dispatch({ type: 'revert', range: initial });
+          // Back to the range as it stood at origin, which for an adopted
+          // selection is everything the user dragged.
+          const origin = selection.originRange;
+          if (!origin) return;
+          dispatch({ type: 'revert' });
           announcer.announce(
             reverted(
-              segmentById(resolved, initial.startSegmentId)!.text,
-              excerptSize(resolved, initial),
+              segmentById(resolved, origin.startSegmentId)!.text,
+              excerptSize(resolved, origin),
             ),
           );
           return;
         }
 
         case 'excerpt.confirm': {
+          if ((state === 'idle' || state === 'saved') && adoptable) {
+            // Adopt, snap, confirm, open the panel: one action, which is the
+            // mouse user's expectation. D-034.
+            dispatch({
+              type: 'begin',
+              range: adoptable.range,
+              originSegmentId: adoptable.range.startSegmentId,
+            });
+            dispatch({ type: 'confirm' });
+            announcer.announce(
+              adoptedAndConfirmed(
+                excerptSize(resolved, adoptable.range),
+                adoptable.extendedStart || adoptable.extendedEnd,
+              ),
+            );
+            nativeSelection?.clear();
+            onSetActiveSegment?.(adoptable.range.startSegmentId);
+            onConfirm?.();
+            return;
+          }
+
           dispatch({ type: 'confirm' });
           announcer.announce(confirmed(excerptSize(resolved, range!)));
           onSetActiveSegment?.(range!.startSegmentId);
@@ -433,12 +494,14 @@ export function useExcerptSelection({
     },
     [
       activeSegmentId,
+      adoptable,
       announcer,
       applyBoundaryChange,
       availability,
       flags.excerptInitialRange,
       focusOriginTurn,
       focusedTurnId,
+      nativeSelection,
       onClosePanel,
       onConfirm,
       onSetActiveSegment,
@@ -486,8 +549,11 @@ export function useExcerptSelection({
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [bindings, panelOpen, run, selection.state]);
 
+  const markSaved = useCallback(() => dispatch({ type: 'save' }), []);
+
   return {
     selection,
+    markSaved,
     run,
     availability,
     firstControlRef,

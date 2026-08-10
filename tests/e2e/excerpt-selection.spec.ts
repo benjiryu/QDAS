@@ -173,7 +173,7 @@ test('the whole selection workflow runs from the visible controls alone', async 
   // Started a few turns in, so both boundaries have somewhere to go.
   await page.getByRole('button', { name: 'Next turn' }).click();
   await page.getByRole('button', { name: 'Next turn' }).click();
-  await page.getByRole('button', { name: 'Begin excerpt' }).click();
+  await page.getByRole('button', { name: 'Start excerpt' }).click();
   await page.getByRole('button', { name: 'Expand end', exact: true }).click();
   await page.getByRole('button', { name: 'Expand start by turn' }).click();
   await page.getByRole('button', { name: 'Read excerpt' }).click();
@@ -182,6 +182,6 @@ test('the whole selection workflow runs from the visible controls alone', async 
   await page.getByRole('button', { name: 'Revert to start' }).click();
   await expect(page.locator('.excerpt-toolbar__state')).toHaveAttribute('data-state', 'anchored');
 
-  await page.getByRole('button', { name: 'Confirm' }).click();
+  await page.getByRole('button', { name: 'Code this excerpt' }).click();
   await expect(page.locator('.excerpt-toolbar__state')).toHaveAttribute('data-state', 'confirmed');
 });

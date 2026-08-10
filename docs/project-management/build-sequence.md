@@ -432,24 +432,27 @@ Acceptance criteria: "Search does not reorder the codebook", "Stable code order"
 "Parent does not cascade", "Query survives selection".
 ```
 
-### Task 9. Definitions and provisional codes
+### Task 9. Provisional codes
+
+Narrowed by D-035, which removes definition lookup from the code panel. The
+definition disclosure this task originally carried is not built, and the
+"Return from definition" criterion no longer exists.
 
 ```
-Add code definitions and provisional code creation per
-docs/patterns/code-selection.md sections 6 and 7.
+Add provisional code creation per docs/patterns/code-selection.md section 7.
 
-- Definitions are inline disclosures, not nested overlays
-- A definition shows short definition, full definition, inclusion criteria,
-  exclusion criteria, status, and codebook version, per code-selection.md
-  section 6. Not examples: out of scope per D-019, and hidden during independent
-  coding for a methodological reason per D-022
-- Closing a definition returns focus to the control that opened it, with the
-  search query and every pending selection intact
 - Created codes are provisional, enter pending immediately, and appear in the
   Proposed codes region, never in the canonical codebook
+- Name and short definition are required; full definition is optional
+- Status is provisional until approved
+- Announce on creation that the code was created as provisional and added to
+  pending
 
-Acceptance criteria: "Return from definition", "Provisional codes do not enter
-the canonical list".
+The panel carries no definition control and no definition display, per D-035.
+Definitions stay in the domain model, stay searchable per section 5, and are
+read at the Codebook destination.
+
+Acceptance criteria: "Provisional codes do not enter the canonical list".
 ```
 
 ### Task 10. Pending assignment, note, save, and return

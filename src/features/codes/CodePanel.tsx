@@ -1,6 +1,7 @@
 import { useId } from 'react';
 import type { PrototypeFlags } from '../../config/flags';
 import type { Code, Id } from '../../domain';
+import { CreateCodeForm } from './CreateCodeForm';
 import type { CodeNode } from './codeTree';
 import type { CodePanelApi } from './useCodePanel';
 import './codePanel.css';
@@ -8,7 +9,11 @@ import './codePanel.css';
 /**
  * The code selection panel.
  *
- * Specification: docs/patterns/code-selection.md sections 2 to 5.
+ * Specification: docs/patterns/code-selection.md sections 2 to 7.
+ *
+ * No definition control and no definition display, per D-035. The short
+ * definition on each row is the only definition text here; the rest is read at
+ * the Codebook destination.
  *
  * Non-modal, per D-027: no `role="dialog"`, no focus trap, no dimmed backdrop.
  * The transcript stays reachable and readable while this is open, which is the
@@ -33,8 +38,6 @@ interface CodePanelProps {
   excerptSummary: string | null;
   excerptSpeaker: string | null;
   onReadExcerpt: () => void;
-  /** Provisional codes are a later task; the region reads this and stays absent. */
-  proposedCodes?: Code[];
 }
 
 export function CodePanel({
@@ -43,15 +46,34 @@ export function CodePanel({
   excerptSummary,
   excerptSpeaker,
   onReadExcerpt,
-  proposedCodes = [],
 }: CodePanelProps) {
   const headingId = useId();
   const searchId = useId();
+  const noteId = useId();
+  const uncertainId = useId();
+  const saveReasonId = useId();
 
   // Destructured, so the search input's callback ref is a plain local. Reading
   // it off the panel object in JSX makes the ref rule treat every other read of
   // that object as a ref access during render.
-  const { setSearchElement, query, setQuery, clearQuery, results, tree, pendingCodeIds } = panel;
+  const {
+    setSearchElement,
+    setPendingElement,
+    query,
+    setQuery,
+    clearQuery,
+    results,
+    tree,
+    pendingCodeIds,
+    proposedCodes,
+    noteText,
+    setNoteText,
+    uncertain,
+    setUncertain,
+    canSave,
+    saveUnavailableReason,
+    cancelPending,
+  } = panel;
 
   if (!panel.isOpen) return null;
 
@@ -157,6 +179,9 @@ export function CodePanel({
       {flags.allowProvisionalCodes && proposedCodes.length > 0 ? (
         <div className="code-panel__region" data-region="proposed">
           <h3>Proposed codes</h3>
+          <p className="code-panel__note">
+            Awaiting approval. These are not part of the codebook.
+          </p>
           <ul className="code-panel__list">
             {proposedCodes.map((code) => (
               <li key={code.codeId}>
@@ -167,24 +192,33 @@ export function CodePanel({
         </div>
       ) : null}
 
-      {/* 8. Create a code. Position held; the control arrives with task 9. */}
-      <div className="code-panel__region" data-region="create">
-        <h3>Create a code</h3>
-        <p className="code-panel__deferred">Not built yet.</p>
-      </div>
+      {/* 8. Create a code. Offered only where the project permits provisional
+          codes: a form that cannot produce one is a dead control. */}
+      {flags.allowProvisionalCodes ? (
+        <div className="code-panel__region" data-region="create">
+          <h3>Create a code</h3>
+          <CreateCodeForm panel={panel} />
+        </div>
+      ) : null}
 
       {/* 9. Pending assignment. */}
       <div className="code-panel__region" data-region="pending">
-        <h3>Pending assignment</h3>
+        <h3 ref={setPendingElement} tabIndex={-1}>
+          Pending assignment
+        </h3>
         <p>
           {pendingCodeIds.length} {pendingCodeIds.length === 1 ? 'code' : 'codes'} pending
         </p>
         {pendingCodeIds.length > 0 ? (
           <ul className="code-panel__list">
             {pendingCodeIds.map((codeId) => (
-              <li key={codeId}>
+              <li key={codeId} className="code-panel__pending-row">
                 <span>{nameOf(panel, codeId)}</span>{' '}
-                <button type="button" onClick={() => panel.toggle(codeId, false)}>
+                <button
+                  type="button"
+                  data-remove-pending={codeId}
+                  onClick={() => panel.removePending(codeId)}
+                >
                   Remove {nameOf(panel, codeId)}
                 </button>
               </li>
@@ -193,51 +227,84 @@ export function CodePanel({
         ) : null}
       </div>
 
-      {/* 10. Note. Position held; D-032 keeps the note here and off the top bar. */}
+      {/* 10. Note. One per excerpt, plain text, no type: types belong to the
+          notes page specification, per D-020. D-032 keeps it here rather than
+          on the top bar. */}
       <div className="code-panel__region" data-region="note">
         <h3>Note</h3>
-        <p className="code-panel__deferred">Not built yet.</p>
+        <label htmlFor={noteId}>Note about this excerpt (optional)</label>
+        <textarea
+          id={noteId}
+          className="code-panel__note-input"
+          rows={3}
+          value={noteText}
+          onChange={(event) => setNoteText(event.target.value)}
+        />
       </div>
 
-      {/* 11. Uncertainty control. Position held. */}
+      {/* 11. Uncertainty, per D-021. Recorded on every assignment this save
+          writes, and it changes no ordering in v0.1. */}
       <div className="code-panel__region" data-region="uncertainty">
         <h3>Uncertainty</h3>
-        <p className="code-panel__deferred">Not built yet.</p>
+        <span className="code-panel__code">
+          <input
+            id={uncertainId}
+            type="checkbox"
+            checked={uncertain}
+            onChange={(event) => setUncertain(event.target.checked)}
+          />
+          <label htmlFor={uncertainId}>Mark this assignment uncertain</label>
+        </span>
       </div>
 
       {/* 12. Save and Cancel. */}
       <div className="code-panel__region code-panel__actions" data-region="actions">
-        <button
-          type="button"
-          aria-disabled="true"
-          onClick={() => panel.focusSearch()}
-          data-command="codes.save"
-        >
-          Save
-        </button>
-        <button type="button" onClick={panel.cancel} data-command="codes.cancel">
-          Cancel
-        </button>
-        <p className="code-panel__deferred" id="save-reason">
-          Saving is not built yet.
-        </p>
+        {cancelPending ? (
+          // Cancel asks before destroying pending codes and a draft note.
+          <div className="code-panel__confirm" data-confirm="cancel">
+            <p>
+              Discard {pendingCodeIds.length}{' '}
+              {pendingCodeIds.length === 1 ? 'code' : 'codes'}
+              {noteText.trim() === '' ? '' : ' and your note'}? Nothing has been discarded yet.
+            </p>
+            <button type="button" autoFocus onClick={panel.cancel}>
+              Discard them
+            </button>
+            <button type="button" onClick={panel.keepEditing}>
+              Keep editing
+            </button>
+          </div>
+        ) : (
+          <>
+            <button
+              type="button"
+              aria-disabled={canSave ? undefined : true}
+              aria-describedby={canSave ? undefined : saveReasonId}
+              onClick={panel.save}
+              data-command="codes.save"
+            >
+              Save
+            </button>
+            <button type="button" onClick={panel.requestCancel} data-command="codes.cancel">
+              Cancel
+            </button>
+            {/* A disabled control with no explanation is a dead end for a
+                screen reader user. Contract 2.6. */}
+            {canSave ? null : (
+              <p className="code-panel__deferred" id={saveReasonId}>
+                {saveUnavailableReason}
+              </p>
+            )}
+          </>
+        )}
       </div>
     </section>
   );
 }
 
 function nameOf(panel: CodePanelApi, codeId: Id): string {
-  const found = panel.tree.length > 0 ? findCode(panel.tree, codeId) : null;
-  return found?.name ?? codeId;
-}
-
-function findCode(nodes: CodeNode[], codeId: Id): Code | null {
-  for (const node of nodes) {
-    if (node.code.codeId === codeId) return node.code;
-    const inChildren = findCode(node.children, codeId);
-    if (inChildren) return inChildren;
-  }
-  return null;
+  // Resolves proposed codes as well as canonical ones.
+  return panel.codeById.get(codeId)?.name ?? codeId;
 }
 
 /**

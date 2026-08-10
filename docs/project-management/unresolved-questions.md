@@ -30,6 +30,15 @@ Assumption until answered: real data is not deployed to an unauthenticated publi
 
 ### Awaiting evidence from a session or from a design pass
 
+**C-5. Does a confirmed excerpt and its pending assignment survive navigating to the Codebook destination and back?**
+
+Owner: team. Opened by D-035, which moves definition lookup out of the code panel.
+
+The persistence rules in `code-selection.md` section 12 and `excerpt-selection.md` section 9 cover what survives inside the panel: search, browse, note editing, a failed save. Neither covers leaving the coding surface for another destination and returning, because until D-035 there was no reason to leave mid-coding. There now is: reading a definition requires it.
+
+If the answer is no, checking a definition costs the coder their work. A coder who cannot tell `Water access` from `Water access rules`, leaves to read them, and comes back to an empty pending assignment and a discarded excerpt has been punished for checking. That is worse than the density D-035 removed, and it would land on exactly the participants least able to reconstruct where they were.
+
+Not answered here. What settles it is a decision about whether the coding surface holds state across destinations, which is a question about the application's state model rather than about this panel.
 
 
 **F-9. Figma frame hygiene.** Owner: Benji. The frame named `Project` contains the login form, the frame named `Log in` holds only the wordmark, and three hidden `Home` frames carry conflicting taxonomies from different generations. Not behavioral. Resolution: clean before the MSE handoff.
@@ -120,7 +129,7 @@ Assumption until answered: real data is not deployed to an unauthenticated publi
 
 **F-2. RESOLVED.** Search is added to the code panel as the first control, results in a separate region above an unchanged canonical codebook.
 
-**F-3. RESOLVED, partially deferred.** The definition disclosure mechanism is built in Task 9, because "Return from definition" is one of the core focus-preservation criteria and cannot be deferred without removing a tested behavior. The real AFB codebook content is not needed for that; synthetic definitions in the seed fixture are sufficient. Loading the actual codebook is later work.
+**F-3. SUPERSEDED by D-035.** The earlier resolution built a definition disclosure in Task 9, on the reasoning that "Return from definition" was a core focus-preservation criterion that could not be deferred. D-035 removes definition lookup from the panel entirely, so the disclosure is not built and the criterion no longer exists. Definitions stay in the domain model and in the seed fixture, stay searchable, and are read at the Codebook destination. Loading the real AFB codebook remains later work.
 
 **F-4. RESOLVED.** The checkbox sits adjacent to its code label.
 

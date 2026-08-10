@@ -11,3 +11,4 @@ export * from './source';
 export * from './navigation';
 export * from './excerpt';
 export * from './segmentDisplayState';
+export * from './coding';

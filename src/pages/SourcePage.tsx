@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useParams } from 'react-router';
 import { createSeedFixture } from '../data/seed';
 import { CURRENT_CODER_ID } from '../data/seed/project';
-import { deriveSegmentDisplayStates, resolveSource } from '../domain';
+import { resolveSource } from '../domain';
 import { TranscriptWorkspace } from '../features/transcript/TranscriptWorkspace';
 
 /**
@@ -35,14 +35,18 @@ export function SourcePage() {
       Every stored excerpt counts as coded, including the seeded second coder's.
       Whether a participant should see another coder's work during independent
       coding is an open research question, so the filter stays at the call site
-      where it can be changed, rather than inside the derivation.
+      where it can be changed, rather than inside the derivation. The workspace
+      merges these with whatever the coder saves during the session.
     */
-    const displayStates = deriveSegmentDisplayStates(resolved, {
-      excerpts: fixture.excerpts,
-      codeAssignments: fixture.codeAssignments,
-    });
-
-    return { resolved, displayStates, codes: fixture.codes };
+    return {
+      resolved,
+      seedExcerpts: fixture.excerpts,
+      seedAssignments: fixture.codeAssignments,
+      codingRoundId: fixture.codingRound.codingRoundId,
+      codebookVersionId: fixture.codebookVersion.codebookVersionId,
+      codes: fixture.codes,
+      projectId: fixture.project.projectId,
+    };
   }, [sourceId]);
 
   if (!view) {
@@ -60,8 +64,12 @@ export function SourcePage() {
       <TranscriptWorkspace
         key={view.resolved.source.sourceId}
         resolved={view.resolved}
-        displayStates={view.displayStates}
+        seedExcerpts={view.seedExcerpts}
+        seedAssignments={view.seedAssignments}
+        codingRoundId={view.codingRoundId}
+        codebookVersionId={view.codebookVersionId}
         codes={view.codes}
+        projectId={view.projectId}
         userId={CURRENT_CODER_ID}
       />
     </>
