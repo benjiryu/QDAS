@@ -89,8 +89,20 @@ function touchedSegments(container: HTMLElement, domRange: Range): HTMLElement[]
   });
 }
 
-/** Step 1: an observable, non-collapsed selection intersecting the transcript. */
-function fromSelection(container: HTMLElement, resolved: ResolvedSource): Capture | null {
+/**
+ * Step 1 on its own: an observable, non-collapsed selection intersecting the
+ * transcript.
+ *
+ * Exported because the context menu in section 2 opens only when this step
+ * would resolve. Asking the same function is what keeps "the menu appears" and
+ * "the menu captures" from drifting apart.
+ */
+export function captureFromSelection(
+  container: HTMLElement | null,
+  resolved: ResolvedSource,
+): Capture | null {
+  if (!container || typeof document === 'undefined') return null;
+
   const selection = document.getSelection();
   if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return null;
 
@@ -182,7 +194,7 @@ export function resolveCapture(
 ): Capture | null {
   if (!container || typeof document === 'undefined') return null;
   return (
-    fromSelection(container, resolved) ??
+    captureFromSelection(container, resolved) ??
     fromCurrentTurn(container, resolved, activeSegmentId)
   );
 }

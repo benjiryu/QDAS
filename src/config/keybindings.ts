@@ -32,6 +32,7 @@ export type Command =
   | 'excerpt.code'
   | 'excerpt.note'
   | 'excerpt.open'
+  | 'excerpt.menu'
   | 'codes.save'
   | 'codes.cancel'
   | 'codes.focusSearch'
@@ -68,6 +69,7 @@ const windowsLinuxBindings: Record<Command, Chord> = {
   'excerpt.code': { key: 'Enter', ctrl: true, alt: true },
   'excerpt.note': { key: 'n', ctrl: true, alt: true },
   'excerpt.open': { key: 'o', ctrl: true, alt: true },
+  'excerpt.menu': { key: 'F10', shift: true },
 
   'codes.save': { key: 'Enter', ctrl: true, alt: true, shift: true },
   'codes.cancel': { key: 'Escape' },
@@ -92,6 +94,10 @@ const macBindings: Record<Command, Chord> = {
   'excerpt.code': { key: 'Enter', ctrl: true, shift: true },
   'excerpt.note': { key: 'n', ctrl: true, shift: true },
   'excerpt.open': { key: 'o', ctrl: true, shift: true },
+  // Not remapped for macOS. Shift+F10 is the platform-independent convention
+  // for opening a context menu, and VoiceOver users reach the same menu
+  // through their own commands rather than through this one.
+  'excerpt.menu': { key: 'F10', shift: true },
 
   'codes.save': { key: 'Enter', ctrl: true, shift: true, meta: true },
   'codes.cancel': { key: 'Escape' },
@@ -101,8 +107,27 @@ const macBindings: Record<Command, Chord> = {
   'help.shortcuts': { key: '/', ctrl: true, shift: true },
 };
 
+/**
+ * Additional chords that reach the same command.
+ *
+ * The applications key is the other convention for opening a context menu, and
+ * a Windows keyboard has one. It belongs here rather than in the component that
+ * listens for it: a chord hardcoded in a component cannot be reassigned after
+ * the pre-session smoke test, which is the whole point of this file.
+ *
+ * Alternates never appear on a visible control; `describeChord` shows the
+ * primary chord, so a control advertises one way in rather than two.
+ */
+const alternateBindings: Partial<Record<Command, Chord[]>> = {
+  'excerpt.menu': [{ key: 'ContextMenu' }],
+};
+
 export function bindingsFor(platform: Platform): Record<Command, Chord> {
   return platform === 'mac' ? macBindings : windowsLinuxBindings;
+}
+
+export function alternatesFor(command: Command): Chord[] {
+  return alternateBindings[command] ?? [];
 }
 
 /**
@@ -136,6 +161,9 @@ export function commandFor(
   for (const [command, chord] of Object.entries(bindings) as [Command, Chord][]) {
     if (matches(event, chord)) return command;
   }
+  for (const [command, chords] of Object.entries(alternateBindings) as [Command, Chord[]][]) {
+    if (chords.some((chord) => matches(event, chord))) return command;
+  }
   return null;
 }
 
@@ -150,6 +178,16 @@ export function describeChord(chord: Chord, platform: Platform): string {
   return parts.join(' plus ');
 }
 
+function signatureOf(chord: Chord): string {
+  return [
+    chord.key.toLowerCase(),
+    chord.ctrl ? 'c' : '',
+    chord.alt ? 'a' : '',
+    chord.shift ? 's' : '',
+    chord.meta ? 'm' : '',
+  ].join('|');
+}
+
 /**
  * Development guard. Two commands sharing a chord is a silent failure at
  * runtime, so fail loudly at startup instead.
@@ -157,17 +195,24 @@ export function describeChord(chord: Chord, platform: Platform): string {
 export function assertNoDuplicateChords(bindings: Record<Command, Chord>): void {
   const seen = new Map<string, Command>();
   for (const [command, chord] of Object.entries(bindings) as [Command, Chord][]) {
-    const signature = [
-      chord.key.toLowerCase(),
-      chord.ctrl ? 'c' : '',
-      chord.alt ? 'a' : '',
-      chord.shift ? 's' : '',
-      chord.meta ? 'm' : '',
-    ].join('|');
+    const signature = signatureOf(chord);
     const existing = seen.get(signature);
     if (existing) {
       throw new Error(`Chord collision: "${existing}" and "${command}" share the same chord.`);
     }
     seen.set(signature, command);
+  }
+
+  for (const [command, chords] of Object.entries(alternateBindings) as [Command, Chord[]][]) {
+    for (const chord of chords) {
+      const signature = signatureOf(chord);
+      const existing = seen.get(signature);
+      if (existing && existing !== command) {
+        throw new Error(
+          `Chord collision: "${existing}" and the alternate for "${command}" share the same chord.`,
+        );
+      }
+      seen.set(signature, command);
+    }
   }
 }

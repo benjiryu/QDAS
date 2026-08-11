@@ -18,8 +18,8 @@ import { TranscriptWorkspace } from '../transcript/TranscriptWorkspace';
  * D-036.
  *
  * The two menu criteria in section 7, "Menu parity" and "Native menu
- * preserved", belong to the context menu in section 2. That is Task 19, so
- * nothing here covers them.
+ * preserved", belong to the context menu in section 2 and are covered in
+ * excerptContextMenu.test.tsx.
  */
 
 const fixture = createSeedFixture();

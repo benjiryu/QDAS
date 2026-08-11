@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { useAnnouncer } from '../../a11y';
 import { bindingsFor, commandFor, detectPlatform, resolveEscape } from '../../config/keybindings';
 import type { Command } from '../../config/keybindings';
 import { excerptSegments, excerptSize, turnOf } from '../../domain';
 import type { Id, ResolvedSource, SavedExcerptSummary, TranscriptSegment } from '../../domain';
-import { clearNativeSelection, resolveCapture } from './capture';
-import type { CaptureTarget } from './capture';
+import { captureFromSelection, clearNativeSelection, resolveCapture } from './capture';
+import type { Capture, CaptureTarget } from './capture';
 import { captured, discarded, EXCERPT_UNAVAILABLE } from './excerptAnnouncements';
 import { excerptReducer, IDLE } from './excerptMachine';
 import type { ExcerptSelection } from './excerptMachine';
@@ -29,6 +29,17 @@ import type { ExcerptSelection } from './excerptMachine';
 const CHORD_COMMANDS = ['excerpt.code', 'excerpt.note', 'excerpt.open'] as const satisfies
   readonly Command[];
 
+/**
+ * The context menu's keyboard route, per D-037.
+ *
+ * Not in `CHORD_COMMANDS`, because it invokes nothing: it opens a menu whose
+ * two items are the two capture commands above. Contract 2.2 asks that every
+ * command be keyboard-operable and every keyboard command have a visible
+ * control; the strip's Code selection and Add note controls are this menu's
+ * visible equivalent, which is exactly what D-037 requires of it.
+ */
+const MENU_COMMAND: Command = 'excerpt.menu';
+
 export type ExcerptCommand = (typeof CHORD_COMMANDS)[number] | 'excerpt.discard';
 
 export interface CommandState {
@@ -37,8 +48,28 @@ export interface CommandState {
   reason: string | null;
 }
 
+/**
+ * The context menu, per section 2 and D-037.
+ *
+ * The capture is snapshotted when the menu opens rather than resolved when an
+ * item is chosen. Opening a menu moves focus into it, and how a browser treats
+ * the document selection while focus sits in a popover is not something the
+ * pattern should depend on. The menu opened on a selection, so that selection
+ * is what it captures.
+ */
+export interface ExcerptMenuState {
+  isOpen: boolean;
+  /** Viewport coordinates to anchor at: the pointer, or the selection. */
+  x: number;
+  y: number;
+  close: () => void;
+  /** Runs the chosen item against the snapshot taken when the menu opened. */
+  choose: (target: CaptureTarget) => void;
+}
+
 export interface ExcerptSelectionApi {
   selection: ExcerptSelection;
+  menu: ExcerptMenuState;
   /** Records the save transition once the records exist. Section 3. */
   markSaved: () => void;
   run: (command: ExcerptCommand) => void;
@@ -96,6 +127,13 @@ export function useExcerptSelection({
 
   /** Overlapping saved excerpts awaiting a choice. D-030 does not guess. */
   const [openChoices, setOpenChoices] = useState<SavedExcerptSummary[]>([]);
+
+  /** The open context menu, with the selection it opened on. */
+  const [menuState, setMenuState] = useState<{ x: number; y: number; capture: Capture } | null>(
+    null,
+  );
+  /** Where focus was before the menu took it, for the return in contract 2.4. */
+  const menuReturnRef = useRef<HTMLElement | null>(null);
 
   /* ---------- Derived view of the range ---------- */
 
@@ -187,17 +225,9 @@ export function useExcerptSelection({
 
   /* ---------- Commands ---------- */
 
-  const runCapture = useCallback(
-    (target: CaptureTarget) => {
-      const capture = resolveCapture(containerRef.current, resolved, activeSegmentId);
-
-      // Step 3 of the capture rule: nothing to capture, so say so and do
-      // nothing. Reached only with focus outside the transcript.
-      if (!capture) {
-        announcer.announce(EXCERPT_UNAVAILABLE.nothingToCapture);
-        return;
-      }
-
+  /** Everything that happens once a range has been resolved, however it was. */
+  const applyCapture = useCallback(
+    (capture: Capture, target: CaptureTarget) => {
       dispatch({ type: 'capture', range: capture.range, source: capture.source });
 
       // Section 1.2: which rule fired is stated, never implied.
@@ -211,7 +241,23 @@ export function useExcerptSelection({
       onSetActiveSegment?.(capture.range.startSegmentId);
       onCapture?.(target);
     },
-    [activeSegmentId, announcer, containerRef, onCapture, onSetActiveSegment, resolved],
+    [announcer, onCapture, onSetActiveSegment, resolved],
+  );
+
+  const runCapture = useCallback(
+    (target: CaptureTarget) => {
+      const capture = resolveCapture(containerRef.current, resolved, activeSegmentId);
+
+      // Step 3 of the capture rule: nothing to capture, so say so and do
+      // nothing. Reached only with focus outside the transcript.
+      if (!capture) {
+        announcer.announce(EXCERPT_UNAVAILABLE.nothingToCapture);
+        return;
+      }
+
+      applyCapture(capture, target);
+    },
+    [activeSegmentId, announcer, applyCapture, containerRef, resolved],
   );
 
   const run = useCallback(
@@ -261,6 +307,64 @@ export function useExcerptSelection({
     ],
   );
 
+  /* ---------- The context menu, per section 2 and D-037 ---------- */
+
+  const openMenuAt = useCallback(
+    (capture: Capture, x: number, y: number) => {
+      // Where focus was, so Escape can put it back. Contract 2.4.
+      menuReturnRef.current =
+        document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      setMenuState({ x, y, capture });
+    },
+    [],
+  );
+
+  const closeMenu = useCallback(() => {
+    setMenuState(null);
+    // Back where it came from. A menu that dismissed to nowhere would leave a
+    // screen reader user at the top of the document.
+    const target = menuReturnRef.current;
+    menuReturnRef.current = null;
+
+    // After the overlay has finished unwinding its own focus handling, which
+    // otherwise lands on the positioning anchor and leaves focus on the body.
+    const startSegmentId = selection.range?.startSegmentId ?? null;
+    queueMicrotask(() => {
+      if (target?.isConnected) target.focus?.();
+      else focusTurnOf(startSegmentId);
+    });
+  }, [focusTurnOf, selection.range]);
+
+  const chooseFromMenu = useCallback(
+    (target: CaptureTarget) => {
+      const capture = menuState?.capture;
+      setMenuState(null);
+      // No focus restore: capture opens the panel, which owns where focus goes.
+      menuReturnRef.current = null;
+      if (capture) applyCapture(capture, target);
+    },
+    [applyCapture, menuState],
+  );
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    function onContextMenu(event: MouseEvent) {
+      // Only over the transcript, and only with a selection the application can
+      // act on. Everywhere else the browser's own menu is untouched, which is
+      // the cost D-037 explicitly accepted only for this one case.
+      const capture = captureFromSelection(containerRef.current, resolved);
+      if (!capture) return;
+
+      event.preventDefault();
+      openMenuAt(capture, event.clientX, event.clientY);
+    }
+
+    container.addEventListener('contextmenu', onContextMenu);
+    return () => container.removeEventListener('contextmenu', onContextMenu);
+  }, [containerRef, openMenuAt, resolved]);
+
   /* ---------- Chords ---------- */
 
   const bindings = useMemo(() => bindingsFor(detectPlatform()), []);
@@ -287,6 +391,23 @@ export function useExcerptSelection({
         return;
       }
 
+      // Shift+F10 and the applications key, per D-037. Anchored on the
+      // selection rather than the pointer, since there is no pointer.
+      if (matched === MENU_COMMAND) {
+        const capture = captureFromSelection(containerRef.current, resolved);
+        // With no selection there is nothing for the menu to act on, so the
+        // key keeps its usual meaning rather than opening an empty menu.
+        if (!capture) return;
+
+        // Anchored to the selection's own box where the environment can
+        // measure one. Position is presentation: the menu opens either way.
+        const range = document.getSelection()?.getRangeAt(0);
+        const rect = range?.getBoundingClientRect?.();
+        event.preventDefault();
+        openMenuAt(capture, rect?.left ?? 0, rect?.bottom ?? 0);
+        return;
+      }
+
       if (!(CHORD_COMMANDS as readonly Command[]).includes(matched)) return;
 
       event.preventDefault();
@@ -295,12 +416,19 @@ export function useExcerptSelection({
 
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [bindings, panelOpen, run]);
+  }, [bindings, containerRef, openMenuAt, panelOpen, resolved, run]);
 
   const markSaved = useCallback(() => dispatch({ type: 'save' }), []);
 
   return {
     selection,
+    menu: {
+      isOpen: menuState !== null,
+      x: menuState?.x ?? 0,
+      y: menuState?.y ?? 0,
+      close: closeMenu,
+      choose: chooseFromMenu,
+    },
     markSaved,
     run,
     availability,

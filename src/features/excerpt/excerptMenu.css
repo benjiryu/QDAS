@@ -1,0 +1,61 @@
+/*
+ * The transcript context menu, per docs/patterns/excerpt-selection.md section 2.
+ *
+ * Nothing here carries meaning. The menu's state is in its markup, and the
+ * focused item is identified by more than colour: the marker on the leading
+ * edge survives forced-colors, where backgrounds are dropped.
+ */
+
+.excerpt-menu__anchor {
+  position: fixed;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+
+.excerpt-menu__popover {
+  background: var(--surface, Canvas);
+  color: var(--text, CanvasText);
+  border: 1px solid var(--border, CanvasText);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 25%);
+  min-width: 16rem;
+}
+
+.excerpt-menu {
+  padding: 0.25rem;
+  margin: 0;
+  list-style: none;
+  outline: none;
+}
+
+.excerpt-menu__item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 0.4rem 0.6rem;
+  border-left: 4px solid transparent;
+  cursor: default;
+  outline: none;
+}
+
+.excerpt-menu__item[data-focused] {
+  background: var(--excerpt-bg, Highlight);
+  border-left-color: currentColor;
+}
+
+.excerpt-menu__chord {
+  font-size: 0.75em;
+  color: var(--text-muted, GrayText);
+}
+
+@media (forced-colors: active) {
+  /* Backgrounds are dropped, so the leading marker carries the whole signal. */
+  .excerpt-menu__item[data-focused] {
+    border-left-color: Highlight;
+    forced-color-adjust: none;
+    color: HighlightText;
+    background: Highlight;
+  }
+}

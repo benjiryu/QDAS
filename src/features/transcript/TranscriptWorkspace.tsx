@@ -25,6 +25,7 @@ import type {
 import { CodePanel } from '../codes/CodePanel';
 import { useCodePanel } from '../codes/useCodePanel';
 import type { SaveOutcome } from '../codes/useCodePanel';
+import { ExcerptContextMenu } from '../excerpt/ExcerptContextMenu';
 import { ExcerptToolbar } from '../excerpt/ExcerptToolbar';
 import type { CaptureTarget } from '../excerpt/capture';
 import { useExcerptSelection } from '../excerpt/useExcerptSelection';
@@ -396,6 +397,9 @@ export function TranscriptWorkspace({
       <PositionRibbon navigation={navigation} />
       <TranscriptToolbar navigation={navigation} />
       <ExcerptToolbar excerpt={excerpt} resolved={resolved} />
+      {/* Section 2: opens over the transcript on a selection, and nowhere
+          else. It renders nothing until then. */}
+      <ExcerptContextMenu excerpt={excerpt} />
       <Transcript
         resolved={resolved}
         displayStates={displayStates}
