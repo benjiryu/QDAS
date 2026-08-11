@@ -29,19 +29,8 @@ export type Command =
   | 'segment.timestamp'
   | 'position.report'
   | 'position.return'
-  | 'excerpt.begin'
-  | 'excerpt.start.expand'
-  | 'excerpt.start.contract'
-  | 'excerpt.end.expand'
-  | 'excerpt.end.contract'
-  | 'excerpt.start.expandTurn'
-  | 'excerpt.end.expandTurn'
-  | 'excerpt.read'
-  | 'excerpt.contextBefore'
-  | 'excerpt.contextAfter'
-  | 'excerpt.revert'
-  | 'excerpt.confirm'
-  | 'excerpt.discard'
+  | 'excerpt.code'
+  | 'excerpt.note'
   | 'excerpt.open'
   | 'codes.save'
   | 'codes.cancel'
@@ -76,19 +65,8 @@ const windowsLinuxBindings: Record<Command, Chord> = {
   'position.report': { key: 'p', ctrl: true, alt: true },
   'position.return': { key: 'Home', ctrl: true, alt: true },
 
-  'excerpt.begin': { key: 'e', ctrl: true, alt: true },
-  'excerpt.start.expand': { key: 'ArrowUp', ctrl: true, alt: true, shift: true },
-  'excerpt.start.contract': { key: 'ArrowDown', ctrl: true, alt: true, shift: true },
-  'excerpt.end.expand': { key: 'ArrowRight', ctrl: true, alt: true, shift: true },
-  'excerpt.end.contract': { key: 'ArrowLeft', ctrl: true, alt: true, shift: true },
-  'excerpt.start.expandTurn': { key: 'PageUp', ctrl: true, alt: true, shift: true },
-  'excerpt.end.expandTurn': { key: 'PageDown', ctrl: true, alt: true, shift: true },
-  'excerpt.read': { key: 'r', ctrl: true, alt: true, shift: true },
-  'excerpt.contextBefore': { key: 'b', ctrl: true, alt: true, shift: true },
-  'excerpt.contextAfter': { key: 'f', ctrl: true, alt: true, shift: true },
-  'excerpt.revert': { key: 'z', ctrl: true, alt: true, shift: true },
-  'excerpt.confirm': { key: 'Enter', ctrl: true, alt: true },
-  'excerpt.discard': { key: 'Delete', ctrl: true, alt: true },
+  'excerpt.code': { key: 'Enter', ctrl: true, alt: true },
+  'excerpt.note': { key: 'n', ctrl: true, alt: true },
   'excerpt.open': { key: 'o', ctrl: true, alt: true },
 
   'codes.save': { key: 'Enter', ctrl: true, alt: true, shift: true },
@@ -111,19 +89,8 @@ const macBindings: Record<Command, Chord> = {
   'position.report': { key: 'p', ctrl: true, shift: true },
   'position.return': { key: 'Home', ctrl: true, shift: true },
 
-  'excerpt.begin': { key: 'e', ctrl: true, shift: true },
-  'excerpt.start.expand': { key: 'ArrowUp', ctrl: true, shift: true, meta: true },
-  'excerpt.start.contract': { key: 'ArrowDown', ctrl: true, shift: true, meta: true },
-  'excerpt.end.expand': { key: 'ArrowRight', ctrl: true, shift: true, meta: true },
-  'excerpt.end.contract': { key: 'ArrowLeft', ctrl: true, shift: true, meta: true },
-  'excerpt.start.expandTurn': { key: 'PageUp', ctrl: true, shift: true, meta: true },
-  'excerpt.end.expandTurn': { key: 'PageDown', ctrl: true, shift: true, meta: true },
-  'excerpt.read': { key: 'r', ctrl: true, shift: true, meta: true },
-  'excerpt.contextBefore': { key: 'b', ctrl: true, shift: true, meta: true },
-  'excerpt.contextAfter': { key: 'f', ctrl: true, shift: true, meta: true },
-  'excerpt.revert': { key: 'z', ctrl: true, shift: true, meta: true },
-  'excerpt.confirm': { key: 'Enter', ctrl: true, shift: true },
-  'excerpt.discard': { key: 'Delete', ctrl: true, shift: true },
+  'excerpt.code': { key: 'Enter', ctrl: true, shift: true },
+  'excerpt.note': { key: 'n', ctrl: true, shift: true },
   'excerpt.open': { key: 'o', ctrl: true, shift: true },
 
   'codes.save': { key: 'Enter', ctrl: true, shift: true, meta: true },
@@ -139,21 +106,17 @@ export function bindingsFor(platform: Platform): Record<Command, Chord> {
 }
 
 /**
- * Escape is the one chord whose meaning depends on context, so it cannot be a
- * single row in the tables above.
+ * Escape is the one chord whose meaning depends on context, so it is not a row
+ * in the binding table.
  *
- * excerpt-selection.md section 4.2 gives Escape to `excerpt.discard` in
- * `anchored` and `adjusting`. code-selection.md section 2.1 gives it to
- * `codes.cancel` while the panel is open. Both are correct: with the panel
- * open, Escape far more likely means "close this" than "throw away the range I
- * just defined", and with no panel there is nothing else for it to mean.
+ * With the code panel open it cancels the panel. With the panel closed it means
+ * nothing: D-036 removed the in-progress range, so there is no capture to
+ * discard outside the panel and Escape belongs to the browser.
  *
- * The tables bind Escape to `codes.cancel`, because a duplicate would trip
- * `assertNoDuplicateChords`. Resolve it through this function rather than
- * reading the table directly, and never branch on Escape inside a component.
+ * Components call this rather than branching on Escape themselves.
  */
-export function resolveEscape(panelOpen: boolean): Command {
-  return panelOpen ? 'codes.cancel' : 'excerpt.discard';
+export function resolveEscape(panelOpen: boolean): Command | null {
+  return panelOpen ? 'codes.cancel' : null;
 }
 
 export function matches(event: KeyboardEvent, chord: Chord): boolean {

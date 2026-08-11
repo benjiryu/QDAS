@@ -40,7 +40,7 @@ const identity = {
 };
 
 const NOW = '2026-08-10T12:00:00.000Z';
-const range = { startSegmentId: 's4', endSegmentId: 's6' };
+const range = { startSegmentId: 's4', endSegmentId: 's6', startOffset: 3, endOffset: 7 };
 
 function build(overrides: Partial<Parameters<typeof buildCodingRecords>[1]> = {}) {
   return buildCodingRecords(
@@ -68,13 +68,14 @@ describe('what a save writes', () => {
     expect(records.assignments.map((a) => a.codeId)).toEqual(['cd-a', 'cd-b']);
   });
 
-  it('writes the excerpt at whole-segment bounds, per D-016', () => {
+  it('writes the exact characters captured, per D-036', () => {
+    // Nothing snaps to a sentence. What was dragged is what is stored.
     const records = build()!;
 
     expect(records.excerpt.startSegmentId).toBe('s4');
     expect(records.excerpt.endSegmentId).toBe('s6');
-    expect(records.excerpt.startOffset).toBe(0);
-    expect(records.excerpt.endOffset).toBe('Sentence 6.'.length);
+    expect(records.excerpt.startOffset).toBe(3);
+    expect(records.excerpt.endOffset).toBe(7);
   });
 
   it('sets the uncertainty flag on every assignment, per D-021', () => {

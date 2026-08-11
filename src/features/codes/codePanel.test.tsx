@@ -81,12 +81,11 @@ function press(chord: Chord) {
 
 const chord = (command: Command) => press(bindings[command]);
 
-/** Confirms a small excerpt, which opens the panel. */
+/** Captures a small excerpt, which opens the panel. */
 function openPanel() {
   chord('segment.next');
   chord('segment.next');
-  chord('excerpt.begin');
-  chord('excerpt.confirm');
+  chord('excerpt.code');
 }
 
 function panel(): HTMLElement {
@@ -160,14 +159,12 @@ describe('acceptance: stable code order', () => {
     openPanel();
     const before = codebookOrder();
 
-    // Cancel closes it. Reopening goes through boundary adjustment, because
-    // `excerpt.confirm` is unavailable in `confirmed` and no command reopens
-    // the panel on a confirmed excerpt. See the task report.
+    // Cancel discards the capture, so reopening means capturing again. D-036
+    // removed the adjustment route this test used to take.
     fireEvent.click(within(panel()).getByRole('button', { name: 'Cancel' }));
     expect(screen.queryByRole('region', { name: /code selection/i })).toBeNull();
 
-    chord('excerpt.start.expand');
-    chord('excerpt.confirm');
+    chord('excerpt.code');
 
     expect(codebookOrder()).toEqual(before);
   });
@@ -315,20 +312,29 @@ describe('commands, per section 2.1', () => {
     press({ key: 'Escape' });
 
     expect(screen.queryByRole('region', { name: /code selection/i })).toBeNull();
-    expect(lastAnnouncement()).toMatch(/cancelled/i);
+    expect(
+      announcer.getHistory().some((entry) => /cancelled/i.test(entry.message)),
+    ).toBe(true);
   });
 
-  it('leaves the excerpt confirmed after cancel, and returns focus to the strip', () => {
-    renderWorkspace();
+  it('discards the capture on cancel, and returns focus to its turn', () => {
+    // Section 3: the capture goes with the panel, and section 6 requires a
+    // defined return, which is the turn the capture was taken from.
+    const { container } = renderWorkspace();
     openPanel();
+    const turnId = container
+      .querySelector('[data-excerpt]')!
+      .closest('[data-turn-id]')!
+      .getAttribute('data-turn-id');
+
     press({ key: 'Escape' });
 
     expect(document.querySelector('.excerpt-toolbar__state')).toHaveAttribute(
       'data-state',
-      'confirmed',
+      'idle',
     );
-    const strip = screen.getByRole('region', { name: 'Excerpt' });
-    expect(within(strip).getAllByRole('button')[0]).toHaveFocus();
+    expect(document.querySelector('[data-excerpt]')).toBeNull();
+    expect(document.activeElement).toHaveAttribute('data-turn-id', turnId!);
   });
 
   it('returns focus to the search field from the transcript', () => {
@@ -355,18 +361,6 @@ describe('commands, per section 2.1', () => {
     expect(screen.getByRole('searchbox', { name: /search the codebook/i })).toHaveFocus();
   });
 
-  it('closes when a boundary command reopens the excerpt for adjustment', () => {
-    renderWorkspace();
-    openPanel();
-
-    chord('excerpt.start.expand');
-
-    expect(screen.queryByRole('region', { name: /code selection/i })).toBeNull();
-    expect(document.querySelector('.excerpt-toolbar__state')).toHaveAttribute(
-      'data-state',
-      'adjusting',
-    );
-  });
 });
 
 describe('regions, per section 3', () => {

@@ -4,7 +4,7 @@
 - Version: 0.3
 - Last updated: 2026-08-05
 
-Progress: v0.1 complete and tagged. Phase 4 defines v0.2. Task 18 is next.
+Progress: v0.1 complete and tagged. Phase 4 defines v0.2. Task 18 has landed; Task 19, the context menu, is next.
 
 Update this line when a task lands. An agent reading a stale progress line will rebuild finished work.
 

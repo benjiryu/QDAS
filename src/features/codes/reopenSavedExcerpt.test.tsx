@@ -177,26 +177,6 @@ describe('reopening a saved excerpt', () => {
   });
 });
 
-describe('boundary commands while reopened, per E-4', () => {
-  it('are unavailable and say why', () => {
-    const { container } = renderWorkspace();
-    clickSegment(container, soleExcerpt.startSegmentId);
-
-    for (const label of ['Expand start', 'Expand end', 'Contract start', 'Contract end']) {
-      expect(screen.getByRole('button', { name: label })).toHaveAttribute('aria-disabled', 'true');
-    }
-
-    chord('excerpt.start.expand');
-
-    expect(announced().some((message) => /boundaries cannot be moved/i.test(message))).toBe(true);
-    // And the range did not move.
-    expect(excerptState()).toBe('confirmed');
-    expect(container.querySelector('[data-excerpt="start"]')).toHaveAttribute(
-      'data-segment-id',
-      soleExcerpt.startSegmentId,
-    );
-  });
-});
 
 describe('the overlap case', () => {
   it('offers a choice instead of guessing', () => {
@@ -331,10 +311,8 @@ describe('cancel leaves a reopened excerpt untouched', () => {
     fireEvent.click(within(panel()).getByRole('button', { name: 'Cancel' }));
     fireEvent.click(screen.getByRole('button', { name: /discard them/i }));
 
-    // Cancel leaves the excerpt confirmed, per section 2.1, so leaving it takes
-    // the explicit Discard control before the highlight can be reopened.
-    expect(excerptState()).toBe('confirmed');
-    fireEvent.click(screen.getByRole('button', { name: /^Discard/ }));
+    // Cancel discards this round of changes and returns to idle, per section 3.
+    // What was already saved is untouched, which is what D-030 requires.
     expect(excerptState()).toBe('idle');
 
     // Reopening shows exactly what was saved before.

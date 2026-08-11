@@ -73,13 +73,25 @@ function press(chord: Chord) {
 
 const chord = (command: Command) => press(bindings[command]);
 
-/** Confirms a two-sentence excerpt, which opens the panel. */
+/** Selects two whole sentences the way a drag does, then captures them. */
+function drag(from: [string, number], to: [string, number]) {
+  const element = (segmentId: string) =>
+    document.querySelector<HTMLElement>(`[data-segment-id="${segmentId}"]`)!;
+  const range = document.createRange();
+  range.setStart(element(from[0]).firstChild!, from[1]);
+  range.setEnd(element(to[0]).firstChild!, to[1]);
+  const selection = document.getSelection()!;
+  selection.removeAllRanges();
+  selection.addRange(range);
+}
+
+/** Captures a two-sentence excerpt, which opens the panel. */
 function openPanel() {
-  chord('segment.next');
-  chord('segment.next');
-  chord('excerpt.begin');
-  chord('excerpt.end.expand');
-  chord('excerpt.confirm');
+  drag(
+    [resolved.segments[1].segmentId, 0],
+    [resolved.segments[2].segmentId, resolved.segments[2].text.length],
+  );
+  chord('excerpt.code');
 }
 
 const panel = () => screen.getByRole('region', { name: /code selection/i });
@@ -152,7 +164,10 @@ describe('acceptance: cancel creates nothing', () => {
     fireEvent.click(within(confirm as HTMLElement).getByRole('button', { name: /discard them/i }));
 
     expect(saved(container)).toEqual({ excerpts: 0, assignments: 0, notes: 0 });
-    expect(excerptState()).toBe('confirmed');
+    // Section 3: cancel discards the capture and creates nothing. v0.1 left the
+    // excerpt confirmed, because rebuilding a range was expensive; native
+    // selection makes reselecting cheap, so D-036 dropped the holding state.
+    expect(excerptState()).toBe('idle');
     expect(screen.queryByRole('region', { name: /code selection/i })).toBeNull();
   });
 
@@ -191,7 +206,7 @@ describe('acceptance: cancel creates nothing', () => {
     fireEvent.click(within(panel()).getByRole('button', { name: 'Cancel' }));
 
     expect(screen.queryByRole('region', { name: /code selection/i })).toBeNull();
-    expect(excerptState()).toBe('confirmed');
+    expect(excerptState()).toBe('idle');
   });
 
   it('asks first on Escape too, since it is the same command', () => {
@@ -328,10 +343,10 @@ describe('what save writes, per section 8', () => {
     expect(excerptState()).toBe('saved');
     expect(screen.queryByRole('region', { name: /code selection/i })).toBeNull();
 
-    // And a second excerpt can be started, which section 3 leaves unstated.
+    // And a second excerpt can be captured straight from `saved`.
     chord('segment.next');
-    chord('excerpt.begin');
-    expect(excerptState()).toBe('anchored');
+    chord('excerpt.code');
+    expect(excerptState()).toBe('confirmed');
   });
 });
 
@@ -404,8 +419,7 @@ describe('acceptance: save failure preserves everything', () => {
 
     // A second excerpt saves first time.
     chord('segment.next');
-    chord('excerpt.begin');
-    chord('excerpt.confirm');
+    chord('excerpt.code');
     checkCode('Mutual aid');
     fireEvent.click(within(panel()).getByRole('button', { name: 'Save' }));
 
@@ -547,34 +561,3 @@ describe('the pending assignment region, per sections 8 and 9', () => {
   });
 });
 
-describe('pending codes survive a return to boundary adjustment', () => {
-  it('holds them while the excerpt goes back to adjusting and is confirmed again', () => {
-    renderWorkspace();
-    openPanel();
-    checkCode('Waiting list');
-    checkCode('Mutual aid');
-
-    // A boundary command from confirmed reopens the range and closes the panel.
-    chord('excerpt.start.expand');
-    expect(excerptState()).toBe('adjusting');
-    expect(screen.queryByRole('region', { name: /code selection/i })).toBeNull();
-
-    chord('excerpt.confirm');
-
-    expect(within(region('pending')).getAllByRole('listitem')).toHaveLength(2);
-  });
-
-  it('keeps a draft note across the same trip', () => {
-    renderWorkspace();
-    openPanel();
-    checkCode('Waiting list');
-    writeNote('Survives the boundary trip.');
-
-    chord('excerpt.end.expand');
-    chord('excerpt.confirm');
-
-    expect(within(region('note')).getByLabelText(/note about this excerpt/i)).toHaveValue(
-      'Survives the boundary trip.',
-    );
-  });
-});

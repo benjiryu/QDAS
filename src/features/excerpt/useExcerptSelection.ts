@@ -1,97 +1,35 @@
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
 import { useAnnouncer } from '../../a11y';
-import type { PrototypeFlags } from '../../config/flags';
-import {
-  bindingsFor,
-  commandFor,
-  detectPlatform,
-  resolveEscape,
-} from '../../config/keybindings';
+import { bindingsFor, commandFor, detectPlatform, resolveEscape } from '../../config/keybindings';
 import type { Command } from '../../config/keybindings';
-import {
-  contextAfter,
-  contextBefore,
-  contractEnd,
-  contractStart,
-  createExcerptAt,
-  excerptAvailability,
-  excerptDelta,
-  excerptSegments,
-  excerptSize,
-  excerptText,
-  expandEnd,
-  expandEndByTurn,
-  expandStart,
-  expandStartByTurn,
-  requireTurnOf,
-  segmentById,
-  turnOf,
-} from '../../domain';
-import type {
-  ExcerptRange,
-  Id,
-  ResolvedSource,
-  SavedExcerptSummary,
-  TranscriptSegment,
-} from '../../domain';
-import {
-  adopted,
-  adoptedAndConfirmed,
-  begun,
-  boundaryChanged,
-  confirmed,
-  contextSentence,
-  discarded,
-  EXCERPT_UNAVAILABLE,
-  readExcerpt,
-  reverted,
-  speakersText,
-  timestampsText,
-} from './excerptAnnouncements';
-import { canAdjust, excerptReducer, IDLE } from './excerptMachine';
+import { excerptSegments, excerptSize, turnOf } from '../../domain';
+import type { Id, ResolvedSource, SavedExcerptSummary, TranscriptSegment } from '../../domain';
+import { clearNativeSelection, resolveCapture } from './capture';
+import type { CaptureTarget } from './capture';
+import { captured, discarded, EXCERPT_UNAVAILABLE } from './excerptAnnouncements';
+import { excerptReducer, IDLE } from './excerptMachine';
 import type { ExcerptSelection } from './excerptMachine';
-import type { NativeSelectionApi } from './useNativeSelection';
 
 /**
- * Excerpt selection: the state machine wired to boundary operations, the
+ * Excerpt capture: the state machine wired to the capture rule, the
  * announcement service, and focus.
  *
- * Specification: docs/patterns/excerpt-selection.md sections 3, 4, 4.1, 5, 6.
+ * Specification: docs/patterns/excerpt-selection.md sections 1, 3, 4, 6, and
+ * decision D-036.
  *
  * The range lives here rather than in the browser's text selection, per D-001:
  * it has to survive focus moving away, persist across views, and be comparable
- * against another coder's differently bounded range, and native selection can
- * do none of those.
+ * against another coder's differently bounded range, and a native selection can
+ * do none of those. What changed in v0.2 is only where the range comes from —
+ * the browser now supplies it, exactly as dragged, instead of the user building
+ * it a boundary at a time.
  */
 
-/** The thirteen commands in section 4, all of which carry a chord. */
-const CHORD_COMMANDS = [
-  'excerpt.begin',
-  'excerpt.start.expand',
-  'excerpt.start.contract',
-  'excerpt.end.expand',
-  'excerpt.end.contract',
-  'excerpt.start.expandTurn',
-  'excerpt.end.expandTurn',
-  'excerpt.read',
-  'excerpt.contextBefore',
-  'excerpt.contextAfter',
-  'excerpt.revert',
-  'excerpt.confirm',
-  'excerpt.discard',
-  'excerpt.open',
-] as const satisfies readonly Command[];
+/** Section 4. Each carries a chord and a visible strip control. */
+const CHORD_COMMANDS = ['excerpt.code', 'excerpt.note', 'excerpt.open'] as const satisfies
+  readonly Command[];
 
-/**
- * Section 5 also makes speakers and timestamps available on request, without
- * giving them commands in section 4. They are controls with no chord: the
- * contract requires every command to have a control, not the reverse. If they
- * should be reachable by chord, keybindings.ts has to define them first.
- */
-export type ExcerptCommand =
-  | (typeof CHORD_COMMANDS)[number]
-  | 'excerpt.speakers'
-  | 'excerpt.timestamps';
+export type ExcerptCommand = (typeof CHORD_COMMANDS)[number] | 'excerpt.discard';
 
 export interface CommandState {
   available: boolean;
@@ -105,11 +43,12 @@ export interface ExcerptSelectionApi {
   markSaved: () => void;
   run: (command: ExcerptCommand) => void;
   availability: Record<ExcerptCommand, CommandState>;
-  /** Focus lands here when an excerpt begins, per section 6. */
-  firstControlRef: React.RefObject<HTMLButtonElement | null>;
   segmentsInRange: Set<Id>;
   startSegmentId: Id | null;
   endSegmentId: Id | null;
+  /** Characters into the first and last segment, so the highlight is exact. */
+  startOffset: number | null;
+  endOffset: number | null;
   /**
    * Saved excerpts the active segment falls inside, offered for choice when
    * there is more than one. Empty when there is nothing to choose. D-030.
@@ -123,87 +62,45 @@ export interface ExcerptSelectionApi {
 
 interface Options {
   resolved: ResolvedSource;
-  activeSegmentId: Id | null;
-  flags: PrototypeFlags;
-  /** The element containing the rendered turns, for focus and scrolling. */
+  /** The reading position, which the turn fallback falls back to. Section 1.1. */
+  activeSegmentId?: Id | null;
+  /** The element containing the rendered turns, which capture reads. */
   containerRef: React.RefObject<HTMLDivElement | null>;
-  /** Confirming or cancelling sets the active segment, per transcript-segment 2.1. */
+  /** Capture and discard set the active segment, per transcript-segment 2.1. */
   onSetActiveSegment?: (segmentId: Id) => void;
-  /** Escape belongs to the code panel while it is open, per section 4.2. */
+  /** Escape belongs to the code panel while it is open, per section 4. */
   panelOpen?: boolean;
   /** Saved excerpts covering the active segment, for `excerpt.open`. D-030. */
   savedAt?: SavedExcerptSummary[];
   /** Opens the panel pre-populated with a saved excerpt's codes. */
   onReopen?: (summary: SavedExcerptSummary) => void;
-  /** Confirm opens code selection, per section 3 and code-selection section 9. */
-  onConfirm?: () => void;
-  /**
-   * A boundary command from `confirmed` closes the panel, and so does discard.
-   * Pending codes are held by the panel, per code-selection section 8.
-   */
+  /** Capture opens code selection, focused per the command. Section 4. */
+  onCapture?: (target: CaptureTarget) => void;
+  /** Discard closes the panel; pending codes go with it. */
   onClosePanel?: () => void;
-  /**
-   * The current native selection, when the application can observe one.
-   * Adoption is opportunistic: with none, every control behaves per D-029.
-   */
-  nativeSelection?: NativeSelectionApi;
 }
 
 export function useExcerptSelection({
   resolved,
-  activeSegmentId,
-  flags,
+  activeSegmentId = null,
   containerRef,
   onSetActiveSegment,
   panelOpen = false,
   savedAt = [],
   onReopen,
-  onConfirm,
+  onCapture,
   onClosePanel,
-  nativeSelection,
 }: Options): ExcerptSelectionApi {
   const announcer = useAnnouncer();
   const [selection, dispatch] = useReducer(excerptReducer, IDLE);
-  const adoptable = nativeSelection?.adoptable ?? null;
-  const firstControlRef = useRef<HTMLButtonElement | null>(null);
-
-  /** Which turn holds focus, so `excerpt.begin` can start from it. */
-  const [focusedTurnId, setFocusedTurnId] = useState<Id | null>(null);
 
   /** Overlapping saved excerpts awaiting a choice. D-030 does not guess. */
   const [openChoices, setOpenChoices] = useState<SavedExcerptSummary[]>([]);
 
-  /**
-   * How far out the context walk has gone in each direction. Section 5 offers
-   * context "one sentence at a time", which is read here as walking outward on
-   * repeated invocation rather than repeating the same sentence. Reset whenever
-   * the range changes, so context is always relative to the current boundaries.
-   */
-  const contextCursor = useRef({ before: 0, after: 0 });
-
-  useEffect(() => {
-    contextCursor.current = { before: 0, after: 0 };
-  }, [selection.range]);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const onFocusIn = (event: FocusEvent) => {
-      const target = event.target;
-      const turn = target instanceof Element ? target.closest('[data-turn-id]') : null;
-      setFocusedTurnId(turn?.getAttribute('data-turn-id') ?? null);
-    };
-
-    container.addEventListener('focusin', onFocusIn);
-    return () => container.removeEventListener('focusin', onFocusIn);
-  }, [containerRef]);
-
   /* ---------- Derived view of the range ---------- */
 
   const rangeSegments = useMemo(
-    (): TranscriptSegment[] =>
-      selection.range ? excerptSegments(resolved, selection.range) : [],
+    (): TranscriptSegment[] => (selection.range ? excerptSegments(resolved, selection.range) : []),
     [resolved, selection.range],
   );
 
@@ -216,82 +113,31 @@ export function useExcerptSelection({
 
   const availability = useMemo((): Record<ExcerptCommand, CommandState> => {
     const state = selection.state;
-    const live = canAdjust(state);
-    const boundaries = selection.range
-      ? excerptAvailability(resolved, selection.range)
-      : null;
+    const captureable = state !== 'confirmed';
 
     const gate = (allowed: boolean, reason: string): CommandState =>
       allowed ? { available: true, reason: null } : { available: false, reason };
 
-    const boundary = (command: keyof NonNullable<typeof boundaries>): CommandState => {
-      // Reopening changes codes, not boundaries. The edit path stays deferred
-      // under E-4, so every boundary command is unavailable and says why.
-      if (selection.reopenedExcerptId !== null) {
-        return gate(false, EXCERPT_UNAVAILABLE.reopenedIsLocked);
-      }
-      if (!live || !boundaries) return gate(false, EXCERPT_UNAVAILABLE.noExcerpt);
-      const entry = boundaries[command];
-      return entry.available
-        ? { available: true, reason: null }
-        : { available: false, reason: EXCERPT_UNAVAILABLE[entry.reason ?? 'invalidRange'] };
-    };
-
+    // Section 4 lists both capture commands as always available: the capture
+    // rule always resolves to something or says why it did not, so there is no
+    // position to check first. The one gate is a capture already in progress.
     return {
-      // A selection is a third way in, alongside the active segment and a
-      // focused turn. D-034, section 4.0.
-      'excerpt.begin': gate(
-        (state === 'idle' || state === 'saved') &&
-          (activeSegmentId !== null || focusedTurnId !== null || adoptable !== null),
-        state === 'idle' || state === 'saved'
-          ? EXCERPT_UNAVAILABLE.noPosition
-          : EXCERPT_UNAVAILABLE.alreadyStarted,
-      ),
-      'excerpt.start.expand': boundary('excerpt.start.expand'),
-      'excerpt.start.contract': boundary('excerpt.start.contract'),
-      'excerpt.end.expand': boundary('excerpt.end.expand'),
-      'excerpt.end.contract': boundary('excerpt.end.contract'),
-      'excerpt.start.expandTurn': boundary('excerpt.start.expandTurn'),
-      'excerpt.end.expandTurn': boundary('excerpt.end.expandTurn'),
-      'excerpt.contextBefore': boundary('excerpt.contextBefore'),
-      'excerpt.contextAfter': boundary('excerpt.contextAfter'),
-      'excerpt.read': gate(live, EXCERPT_UNAVAILABLE.noExcerpt),
-      'excerpt.speakers': gate(live, EXCERPT_UNAVAILABLE.noExcerpt),
-      'excerpt.timestamps': gate(live, EXCERPT_UNAVAILABLE.noExcerpt),
-      'excerpt.revert': gate(state === 'adjusting', EXCERPT_UNAVAILABLE.notAdjusted),
-      // Enabled in `idle` when a selection exists, with adoption as its action:
-      // one click from drag to codebook. Otherwise its disabled reason stands.
-      'excerpt.confirm': gate(
-        state === 'anchored' || state === 'adjusting' || (state === 'idle' && adoptable !== null),
-        state === 'confirmed'
-          ? EXCERPT_UNAVAILABLE.alreadyConfirmed
-          : EXCERPT_UNAVAILABLE.noExcerpt,
-      ),
-      'excerpt.discard': gate(live, EXCERPT_UNAVAILABLE.noExcerpt),
+      'excerpt.code': gate(captureable, EXCERPT_UNAVAILABLE.alreadyCapturing),
+      'excerpt.note': gate(captureable, EXCERPT_UNAVAILABLE.alreadyCapturing),
       'excerpt.open': gate(
-        (state === 'idle' || state === 'saved') && savedAt.length > 0,
-        state === 'idle' || state === 'saved'
-          ? EXCERPT_UNAVAILABLE.noSavedExcerptHere
-          : EXCERPT_UNAVAILABLE.alreadyStarted,
+        captureable && savedAt.length > 0,
+        captureable ? EXCERPT_UNAVAILABLE.noSavedExcerptHere : EXCERPT_UNAVAILABLE.alreadyCapturing,
       ),
+      'excerpt.discard': gate(state === 'confirmed', EXCERPT_UNAVAILABLE.nothingToCapture),
     };
-  }, [
-    activeSegmentId,
-    adoptable,
-    focusedTurnId,
-    resolved,
-    savedAt.length,
-    selection.range,
-    selection.reopenedExcerptId,
-    selection.state,
-  ]);
+  }, [savedAt.length, selection.state]);
 
-  /* ---------- Focus and scrolling helpers ---------- */
+  /* ---------- Focus helpers ---------- */
 
-  const focusOriginTurn = useCallback(
-    (originSegmentId: Id | null) => {
-      if (!originSegmentId) return;
-      const turn = turnOf(resolved, originSegmentId);
+  const focusTurnOf = useCallback(
+    (segmentId: Id | null) => {
+      if (!segmentId) return;
+      const turn = turnOf(resolved, segmentId);
       const element = containerRef.current?.querySelector<HTMLElement>(
         `[data-turn-id="${turn?.turn.turnId}"]`,
       );
@@ -300,59 +146,7 @@ export function useExcerptSelection({
     [containerRef, resolved],
   );
 
-  const scrollBoundaryIntoView = useCallback(
-    (segmentId: Id) => {
-      // Only the boundary that moved. Section 7: the other boundary does not
-      // move, and the scroll does not reset to the top of the range.
-      const element = containerRef.current?.querySelector<HTMLElement>(
-        `[data-segment-id="${segmentId}"]`,
-      );
-      element?.scrollIntoView?.({ block: 'nearest' });
-    },
-    [containerRef],
-  );
-
-  /* ---------- Boundary changes ---------- */
-
-  const applyBoundaryChange = useCallback(
-    (next: ExcerptRange | null, reason: string) => {
-      const current = selection.range;
-      if (!current) {
-        announcer.announce(EXCERPT_UNAVAILABLE.noExcerpt);
-        return;
-      }
-      if (!next) {
-        // Unavailable rather than silently clamped, and it says why.
-        announcer.announce(reason);
-        return;
-      }
-
-      const delta = excerptDelta(resolved, current, next);
-      const wasConfirmed = selection.state === 'confirmed';
-      dispatch({ type: 'boundaryChange', range: next });
-
-      // Section 4: invoking a boundary command from `confirmed` reopens the
-      // excerpt for editing and closes code selection, holding pending codes.
-      if (wasConfirmed) onClosePanel?.();
-
-      announcer.announce(
-        boundaryChanged(
-          delta,
-          excerptSize(resolved, next),
-          excerptText(resolved, next),
-          flags.boundaryChangeAnnouncement,
-          flags.deltaTruncationWords,
-        ),
-      );
-
-      const movedBoundary =
-        next.startSegmentId !== current.startSegmentId ? next.startSegmentId : next.endSegmentId;
-      scrollBoundaryIntoView(movedBoundary);
-    },
-    [announcer, flags, onClosePanel, resolved, scrollBoundaryIntoView, selection.range, selection.state],
-  );
-
-  /* ---------- Commands ---------- */
+  /* ---------- Reopening a saved excerpt, per D-030 ---------- */
 
   const reopen = useCallback(
     (summary: SavedExcerptSummary) => {
@@ -391,213 +185,79 @@ export function useExcerptSelection({
     announcer.announce('No excerpt opened.');
   }, [announcer]);
 
+  /* ---------- Commands ---------- */
+
+  const runCapture = useCallback(
+    (target: CaptureTarget) => {
+      const capture = resolveCapture(containerRef.current, resolved, activeSegmentId);
+
+      // Step 3 of the capture rule: nothing to capture, so say so and do
+      // nothing. Reached only with focus outside the transcript.
+      if (!capture) {
+        announcer.announce(EXCERPT_UNAVAILABLE.nothingToCapture);
+        return;
+      }
+
+      dispatch({ type: 'capture', range: capture.range, source: capture.source });
+
+      // Section 1.2: which rule fired is stated, never implied.
+      announcer.announce(
+        captured(capture.source, excerptSize(resolved, capture.range), capture.speakerLabel),
+      );
+
+      // Section 6: from here the application highlight is the only selection
+      // visual, and it shows exactly what will be coded.
+      clearNativeSelection();
+      onSetActiveSegment?.(capture.range.startSegmentId);
+      onCapture?.(target);
+    },
+    [activeSegmentId, announcer, containerRef, onCapture, onSetActiveSegment, resolved],
+  );
+
   const run = useCallback(
     (command: ExcerptCommand) => {
-      const { state, range, originSegmentId } = selection;
       const status = availability[command];
-
       if (!status.available) {
-        announcer.announce(status.reason ?? EXCERPT_UNAVAILABLE.noExcerpt);
+        announcer.announce(status.reason ?? EXCERPT_UNAVAILABLE.nothingToCapture);
         return;
       }
 
       switch (command) {
-        case 'excerpt.begin': {
-          // A selection the application can see is adopted whole, snapped
-          // outward to sentence boundaries, and becomes the origin.
-          if (adoptable) {
-            dispatch({
-              type: 'begin',
-              range: adoptable.range,
-              originSegmentId: adoptable.range.startSegmentId,
-            });
-            announcer.announce(
-              adopted(
-                excerptSize(resolved, adoptable.range),
-                adoptable.extendedStart || adoptable.extendedEnd,
-              ),
-            );
-            nativeSelection?.clear();
-            firstControlRef.current?.focus?.();
-            return;
-          }
+        case 'excerpt.code':
+          return runCapture('search');
 
-          // From the active segment, or from the last sentence of the turn
-          // holding focus: a user who has just read a turn straight through is
-          // at its end. transcript-segment.md section 2.3.
-          let origin = activeSegmentId;
-          if (!origin && focusedTurnId) {
-            const turn = resolved.turns.find((candidate) => candidate.turn.turnId === focusedTurnId);
-            origin = turn?.segments[turn.segments.length - 1]?.segmentId ?? null;
-          }
-          if (!origin) {
-            announcer.announce(EXCERPT_UNAVAILABLE.noPosition);
-            return;
-          }
+        case 'excerpt.note':
+          return runCapture('note');
 
-          const initial = createExcerptAt(resolved, origin, flags.excerptInitialRange);
-          if (!initial) return;
-
-          dispatch({ type: 'begin', range: initial, originSegmentId: origin });
-          announcer.announce(
-            begun(segmentById(resolved, initial.startSegmentId)!.text, excerptSize(resolved, initial)),
-          );
-          // Section 6: focus goes to the excerpt toolbar, first control.
-          firstControlRef.current?.focus?.();
-          return;
-        }
-
-        case 'excerpt.start.expand':
-          return applyBoundaryChange(expandStart(resolved, range!), status.reason ?? '');
-        case 'excerpt.start.contract':
-          return applyBoundaryChange(contractStart(resolved, range!), status.reason ?? '');
-        case 'excerpt.end.expand':
-          return applyBoundaryChange(expandEnd(resolved, range!), status.reason ?? '');
-        case 'excerpt.end.contract':
-          return applyBoundaryChange(contractEnd(resolved, range!), status.reason ?? '');
-        case 'excerpt.start.expandTurn':
-          return applyBoundaryChange(expandStartByTurn(resolved, range!), status.reason ?? '');
-        case 'excerpt.end.expandTurn':
-          return applyBoundaryChange(expandEndByTurn(resolved, range!), status.reason ?? '');
-
-        case 'excerpt.read':
-          announcer.announce(
-            readExcerpt(excerptSize(resolved, range!), excerptText(resolved, range!)),
-          );
-          return;
-
-        case 'excerpt.speakers': {
-          const segments = excerptSegments(resolved, range!);
-          announcer.announce(
-            speakersText(
-              requireTurnOf(resolved, segments[0].segmentId).speaker?.label ?? null,
-              requireTurnOf(resolved, segments[segments.length - 1].segmentId).speaker?.label ??
-                null,
-            ),
-          );
-          return;
-        }
-
-        case 'excerpt.timestamps': {
-          const segments = excerptSegments(resolved, range!);
-          announcer.announce(
-            timestampsText(segments[0].startTimeMs, segments[segments.length - 1].endTimeMs),
-          );
-          return;
-        }
-
-        case 'excerpt.contextBefore':
-        case 'excerpt.contextAfter': {
-          // Reading context never changes the range and never moves focus. If it
-          // did, the user would lose their place in the adjustment sequence
-          // every time they checked whether to expand further.
-          const before = command === 'excerpt.contextBefore';
-          const cursor = contextCursor.current;
-          const depth = (before ? cursor.before : cursor.after) + 1;
-          const sentences = before
-            ? contextBefore(resolved, range!, depth)
-            : contextAfter(resolved, range!, depth);
-
-          const sentence = before ? sentences[0] : sentences[sentences.length - 1];
-          if (!sentence || sentences.length < depth) {
-            announcer.announce(
-              before ? EXCERPT_UNAVAILABLE.atSourceStart : EXCERPT_UNAVAILABLE.atSourceEnd,
-            );
-            return;
-          }
-
-          if (before) cursor.before = depth;
-          else cursor.after = depth;
-          announcer.announce(contextSentence(before ? 'before' : 'after', sentence));
-          return;
-        }
-
-        case 'excerpt.revert': {
-          // Back to the range as it stood at origin, which for an adopted
-          // selection is everything the user dragged.
-          const origin = selection.originRange;
-          if (!origin) return;
-          dispatch({ type: 'revert' });
-          announcer.announce(
-            reverted(
-              segmentById(resolved, origin.startSegmentId)!.text,
-              excerptSize(resolved, origin),
-            ),
-          );
-          return;
-        }
-
-        case 'excerpt.confirm': {
-          if ((state === 'idle' || state === 'saved') && adoptable) {
-            // Adopt, snap, confirm, open the panel: one action, which is the
-            // mouse user's expectation. D-034.
-            dispatch({
-              type: 'begin',
-              range: adoptable.range,
-              originSegmentId: adoptable.range.startSegmentId,
-            });
-            dispatch({ type: 'confirm' });
-            announcer.announce(
-              adoptedAndConfirmed(
-                excerptSize(resolved, adoptable.range),
-                adoptable.extendedStart || adoptable.extendedEnd,
-              ),
-            );
-            nativeSelection?.clear();
-            onSetActiveSegment?.(adoptable.range.startSegmentId);
-            onConfirm?.();
-            return;
-          }
-
-          dispatch({ type: 'confirm' });
-          announcer.announce(confirmed(excerptSize(resolved, range!)));
-          onSetActiveSegment?.(range!.startSegmentId);
-          // Section 6 sends focus to the code panel's search field; the panel
-          // owns that move, and this opens it.
-          onConfirm?.();
-          return;
-        }
-
-        case 'excerpt.open': {
+        case 'excerpt.open':
           // One opens; two or more, the `coded-multiple` case, are presented
           // for choice. Guessing would silently edit the wrong excerpt. D-030.
-          runOpenAt(savedAt);
-          return;
-        }
+          return runOpenAt(savedAt);
 
         case 'excerpt.discard': {
-          const origin = originSegmentId;
+          const origin = selection.range?.startSegmentId ?? null;
+          const reopened = selection.reopenedExcerptId !== null;
           dispatch({ type: 'discard' });
           onClosePanel?.();
-          announcer.announce(discarded());
+          announcer.announce(discarded(reopened));
           if (origin) onSetActiveSegment?.(origin);
-          // Section 6: focus returns to the origin segment's turn container,
-          // from `anchored`, `adjusting`, and `confirmed` alike.
-          focusOriginTurn(origin);
+          // Section 6: focus returns to the turn the capture started in.
+          focusTurnOf(origin);
           return;
         }
       }
-
-      // Exhaustive above; `state` is read only for the guards.
-      void state;
     },
     [
-      activeSegmentId,
-      adoptable,
       announcer,
-      applyBoundaryChange,
       availability,
-      flags.excerptInitialRange,
-      focusOriginTurn,
-      focusedTurnId,
-      nativeSelection,
+      focusTurnOf,
       onClosePanel,
-      onConfirm,
       onSetActiveSegment,
-      resolved,
+      runCapture,
       runOpenAt,
       savedAt,
-      selection,
+      selection.range,
+      selection.reopenedExcerptId,
     ],
   );
 
@@ -620,25 +280,22 @@ export function useExcerptSelection({
 
       // Escape is the one chord whose meaning depends on context, so the
       // resolution lives in the binding module rather than in a branch here.
-      // With the panel open it means cancel, which the panel owns.
-      const command = matched === 'codes.cancel' ? resolveEscape(panelOpen) : matched;
-
-      if (!(CHORD_COMMANDS as readonly Command[]).includes(command)) return;
-
-      // Section 4.1: Escape discards only in anchored and adjusting. In
-      // confirmed it belongs to the panel, and discarding a confirmed excerpt
-      // takes the explicit control.
-      if (matched === 'codes.cancel' && selection.state !== 'anchored' && selection.state !== 'adjusting') {
+      // With the panel open it means cancel, which the panel owns; with no
+      // panel there is nothing to capture out of, so it resolves to nothing.
+      if (matched === 'codes.cancel') {
+        void resolveEscape(panelOpen);
         return;
       }
 
+      if (!(CHORD_COMMANDS as readonly Command[]).includes(matched)) return;
+
       event.preventDefault();
-      run(command as ExcerptCommand);
+      run(matched as ExcerptCommand);
     }
 
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [bindings, panelOpen, run, selection.state]);
+  }, [bindings, panelOpen, run]);
 
   const markSaved = useCallback(() => dispatch({ type: 'save' }), []);
 
@@ -647,10 +304,11 @@ export function useExcerptSelection({
     markSaved,
     run,
     availability,
-    firstControlRef,
     segmentsInRange,
     startSegmentId: selection.range?.startSegmentId ?? null,
     endSegmentId: selection.range?.endSegmentId ?? null,
+    startOffset: selection.range?.startOffset ?? null,
+    endOffset: selection.range?.endOffset ?? null,
     openChoices,
     chooseSavedExcerpt,
     dismissChoices,

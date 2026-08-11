@@ -88,6 +88,8 @@ export interface CodePanelApi {
   setPendingElement: (node: HTMLElement | null) => void;
   cancel: () => void;
   focusSearch: () => void;
+  /** Callback ref for the note field, which `excerpt.note` opens focused on. */
+  setNoteElement: (node: HTMLTextAreaElement | null) => void;
   /**
    * Callback ref for the search input. A callback rather than the ref object
    * itself, so nothing that renders the panel holds a ref it might read during
@@ -102,6 +104,15 @@ interface Options {
   isOpen: boolean;
   /** Announced when the panel opens: excerpt size and start speaker, per section 10. */
   excerptSummary: string | null;
+  /**
+   * Which field the panel opens focused on.
+   *
+   * Search by default, per section 9. `excerpt.note` opens on the note field
+   * instead: it exists so a coder can write the thought that made them stop
+   * reading before choosing codes, and landing them in search would make them
+   * navigate past eight regions to reach it.
+   */
+  openFocus?: 'search' | 'note';
 
   /** Cancel closes the panel and returns focus to the command strip, per section 9. */
   onCancel: () => void;
@@ -122,6 +133,7 @@ export function useCodePanel({
   projectId,
   isOpen,
   excerptSummary,
+  openFocus = 'search',
   onCancel,
   onSave,
 }: Options): CodePanelApi {
@@ -129,6 +141,11 @@ export function useCodePanel({
   const searchRef = useRef<HTMLInputElement | null>(null);
   const setSearchElement = useCallback((node: HTMLInputElement | null) => {
     searchRef.current = node;
+  }, []);
+
+  const noteRef = useRef<HTMLTextAreaElement | null>(null);
+  const setNoteElement = useCallback((node: HTMLTextAreaElement | null) => {
+    noteRef.current = node;
   }, []);
 
   const pendingRef = useRef<HTMLElement | null>(null);
@@ -189,9 +206,11 @@ export function useCodePanel({
     wasOpen.current = isOpen;
     if (!isOpen) return;
 
-    // Section 9: the panel opens with focus in the search field. That is also
-    // the destination excerpt-selection.md section 6 names for confirm.
-    searchRef.current?.focus?.();
+    // Section 9: the panel opens with focus in the search field, which is also
+    // where excerpt-selection.md section 4 sends `excerpt.code`. `excerpt.note`
+    // is the one command that opens elsewhere.
+    const field = openFocus === 'note' ? noteRef.current : searchRef.current;
+    field?.focus?.();
 
     // Section 10: panel name, excerpt size, start speaker, and for a reopened
     // excerpt that existing codes are loaded and how many, so they are not
@@ -203,9 +222,9 @@ export function useCodePanel({
         loaded > 0
           ? ` ${loaded} existing ${loaded === 1 ? 'code' : 'codes'} loaded from the saved excerpt.`
           : ''
-      } Search field focused.`,
+      } ${openFocus === 'note' ? 'Note field focused.' : 'Search field focused.'}`,
     );
-  }, [announcer, excerptSummary, isOpen]);
+  }, [announcer, excerptSummary, isOpen, openFocus]);
 
   /* ---------- Search ---------- */
 
@@ -410,8 +429,12 @@ export function useCodePanel({
     announcedFor.current = null;
   }, [applyPending]);
 
-  /** Section 2.1: discard pending codes and the draft note, close the panel,
-      leave the excerpt confirmed. No records are created. */
+  /**
+   * Section 2.1: discard pending codes and the draft note and close the panel.
+   * The capture goes with it, per excerpt-selection section 3, so this no
+   * longer says the excerpt survives; what happened to the range is announced
+   * by whoever owns it.
+   */
   const cancelNow = useCallback(() => {
     loadedCountRef.current = 0;
     setSaveError(null);
@@ -421,7 +444,7 @@ export function useCodePanel({
     setQueryState('');
     setCancelPending(false);
     announcedFor.current = null;
-    announcer.announce('Code selection cancelled. The excerpt is still confirmed.');
+    announcer.announce('Code selection cancelled.');
     onCancel();
   }, [announcer, applyPending, onCancel]);
 
@@ -565,6 +588,7 @@ export function useCodePanel({
     setPendingElement,
     cancel: cancelNow,
     focusSearch,
+    setNoteElement,
     setSearchElement,
   };
 }

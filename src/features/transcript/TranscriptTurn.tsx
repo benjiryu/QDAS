@@ -31,7 +31,41 @@ interface TranscriptTurnProps {
   segmentsInRange?: Set<Id>;
   excerptStartSegmentId?: Id | null;
   excerptEndSegmentId?: Id | null;
+  /** Characters into the boundary sentences. D-036 stores exact characters. */
+  excerptStartOffset?: number | null;
+  excerptEndOffset?: number | null;
   excerptState?: string;
+}
+
+type ExcerptMarker = 'start' | 'end' | 'only' | 'in-range';
+
+/**
+ * Splits a sentence into the part before the capture, the captured part, and
+ * the part after.
+ *
+ * Section 6: a captured range may begin or end mid-sentence, and the highlight
+ * shows exactly what will be coded. Whole-sentence highlighting would show the
+ * coder something different from what is about to be stored, which is the
+ * failure D-036 removed sentence snapping to avoid.
+ */
+function splitAtOffsets(
+  text: string,
+  marker: ExcerptMarker,
+  startOffset: number | null,
+  endOffset: number | null,
+): [string, string, string] {
+  const start = marker === 'start' || marker === 'only' ? clamp(startOffset ?? 0, text) : 0;
+  const end = marker === 'end' || marker === 'only' ? clamp(endOffset ?? text.length, text) : text.length;
+
+  // A range whose offsets cross within one sentence cannot be shown, so the
+  // sentence is highlighted whole rather than rendered inside out.
+  if (end < start) return ['', text, ''];
+
+  return [text.slice(0, start), text.slice(start, end), text.slice(end)];
+}
+
+function clamp(offset: number, text: string): number {
+  return Math.max(0, Math.min(offset, text.length));
 }
 
 /**
@@ -65,6 +99,8 @@ export function TranscriptTurn({
   segmentsInRange,
   excerptStartSegmentId = null,
   excerptEndSegmentId = null,
+  excerptStartOffset = null,
+  excerptEndOffset = null,
   excerptState,
 }: TranscriptTurnProps) {
   const first = turn.segments[0];
@@ -131,7 +167,18 @@ export function TranscriptTurn({
         </span>
       </span>{' '}
       <span className="transcript-turn__prose">
-        {turn.segments.map((segment, index) => (
+        {turn.segments.map((segment, index) => {
+          const marker = excerptMarker(
+            segment.segmentId,
+            segmentsInRange,
+            excerptStartSegmentId,
+            excerptEndSegmentId,
+          );
+          const [before, inside, after] = marker
+            ? splitAtOffsets(segment.text, marker, excerptStartOffset, excerptEndOffset)
+            : ['', '', ''];
+
+          return (
           <Fragment key={segment.segmentId}>
             <span
               className="transcript-segment"
@@ -140,23 +187,31 @@ export function TranscriptTurn({
               /* Orthogonal to the coded state, per section 3: a segment can be
                  active and coded at once and has to be legible as both. */
               data-active={segment.segmentId === activeSegmentId ? 'true' : undefined}
-              data-excerpt={excerptMarker(
-                segment.segmentId,
-                segmentsInRange,
-                excerptStartSegmentId,
-                excerptEndSegmentId,
-              )}
+              data-excerpt={marker}
               data-excerpt-state={
                 segmentsInRange?.has(segment.segmentId) ? excerptState : undefined
               }
             >
-              {segment.text}
+              {/* Split only where there is a capture: an uncaptured sentence
+                  stays one text node, which is what everything else reads. */}
+              {marker ? (
+                <>
+                  {before}
+                  <span className="transcript-segment__captured" data-captured>
+                    {inside}
+                  </span>
+                  {after}
+                </>
+              ) : (
+                segment.text
+              )}
             </span>
             {/* The space belongs between the sentences, not inside one, so a
                 coded sentence's underline stops at its own last character. */}
             {index < turn.segments.length - 1 ? ' ' : null}
           </Fragment>
-        ))}
+          );
+        })}
       </span>
     </li>
   );

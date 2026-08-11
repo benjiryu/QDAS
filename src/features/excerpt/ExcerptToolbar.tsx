@@ -7,69 +7,29 @@ import type { ExcerptCommand, ExcerptSelectionApi } from './useExcerptSelection'
 import './excerpt.css';
 
 /**
- * The excerpt controls.
+ * The excerpt strip.
  *
- * Specification: docs/patterns/excerpt-selection.md sections 4, 6, 7.
+ * Specification: docs/patterns/excerpt-selection.md sections 4 and 6, decision
+ * D-036.
  *
- * D-018 leaves presentation to the implementer and fixes behaviour. The
- * behaviour that is fixed and visible here: every command has a control, the
- * revert control appears only in `adjusting`, and the toolbar holds one place
- * in the layout and never follows the selection.
+ * Three controls where v0.1 had fourteen. The boundary groups, the revert
+ * control, and the read-back group went with the commands they invoked; what
+ * remains is capture, capture-into-a-note, and reopening a saved excerpt, each
+ * showing its chord.
  *
- * Placement: directly below the position ribbon, above the transcript, in
- * normal flow. Not sticky, because a bar pinned to the viewport eats vertical
- * space that contract 2.5 needs left for reading at 400% zoom. The cost is that
- * a user far down a long transcript scrolls to reach the buttons; the chords
- * and the return-to-position control cover that, and every control keeps the
- * same location on every invocation, which is the predictability the
- * magnification interview asked for.
+ * Placement is unchanged: directly below the position ribbon, above the
+ * transcript, in normal flow, not sticky. A bar pinned to the viewport eats
+ * vertical space contract 2.5 needs left for reading at 400% zoom, and the
+ * chords plus the return-to-position control cover the scroll distance.
  */
 
-/** Grouped by what they do, in the order the workflow uses them. */
-const GROUPS: { label: string; commands: { command: ExcerptCommand; label: string }[] }[] = [
-  {
-    label: 'Excerpt',
-    commands: [
-      // Named as D-029 names them: two stable entry controls, never one
-      // context-sensitive control whose meaning depends on how you arrived.
-      { command: 'excerpt.begin', label: 'Start excerpt' },
-      { command: 'excerpt.confirm', label: 'Code this excerpt' },
-      { command: 'excerpt.open', label: 'Open saved excerpt' },
-      { command: 'excerpt.discard', label: 'Discard' },
-    ],
-  },
-  {
-    label: 'Start boundary',
-    commands: [
-      { command: 'excerpt.start.expand', label: 'Expand start' },
-      { command: 'excerpt.start.contract', label: 'Contract start' },
-      { command: 'excerpt.start.expandTurn', label: 'Expand start by turn' },
-    ],
-  },
-  {
-    label: 'End boundary',
-    commands: [
-      { command: 'excerpt.end.expand', label: 'Expand end' },
-      { command: 'excerpt.end.contract', label: 'Contract end' },
-      { command: 'excerpt.end.expandTurn', label: 'Expand end by turn' },
-    ],
-  },
-  {
-    label: 'Review',
-    commands: [
-      { command: 'excerpt.read', label: 'Read excerpt' },
-      { command: 'excerpt.contextBefore', label: 'Context before' },
-      { command: 'excerpt.contextAfter', label: 'Context after' },
-      { command: 'excerpt.speakers', label: 'Speakers' },
-      { command: 'excerpt.timestamps', label: 'Timestamps' },
-    ],
-  },
+const CONTROLS: { command: ExcerptCommand; label: string }[] = [
+  // Named for what they do to the selection, matching the context menu items in
+  // section 2 word for word: the menu adds no capability the strip lacks.
+  { command: 'excerpt.code', label: 'Code selection' },
+  { command: 'excerpt.note', label: 'Add note' },
+  { command: 'excerpt.open', label: 'Open saved excerpt' },
 ];
-
-const CHORDLESS: ExcerptCommand[] = ['excerpt.speakers', 'excerpt.timestamps'];
-
-/** Focus lands here when an excerpt begins, per section 6. */
-const FIRST_CONTROL = GROUPS[0].commands[0].command;
 
 interface ExcerptToolbarProps {
   excerpt: ExcerptSelectionApi;
@@ -92,34 +52,33 @@ export function ExcerptToolbar({ excerpt, resolved }: ExcerptToolbarProps) {
         {size ? <span className="excerpt-toolbar__size">{describeExcerptSize(size)}</span> : null}
       </p>
 
-      {GROUPS.map((group) => (
-        <div key={group.label} className="excerpt-toolbar__group" role="group" aria-label={group.label}>
-          {group.commands.map(({ command, label }) => {
-            // The revert control exists only in `adjusting`, which is the whole
-            // reason `anchored` and `adjusting` are separate states.
-            const status = excerpt.availability[command];
+      <div className="excerpt-toolbar__group" role="group" aria-label="Excerpt">
+        {CONTROLS.map(({ command, label }) => {
+          const status = excerpt.availability[command];
 
-            return (
-              <button
-                key={command}
-                type="button"
-                ref={command === FIRST_CONTROL ? excerpt.firstControlRef : undefined}
-                className="excerpt-toolbar__button"
-                aria-disabled={status.available ? undefined : true}
-                data-command={command}
-                onClick={() => excerpt.run(command)}
-              >
-                {label}
-                {CHORDLESS.includes(command) ? null : (
-                  <kbd className="excerpt-toolbar__chord" aria-hidden="true">
-                    {describeChord(bindings[command as Command], platform)}
-                  </kbd>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      ))}
+          return (
+            <button
+              key={command}
+              type="button"
+              className="excerpt-toolbar__button"
+              aria-disabled={status.available ? undefined : true}
+              data-command={command}
+              // A button's mousedown collapses the document selection before its
+              // click handler runs, which would destroy the very range the
+              // control exists to capture. Suppressing the default keeps the
+              // selection alive long enough to read it; focus is moved
+              // explicitly by the capture itself.
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => excerpt.run(command)}
+            >
+              {label}
+              <kbd className="excerpt-toolbar__chord" aria-hidden="true">
+                {describeChord(bindings[command as Command], platform)}
+              </kbd>
+            </button>
+          );
+        })}
+      </div>
 
       {/*
         Two or more saved excerpts cover this sentence, so the coder chooses.
@@ -152,30 +111,12 @@ export function ExcerptToolbar({ excerpt, resolved }: ExcerptToolbarProps) {
           </button>
         </div>
       ) : null}
-
-      {selection.state === 'adjusting' ? (
-        <div className="excerpt-toolbar__group" role="group" aria-label="Revert">
-          <button
-            type="button"
-            className="excerpt-toolbar__button"
-            data-command="excerpt.revert"
-            onClick={() => excerpt.run('excerpt.revert')}
-          >
-            Revert to start
-            <kbd className="excerpt-toolbar__chord" aria-hidden="true">
-              {describeChord(bindings['excerpt.revert'], platform)}
-            </kbd>
-          </button>
-        </div>
-      ) : null}
     </section>
   );
 }
 
 const STATE_LABELS: Record<string, string> = {
   idle: 'No excerpt in progress',
-  anchored: 'Excerpt started',
-  adjusting: 'Adjusting boundaries',
-  confirmed: 'Excerpt confirmed',
+  confirmed: 'Excerpt captured',
   saved: 'Excerpt saved',
 };

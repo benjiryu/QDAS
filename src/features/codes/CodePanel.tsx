@@ -75,6 +75,7 @@ export function CodePanel({
     cancelPending,
     saveError,
     setErrorElement,
+    setNoteElement,
   } = panel;
 
   if (!panel.isOpen) return null;
@@ -237,6 +238,7 @@ export function CodePanel({
         <label htmlFor={noteId}>Note about this excerpt (optional)</label>
         <textarea
           id={noteId}
+          ref={setNoteElement}
           className="code-panel__note-input"
           rows={3}
           value={noteText}

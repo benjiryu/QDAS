@@ -8,6 +8,7 @@ import {
   describeExcerptSize,
   diffReopenedAssignments,
   excerptSize,
+  excerptText,
   positionReport,
   postCodingReturnTarget,
   requireTurnOf,
@@ -25,8 +26,8 @@ import { CodePanel } from '../codes/CodePanel';
 import { useCodePanel } from '../codes/useCodePanel';
 import type { SaveOutcome } from '../codes/useCodePanel';
 import { ExcerptToolbar } from '../excerpt/ExcerptToolbar';
+import type { CaptureTarget } from '../excerpt/capture';
 import { useExcerptSelection } from '../excerpt/useExcerptSelection';
-import { useNativeSelection } from '../excerpt/useNativeSelection';
 import { PositionRibbon } from './PositionRibbon';
 import { Transcript } from './Transcript';
 import { TranscriptToolbar } from './TranscriptToolbar';
@@ -148,19 +149,14 @@ export function TranscriptWorkspace({
    * and both features read the same answer.
    */
   const [panelOpen, setPanelOpen] = useState(false);
+  /**
+   * Which field the panel opens focused on, set by whichever capture command
+   * opened it. Section 4: `excerpt.code` lands in search, `excerpt.note` in the
+   * note field.
+   */
+  const [panelFocus, setPanelFocus] = useState<CaptureTarget>('search');
   const panelCodeById = useRef<Map<Id, Code>>(new Map());
   const panelClear = useRef<(() => void) | null>(null);
-
-  /**
-   * A drag in the transcript is a way in to the same application-owned range,
-   * per D-034. Opportunistic: with nothing observable, which is the normal case
-   * in browse mode, every control behaves exactly as it does without it.
-   */
-  const nativeSelection = useNativeSelection({
-    enabled: flags.adoptNativeSelection,
-    containerRef: navigation.containerRef,
-    resolved,
-  });
 
   /**
    * Saved excerpts covering the active segment, for `excerpt.open`.
@@ -181,21 +177,23 @@ export function TranscriptWorkspace({
   const excerpt = useExcerptSelection({
     resolved,
     activeSegmentId: navigation.activeSegmentId,
-    flags,
     containerRef: navigation.containerRef,
-    // Confirming or cancelling an excerpt sets the active segment, per
-    // transcript-segment.md section 2.1.
+    // Capturing or discarding sets the active segment, per transcript-segment
+    // section 2.1.
     onSetActiveSegment: navigation.setActiveSegment,
     panelOpen,
-    onConfirm: () => setPanelOpen(true),
+    onCapture: (target) => {
+      setPanelFocus(target);
+      setPanelOpen(true);
+    },
     onClosePanel: () => setPanelOpen(false),
     savedAt,
     onReopen: (summary) => {
       // The panel opens pre-populated with what is already saved, per D-030.
       panelLoad.current?.(summary.codeIds);
+      setPanelFocus('search');
       setPanelOpen(true);
     },
-    nativeSelection,
   });
 
   const excerptSummary = useMemo(() => {
@@ -350,13 +348,13 @@ export function TranscriptWorkspace({
     projectId,
     isOpen: panelOpen,
     excerptSummary,
+    openFocus: panelFocus,
     onSave: handleSave,
     onCancel: () => {
       // A reopened excerpt's saved assignments are untouched by cancel. D-030.
-      setPanelOpen(false);
-      // Section 9: cancel returns focus to the command strip, with the excerpt
-      // still confirmed.
-      excerpt.firstControlRef.current?.focus();
+      // For a fresh capture, cancel discards it and creates nothing, per
+      // section 3, and returns focus to the turn the capture started in.
+      excerpt.run('excerpt.discard');
     },
   });
 
@@ -378,7 +376,7 @@ export function TranscriptWorkspace({
     (segmentId: Id) => {
       navigation.activate(segmentId);
 
-      if (excerpt.selection.state !== 'idle' && excerpt.selection.state !== 'saved') return;
+      if (excerpt.selection.state === 'confirmed') return;
       const here = savedExcerptsAt(resolved, segmentId, allExcerpts, effectiveAssignments);
       if (here.length === 0) return;
       // One opens; several ask, exactly as the command does.
@@ -408,6 +406,8 @@ export function TranscriptWorkspace({
         segmentsInRange={excerpt.segmentsInRange}
         excerptStartSegmentId={excerpt.startSegmentId}
         excerptEndSegmentId={excerpt.endSegmentId}
+        excerptStartOffset={excerpt.startOffset}
+        excerptEndOffset={excerpt.endOffset}
         excerptState={excerpt.selection.state}
       />
       {/* D-033: below the transcript at narrow width, alongside it when there
@@ -417,7 +417,16 @@ export function TranscriptWorkspace({
         flags={flags}
         excerptSummary={excerptSummary}
         excerptSpeaker={excerptSpeaker}
-        onReadExcerpt={() => excerpt.run('excerpt.read')}
+        onReadExcerpt={() => {
+          // The strip's read-back command went with D-036, but code-selection
+          // section 3 still specifies this control inside the panel, so it
+          // announces the excerpt directly rather than through a command.
+          const range = excerpt.selection.range;
+          if (!range) return;
+          announcer.announce(
+            `${describeExcerptSize(excerptSize(resolved, range))}. ${excerptText(resolved, range)}`,
+          );
+        }}
       />
     </>
   );

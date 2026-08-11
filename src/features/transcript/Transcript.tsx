@@ -26,6 +26,8 @@ interface TranscriptProps {
   segmentsInRange?: Set<Id>;
   excerptStartSegmentId?: Id | null;
   excerptEndSegmentId?: Id | null;
+  excerptStartOffset?: number | null;
+  excerptEndOffset?: number | null;
   excerptState?: string;
 }
 
@@ -39,6 +41,8 @@ export function Transcript({
   segmentsInRange,
   excerptStartSegmentId = null,
   excerptEndSegmentId = null,
+  excerptStartOffset = null,
+  excerptEndOffset = null,
   excerptState,
 }: TranscriptProps) {
   const headingId = useId();
@@ -47,7 +51,7 @@ export function Transcript({
     <section className="transcript" aria-labelledby={headingId}>
       <h2 id={headingId}>Transcript</h2>
 
-      <div ref={containerRef}>
+      <div ref={containerRef} data-transcript>
         {/*
           A list, so a screen reader reports how many turns there are on entry
           and where the user is within them. Section 1: one focusable container
@@ -65,6 +69,8 @@ export function Transcript({
               segmentsInRange={segmentsInRange}
               excerptStartSegmentId={excerptStartSegmentId}
               excerptEndSegmentId={excerptEndSegmentId}
+              excerptStartOffset={excerptStartOffset}
+              excerptEndOffset={excerptEndOffset}
               excerptState={excerptState}
             />
           ))}

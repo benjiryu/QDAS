@@ -29,11 +29,20 @@ export interface PrototypeFlags {
   timestampVerbosity: TimestampVerbosity;
   positionReportDetail: PositionReportDetail;
 
-  /** What becomes the excerpt when selection begins. See E-1. */
+  /**
+   * @deprecated Dead since D-036. v0.2 captures a native selection exactly, or
+   * falls back to the focused turn; nothing decides an initial range. Kept, not
+   * deleted, because v0.1 comparisons may still run.
+   */
   excerptInitialRange: ExcerptInitialRange;
-  /** What is announced after a boundary moves. See E-5. */
+  /**
+   * @deprecated Dead since D-036, which removed boundary adjustment. Kept for
+   * v0.1 comparisons.
+   */
   boundaryChangeAnnouncement: BoundaryChangeAnnouncement;
-  /** Words before truncation when announcing an added or removed range. */
+  /**
+   * @deprecated Dead since D-036. There is no boundary delta to truncate.
+   */
   deltaTruncationWords: number;
   /** Where focus lands after a successful save. */
   postCodingReturn: PostCodingReturn;
@@ -60,6 +69,11 @@ export interface PrototypeFlags {
   /**
    * Native drag selection is adopted into the app-owned range on the next
    * strip control, per D-034. Off restores pure command entry for comparison.
+   */
+  /**
+   * @deprecated Dead since D-036. Native selection is no longer adopted by a
+   * separate mechanism; capture reads the selection at the moment the command
+   * fires, and there is nothing to switch off.
    */
   adoptNativeSelection: boolean;
 
@@ -103,7 +117,9 @@ export const flagPresets: Record<string, Partial<PrototypeFlags>> = {
     transcriptNavigationUnit: 'speakerTurn',
     excerptInitialRange: 'activeSpeakerTurn',
   },
+  /** @deprecated Governs nothing since D-036. Retained for v0.1 comparisons. */
   verboseBoundaries: { boundaryChangeAnnouncement: 'fullRange' },
+  /** @deprecated Governs nothing since D-036. Retained for v0.1 comparisons. */
   commandEntryOnly: { adoptNativeSelection: false },
   /** Arms one save failure, for rehearsing recovery before a session. */
   saveFailure: { simulateSaveFailure: true },

@@ -58,12 +58,10 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('a failed save loses nothing, and the retry succeeds', async ({ page }) => {
-  // Confirm an excerpt.
-  await press(page, 'segment.next');
-  await press(page, 'segment.next');
-  await press(page, 'excerpt.begin');
-  await press(page, 'excerpt.end.expand');
-  await press(page, 'excerpt.confirm');
+  // Capture an excerpt. Clicking a turn focuses it, so the turn fallback in
+  // capture rule 1.1 step 2 resolves and the whole turn is captured.
+  await page.locator('[data-turn-id]').nth(1).click();
+  await press(page, 'excerpt.code');
   await expect(page.getByRole('region', { name: /code selection/i })).toBeVisible();
 
   // Two codes and a note.
@@ -126,9 +124,8 @@ test('without the preset, the first save simply succeeds', async ({ page }) => {
   await page.goto(`/projects/${source.projectId}/sources/${source.sourceId}`);
   await expect(page.getByRole('heading', { level: 1, name: source.title })).toBeVisible();
 
-  await press(page, 'segment.next');
-  await press(page, 'excerpt.begin');
-  await press(page, 'excerpt.confirm');
+  await page.locator('[data-turn-id]').nth(1).click();
+  await press(page, 'excerpt.code');
   await page
     .locator('[data-region="codebook"]')
     .getByRole('checkbox', { name: /Waiting list/ })

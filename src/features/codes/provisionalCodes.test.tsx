@@ -79,8 +79,7 @@ const chord = (command: Command) => press(bindings[command]);
 function openPanel() {
   chord('segment.next');
   chord('segment.next');
-  chord('excerpt.begin');
-  chord('excerpt.confirm');
+  chord('excerpt.code');
 }
 
 const panel = () => screen.getByRole('region', { name: /code selection/i });
@@ -130,8 +129,7 @@ describe('acceptance: provisional codes do not enter the canonical list', () => 
 
     // And still there, still outside the codebook, when the panel is reopened.
     fireEvent.click(within(panel()).getByRole('button', { name: 'Cancel' }));
-    chord('excerpt.start.expand');
-    chord('excerpt.confirm');
+    chord('excerpt.code');
 
     expect(within(region('proposed')).getByText('Compost queue')).toBeInTheDocument();
     expect(codebookOrder()).toEqual(before);

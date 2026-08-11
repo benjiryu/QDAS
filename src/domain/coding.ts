@@ -10,14 +10,14 @@
 import { nextSegment } from './navigation';
 import { positionOf } from './source';
 import type { ResolvedSource } from './source';
-import type { ExcerptRange } from './excerpt';
+import type { CapturedRange, ExcerptRange } from './excerpt';
 import type { SegmentDisplayStates } from './segmentDisplayState';
 import type { Code, CodeAssignment, Excerpt, Id, Note } from './types';
 // Type only: the domain reads no configuration, and the caller passes the value.
 import type { PostCodingReturn } from '../config/flags';
 
 export interface PendingAssignmentInput {
-  range: ExcerptRange;
+  range: CapturedRange;
   /** In the order the coder checked them. */
   codeIds: Id[];
   /** Empty string when the coder wrote nothing. */
@@ -69,8 +69,7 @@ export function buildCodingRecords(
 ): CodingRecords | null {
   if (pending.codeIds.length === 0) return null;
 
-  const endSegment = resolved.segments[positionOf(resolved, pending.range.endSegmentId) ?? -1];
-  if (!endSegment) return null;
+  if (positionOf(resolved, pending.range.endSegmentId) === null) return null;
 
   const excerptId = ids.excerptId ?? newId('ex');
 
@@ -79,10 +78,11 @@ export function buildCodingRecords(
     sourceId: identity.sourceId,
     startSegmentId: pending.range.startSegmentId,
     endSegmentId: pending.range.endSegmentId,
-    // Whole-segment bounds, always. Offsets are reserved so word-level
-    // boundaries could arrive later without migrating stored excerpts. D-016.
-    startOffset: 0,
-    endOffset: endSegment.text.length,
+    // Exact characters, per D-036 section 5. Nothing snaps to a sentence:
+    // boundary variation between coders is data, and review compares at
+    // sentence granularity without altering what was stored.
+    startOffset: pending.range.startOffset,
+    endOffset: pending.range.endOffset,
     coderId: identity.coderId,
     codingRoundId: identity.codingRoundId,
     createdAt: now,
@@ -175,7 +175,7 @@ export function postCodingReturnTarget(
 
 export interface SavedExcerptSummary {
   excerptId: Id;
-  range: ExcerptRange;
+  range: CapturedRange;
   /** Assignments still standing. Superseded ones are not counted. */
   codeIds: Id[];
   /** One based, for identifying the excerpt by range in a chooser. */
@@ -222,6 +222,8 @@ export function savedExcerptsAt(
         range: {
           startSegmentId: excerpt.startSegmentId,
           endSegmentId: excerpt.endSegmentId,
+          startOffset: excerpt.startOffset,
+          endOffset: excerpt.endOffset,
         },
         codeIds,
         startSentence: start + 1,

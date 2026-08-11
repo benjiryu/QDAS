@@ -1,134 +1,65 @@
 /**
- * What excerpt selection says.
+ * What excerpt capture says.
  *
- * Specification: docs/patterns/excerpt-selection.md sections 5 and 5.1.
+ * Specification: docs/patterns/excerpt-selection.md section 1.2, decision D-036.
  *
- * Section 5 fixes the information content and leaves the phrasing open, and
- * calls the phrasing itself a candidate for testing. So the order here is not
- * negotiable — what entered or left the range, then the new size — and the
- * words are.
+ * The two capture announcements are the most important strings in this feature.
+ * A screen reader user whose browse-mode selection never reached the DOM has no
+ * other way to learn that the turn fallback fired; if the two read alike, they
+ * find out later, from a wrongly bounded excerpt.
+ *
+ * So they are built to be unmistakable rather than parallel. They share no
+ * opening words, the fallback leads with the absence rather than burying it, and
+ * the fallback names the turn it took instead. Section 1.2 fixes the information
+ * content and leaves the phrasing open to session evidence, as elsewhere.
  *
  * Every string goes through the shared announcement service. Nothing in this
  * feature writes to a live region.
  */
 
-import type { BoundaryChangeAnnouncement } from '../../config/flags';
-import { describeExcerptSize, truncateWords } from '../../domain';
-import type { ExcerptDelta, ExcerptSize, TranscriptSegment } from '../../domain';
-import { formatTimestamp } from '../transcript/formatTimestamp';
+import { describeExcerptSize } from '../../domain';
+import type { ExcerptSize } from '../../domain';
+import type { CaptureSource } from './capture';
 
 /**
- * The automatic announcement after a boundary change.
- *
- * All three values of `boundaryChangeAnnouncement` are built here rather than
- * only the default, because the flag exists so the three can be compared in a
- * session rather than argued about in advance.
+ * Where focus landed is left to the panel, which announces itself as it opens
+ * per code-selection section 10. Saying it twice would push the part that
+ * matters — which capture rule fired — further from the start of the utterance.
  */
-export function boundaryChanged(
-  delta: ExcerptDelta,
+export function captured(
+  source: CaptureSource,
   size: ExcerptSize,
-  fullText: string,
-  mode: BoundaryChangeAnnouncement,
-  truncationWords: number,
+  speakerLabel: string | null,
 ): string {
-  const sizeText = `Excerpt is now ${describeExcerptSize(size)}.`;
+  const description = describeExcerptSize(size);
 
-  if (mode === 'sizeOnly') return sizeText;
-
-  if (mode === 'fullRange') {
-    const { text, truncated } = truncateWords(fullText, truncationWords);
-    return `${text}${truncated ? ', and more' : ''}. ${sizeText}`;
+  if (source === 'selection') {
+    const from = speakerLabel ? ` from ${speakerLabel}` : '';
+    return `Coding your selection. ${description}${from}.`;
   }
 
-  const changed = delta.added.length > 0 ? delta.addedText : delta.removedText;
-  const verb = delta.added.length > 0 ? 'Added' : 'Removed';
-  const { text, truncated } = truncateWords(changed, truncationWords);
-
-  // The delta first: after expanding backward, what the user most needs is to
-  // hear what they just picked up.
-  return `${verb}: ${text}${truncated ? ', and more' : ''}. ${sizeText}`;
+  // Leads with what did not happen. A user who believes they made a selection
+  // has to hear that the application did not see one before anything else.
+  const speaker = speakerLabel ?? 'Unknown speaker';
+  return `No selection detected. Coding the current turn. ${speaker}, ${description}.`;
 }
 
-export function begun(startText: string, size: ExcerptSize): string {
-  // Section 3: announce the start sentence. Transcript-segment section 10 also
-  // requires the application to confirm which sentence it began from.
-  return `Excerpt started at: ${startText} ${describeExcerptSize(size)}.`;
-}
-
-/**
- * Adopting a native selection, per section 4.0 and D-034.
- *
- * Names the adopted size, and states that boundaries were extended to whole
- * sentences when they were, so a user who dragged across part of a sentence
- * hears that the sentence came in whole rather than discovering it later.
- */
-export function adopted(size: ExcerptSize, extended: boolean): string {
-  const snap = extended ? ' Boundaries extended to whole sentences.' : '';
-  return `Excerpt started from your selection. ${describeExcerptSize(size)}.${snap}`;
-}
-
-/** Adopt and confirm in one action: the pointer route into the code panel. */
-export function adoptedAndConfirmed(size: ExcerptSize, extended: boolean): string {
-  const snap = extended ? ' Boundaries extended to whole sentences.' : '';
-  return `Excerpt confirmed from your selection. ${describeExcerptSize(size)}.${snap}`;
-}
-
-export function reverted(startText: string, size: ExcerptSize): string {
-  return `Reverted to where the excerpt began: ${startText} ${describeExcerptSize(size)}.`;
-}
-
-export function confirmed(size: ExcerptSize): string {
-  // The code panel announces itself as it opens, per code-selection section 10.
-  return `Excerpt confirmed. ${describeExcerptSize(size)}.`;
-}
-
-export function discarded(): string {
-  return 'Excerpt discarded. Nothing was recorded.';
-}
-
-/** Size first, so a listener can decide whether to sit through a long range. */
-export function readExcerpt(size: ExcerptSize, text: string): string {
-  return `${describeExcerptSize(size)}. ${text}`;
-}
-
-export function contextSentence(direction: 'before' | 'after', segment: TranscriptSegment): string {
-  return `${direction === 'before' ? 'Before' : 'After'}: ${segment.text}`;
-}
-
-export function speakersText(startLabel: string | null, endLabel: string | null): string {
-  if (startLabel && endLabel && startLabel === endLabel) return `Speaker: ${startLabel}.`;
-  return `Starts with ${startLabel ?? 'an unknown speaker'}. Ends with ${
-    endLabel ?? 'an unknown speaker'
-  }.`;
-}
-
-export function timestampsText(startMs: number | null, endMs: number | null): string {
-  if (startMs === null && endMs === null) return 'This excerpt has no timestamps.';
-  return `Starts at ${startMs === null ? 'an unknown time' : formatTimestamp(startMs)}. Ends at ${
-    endMs === null ? 'an unknown time' : formatTimestamp(endMs)
-  }.`;
+export function discarded(reopened: boolean): string {
+  // A reopened excerpt is already saved, so "nothing was recorded" would be a
+  // lie about the wrong object: what was discarded is this round of changes.
+  return reopened
+    ? 'Changes discarded. The saved excerpt is unchanged.'
+    : 'Excerpt discarded. Nothing was recorded.';
 }
 
 /**
- * Why a command did nothing. Section 4 requires the reason to be announced on
- * attempt when a boundary cannot move, and contract 2.6 requires an unavailable
- * control to explain itself rather than being a dead end.
+ * Why a command did nothing. Contract 2.6 requires an unavailable control to
+ * explain itself rather than being a dead end, and section 1.1 step 3 requires
+ * the capture commands to say so rather than failing silently.
  */
 export const EXCERPT_UNAVAILABLE: Record<string, string> = {
-  atSourceStart: 'The excerpt already starts at the first sentence of the source.',
-  atSourceEnd: 'The excerpt already ends at the last sentence of the source.',
-  wouldCrossEnd: 'The start cannot move past the end of the excerpt.',
-  wouldCrossStart: 'The end cannot move past the start of the excerpt.',
-  inFirstTurn: 'The excerpt already starts in the first speaker turn.',
-  inLastTurn: 'The excerpt already ends in the last speaker turn.',
-  invalidRange: 'That excerpt range is not valid.',
-  noExcerpt: 'No excerpt in progress.',
-  noPosition:
-    'No position is set, so there is nowhere to begin an excerpt. Move to a sentence first.',
-  alreadyStarted: 'An excerpt is already in progress.',
-  notAdjusted: 'The excerpt has not been adjusted, so there is nothing to revert.',
-  alreadyConfirmed: 'The excerpt is already confirmed.',
+  nothingToCapture:
+    'Nothing to capture. Select some transcript text, or move focus to a speaker turn.',
   noSavedExcerptHere: 'This sentence is not inside a saved excerpt.',
-  reopenedIsLocked:
-    'This excerpt was reopened to change its codes. Its boundaries cannot be moved.',
+  alreadyCapturing: 'A range is already captured. Save or cancel code selection first.',
 };

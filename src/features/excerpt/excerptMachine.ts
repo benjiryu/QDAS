@@ -1,46 +1,26 @@
 /**
- * The excerpt selection state machine.
+ * The excerpt capture state machine.
  *
- * Specification: docs/patterns/excerpt-selection.md sections 2 and 3.
+ * Specification: docs/patterns/excerpt-selection.md section 3, decision D-036.
  *
- * Pure. No React, no DOM, no announcements, no focus. Every transition in the
- * table in section 3 is here and nothing else is, so a transition that the
- * specification does not name cannot happen by accident somewhere in a
- * component.
- *
- * There is no `cancelled` state: cancelling returns to `idle` and creates no
- * record, so a terminal state would never be observable. `saved` exists in the
- * type because the domain model has it, and the transition into it belongs to
- * code selection, which is a later task.
+ * Pure. Three states, four transitions, and nothing else. v0.1's `anchored` and
+ * `adjusting` are gone with the boundary commands that justified them: there is
+ * no adjustment phase, and fixing a wrong range means cancelling and
+ * reselecting. That machine is preserved at tag `v0.1`.
  */
 
-import type { ExcerptRange } from '../../domain';
-import type { ExcerptSelectionState, Id } from '../../domain';
+import type { CapturedRange, ExcerptSelectionState, Id } from '../../domain';
+import type { CaptureSource } from './capture';
 
 export interface ExcerptSelection {
   state: ExcerptSelectionState;
-  /** Null only in `idle`. */
-  range: ExcerptRange | null;
+  /** Null in `idle` and after a save. Exact to the character while captured. */
+  range: CapturedRange | null;
+  /** Which rule produced the range, so a caller never has to guess. */
+  source: CaptureSource | null;
   /**
-   * The segment the excerpt began at. Both discard paths return focus to its
-   * turn, per sections 3 and 6.
-   */
-  originSegmentId: Id | null;
-  /**
-   * The range as it stood at origin, which revert returns to.
-   *
-   * A range rather than a single segment because D-034 generalises `anchored`
-   * to mean the range sits at its origin, whether that origin is the active
-   * segment or an adopted native selection. Reverting an adopted excerpt to one
-   * sentence would silently discard most of what the user dragged.
-   */
-  originRange: ExcerptRange | null;
-  /**
-   * The saved excerpt this selection reopened, per D-030.
-   *
-   * Non-null means the range is locked: reopening changes codes, not
-   * boundaries, and the boundary edit path stays deferred under E-4. It also
-   * tells save to write the difference rather than create a new set.
+   * The saved excerpt this reopened, per D-030. Non-null means the range is
+   * locked and save writes the difference rather than a new set.
    */
   reopenedExcerptId: Id | null;
 }
@@ -48,101 +28,49 @@ export interface ExcerptSelection {
 export const IDLE: ExcerptSelection = {
   state: 'idle',
   range: null,
-  originSegmentId: null,
-  originRange: null,
+  source: null,
   reopenedExcerptId: null,
 };
 
 export type ExcerptEvent =
-  | { type: 'begin'; range: ExcerptRange; originSegmentId: Id }
-  | { type: 'reopen'; range: ExcerptRange; excerptId: Id }
-  | { type: 'boundaryChange'; range: ExcerptRange }
-  | { type: 'revert' }
-  | { type: 'confirm' }
+  | { type: 'capture'; range: CapturedRange; source: CaptureSource }
+  | { type: 'reopen'; range: CapturedRange; excerptId: Id }
   | { type: 'save' }
   | { type: 'discard' };
 
-/** States in which the range exists and its boundaries can be adjusted. */
-const ADJUSTABLE: ExcerptSelectionState[] = ['anchored', 'adjusting', 'confirmed'];
-
-export function canAdjust(state: ExcerptSelectionState): boolean {
-  return ADJUSTABLE.includes(state);
-}
-
-/**
- * Applies an event, or returns the current selection unchanged when the
- * specification does not define that transition.
- *
- * Returning the same object for a no-op lets a caller tell "nothing happened"
- * from "something happened" by identity, which is what decides whether there is
- * anything to announce.
- */
 export function excerptReducer(
   current: ExcerptSelection,
   event: ExcerptEvent,
 ): ExcerptSelection {
   switch (event.type) {
-    case 'begin':
-      // From idle, and from saved: the previous excerpt is a stored record
-      // rather than something in progress, so beginning the next one discards
-      // nothing. Section 3 gives no transition out of `saved`, and without this
-      // the workflow ends after a single excerpt. Flagged in the task report.
-      if (current.state !== 'idle' && current.state !== 'saved') return current;
+    case 'capture':
+      // Straight to `confirmed`: capture opens the panel, and there is no
+      // phase in between. Capturing again replaces the range, which is what
+      // cancel-and-reselect looks like when the panel is not open.
+      if (current.state === 'confirmed') return current;
       return {
-        state: 'anchored',
+        state: 'confirmed',
         range: event.range,
-        originSegmentId: event.originSegmentId,
-        originRange: event.range,
+        source: event.source,
         reopenedExcerptId: null,
       };
 
     case 'reopen':
-      // Straight to `confirmed` with the range fixed. D-030: reopening changes
-      // codes only, so there is no anchored or adjusting phase to pass through.
-      if (current.state !== 'idle' && current.state !== 'saved') return current;
+      // D-030: the range is locked and the assignments are preloaded.
+      if (current.state === 'confirmed') return current;
       return {
         state: 'confirmed',
         range: event.range,
-        originSegmentId: event.range.startSegmentId,
-        originRange: event.range,
+        source: null,
         reopenedExcerptId: event.excerptId,
       };
 
-    case 'boundaryChange':
-      // From `confirmed` too: the range reopens for editing rather than being
-      // locked. That is the recovery path, and the most common reason to back
-      // out of code selection is realising the boundaries are wrong.
-      // A reopened excerpt has locked boundaries, so nothing moves them.
-      if (!canAdjust(current.state) || current.reopenedExcerptId !== null) return current;
-      return { ...current, state: 'adjusting', range: event.range };
-
-    case 'revert':
-      // Only from `adjusting`, which is why `anchored` and `adjusting` are
-      // separate states at all: the revert control exists only once something
-      // has moved. The range returns to its origin, whatever that origin was.
-      if (current.state !== 'adjusting' || !current.originRange) return current;
-      return { ...current, state: 'anchored', range: current.originRange };
-
-    case 'confirm':
-      if (current.state !== 'anchored' && current.state !== 'adjusting') return current;
-      return { ...current, state: 'confirmed' };
-
     case 'save':
-      // Section 3: confirmed, save with at least one code, saved. The range
-      // moves into the stored record, so the live selection is cleared and the
-      // transcript shows it as coded from that record instead.
       if (current.state !== 'confirmed') return current;
-      return {
-        state: 'saved',
-        range: null,
-        originSegmentId: null,
-        originRange: null,
-        reopenedExcerptId: null,
-      };
+      return { state: 'saved', range: null, source: null, reopenedExcerptId: null };
 
     case 'discard':
-      // From every live state, including `confirmed`. Cancelling creates no
-      // record, so this returns to idle and drops the range entirely.
+      // Cancelling the panel discards the capture and creates nothing.
       if (current.state === 'idle') return current;
       return IDLE;
   }

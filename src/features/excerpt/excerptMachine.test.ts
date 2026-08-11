@@ -1,145 +1,107 @@
 import { describe, expect, it } from 'vitest';
-import { canAdjust, excerptReducer, IDLE } from './excerptMachine';
-import type { ExcerptSelection } from './excerptMachine';
+import { excerptReducer, IDLE } from './excerptMachine';
+import type { CapturedRange } from '../../domain';
 
-/** Specification: docs/patterns/excerpt-selection.md sections 2 and 3. */
+/**
+ * Specification: docs/patterns/excerpt-selection.md section 3 (v0.2).
+ *
+ * Three states and four transitions. The anchored and adjusting cases this file
+ * used to cover went with D-036; they are preserved at tag `v0.1`.
+ */
 
-const range = { startSegmentId: 's4', endSegmentId: 's4' };
-const wider = { startSegmentId: 's3', endSegmentId: 's5' };
-
-const anchored: ExcerptSelection = {
-  state: 'anchored',
-  range,
-  originSegmentId: 's4',
-  originRange: range,
-  reopenedExcerptId: null,
-};
-const adjusting: ExcerptSelection = {
-  state: 'adjusting',
-  range: wider,
-  originSegmentId: 's4',
-  originRange: range,
-  reopenedExcerptId: null,
-};
-const confirmedSelection: ExcerptSelection = {
-  state: 'confirmed',
-  range: wider,
-  originSegmentId: 's4',
-  originRange: range,
-  reopenedExcerptId: null,
+const range: CapturedRange = {
+  startSegmentId: 's4',
+  endSegmentId: 's6',
+  startOffset: 12,
+  endOffset: 5,
 };
 
-describe('the transition table', () => {
-  it('idle, begin, anchored', () => {
-    const next = excerptReducer(IDLE, { type: 'begin', range, originSegmentId: 's4' });
+const other: CapturedRange = {
+  startSegmentId: 's1',
+  endSegmentId: 's1',
+  startOffset: 0,
+  endOffset: 9,
+};
 
-    expect(next).toEqual({
-      state: 'anchored',
-      range,
-      originSegmentId: 's4',
-      originRange: range,
-      reopenedExcerptId: null,
-    });
-  });
+describe('capture', () => {
+  it('goes straight from idle to confirmed, keeping the exact offsets', () => {
+    const next = excerptReducer(IDLE, { type: 'capture', range, source: 'selection' });
 
-  it('anchored, boundary change, adjusting', () => {
-    expect(excerptReducer(anchored, { type: 'boundaryChange', range: wider })).toEqual({
-      state: 'adjusting',
-      range: wider,
-      originSegmentId: 's4',
-      originRange: range,
-      reopenedExcerptId: null,
-    });
-  });
-
-  it('adjusting, boundary change, adjusting', () => {
-    const next = excerptReducer(adjusting, { type: 'boundaryChange', range });
-    expect(next.state).toBe('adjusting');
+    expect(next.state).toBe('confirmed');
     expect(next.range).toEqual(range);
+    expect(next.reopenedExcerptId).toBeNull();
   });
 
-  it('anchored or adjusting, confirm, confirmed', () => {
-    expect(excerptReducer(anchored, { type: 'confirm' }).state).toBe('confirmed');
-    expect(excerptReducer(adjusting, { type: 'confirm' }).state).toBe('confirmed');
-  });
-
-  it('adjusting, revert, anchored, with the range back at the origin', () => {
-    const next = excerptReducer(adjusting, { type: 'revert' });
-
-    expect(next.state).toBe('anchored');
-    expect(next.range).toEqual(range);
-    expect(next.originSegmentId).toBe('s4');
-  });
-
-  it('confirmed, boundary change, adjusting, which is the recovery path', () => {
-    const next = excerptReducer(confirmedSelection, { type: 'boundaryChange', range });
-
-    expect(next.state).toBe('adjusting');
-    expect(next.range).toEqual(range);
-    expect(next.originSegmentId).toBe('s4');
-  });
-
-  it('confirmed, discard, idle', () => {
-    expect(excerptReducer(confirmedSelection, { type: 'discard' })).toEqual(IDLE);
-  });
-
-  it('anchored or adjusting, cancel, idle, with no record left behind', () => {
-    expect(excerptReducer(anchored, { type: 'discard' })).toEqual(IDLE);
-    expect(excerptReducer(adjusting, { type: 'discard' })).toEqual(IDLE);
-  });
-});
-
-describe('transitions the specification does not define', () => {
-  it('does not begin over a live excerpt', () => {
-    expect(excerptReducer(anchored, { type: 'begin', range: wider, originSegmentId: 's9' })).toBe(
-      anchored,
+  it('records which rule produced the range', () => {
+    expect(excerptReducer(IDLE, { type: 'capture', range, source: 'selection' }).source).toBe(
+      'selection',
     );
-    expect(
-      excerptReducer(confirmedSelection, { type: 'begin', range: wider, originSegmentId: 's9' }),
-    ).toBe(confirmedSelection);
+    expect(excerptReducer(IDLE, { type: 'capture', range, source: 'turn' }).source).toBe('turn');
   });
 
-  it('does not adjust an excerpt that does not exist', () => {
-    expect(excerptReducer(IDLE, { type: 'boundaryChange', range })).toBe(IDLE);
+  it('captures again from saved, replacing the range', () => {
+    const saved = excerptReducer(
+      excerptReducer(IDLE, { type: 'capture', range, source: 'selection' }),
+      { type: 'save' },
+    );
+
+    const next = excerptReducer(saved, { type: 'capture', range: other, source: 'turn' });
+    expect(next.state).toBe('confirmed');
+    expect(next.range).toEqual(other);
   });
 
-  it('reverts only from adjusting, since anchored has nothing to revert', () => {
-    expect(excerptReducer(anchored, { type: 'revert' })).toBe(anchored);
-    expect(excerptReducer(confirmedSelection, { type: 'revert' })).toBe(confirmedSelection);
-  });
+  it('does not replace a range that is already captured', () => {
+    // Fixing a wrong range means cancelling and reselecting, per section 3.
+    const confirmed = excerptReducer(IDLE, { type: 'capture', range, source: 'selection' });
 
-  it('does not confirm from idle or re-confirm', () => {
-    expect(excerptReducer(IDLE, { type: 'confirm' })).toBe(IDLE);
-    expect(excerptReducer(confirmedSelection, { type: 'confirm' })).toBe(confirmedSelection);
-  });
-
-  it('does not discard when there is nothing in progress', () => {
-    expect(excerptReducer(IDLE, { type: 'discard' })).toBe(IDLE);
-  });
-
-  it('has no cancelled state: cancelling is indistinguishable from never starting', () => {
-    const cancelled = excerptReducer(adjusting, { type: 'discard' });
-    expect(cancelled).toEqual(IDLE);
-    expect(cancelled.range).toBeNull();
-    expect(cancelled.originSegmentId).toBeNull();
+    expect(excerptReducer(confirmed, { type: 'capture', range: other, source: 'turn' })).toBe(
+      confirmed,
+    );
   });
 });
 
-describe('adjustable states', () => {
-  it('allows boundary work in anchored, adjusting, and confirmed only', () => {
-    expect(canAdjust('anchored')).toBe(true);
-    expect(canAdjust('adjusting')).toBe(true);
-    expect(canAdjust('confirmed')).toBe(true);
-    expect(canAdjust('idle')).toBe(false);
-    expect(canAdjust('saved')).toBe(false);
+describe('reopening a saved excerpt', () => {
+  it('confirms with the saved range and remembers which excerpt it is', () => {
+    const next = excerptReducer(IDLE, { type: 'reopen', range, excerptId: 'ex-1' });
+
+    expect(next.state).toBe('confirmed');
+    expect(next.range).toEqual(range);
+    expect(next.reopenedExcerptId).toBe('ex-1');
+    // No capture rule ran, so there is nothing to report about one.
+    expect(next.source).toBeNull();
   });
 
-  it('keeps the origin through every adjustment, so revert always has a target', () => {
-    let selection = excerptReducer(IDLE, { type: 'begin', range, originSegmentId: 's4' });
-    selection = excerptReducer(selection, { type: 'boundaryChange', range: wider });
-    selection = excerptReducer(selection, { type: 'confirm' });
-    selection = excerptReducer(selection, { type: 'boundaryChange', range });
+  it('does not interrupt a capture already in progress', () => {
+    const confirmed = excerptReducer(IDLE, { type: 'capture', range, source: 'selection' });
 
-    expect(selection.originSegmentId).toBe('s4');
+    expect(excerptReducer(confirmed, { type: 'reopen', range: other, excerptId: 'ex-1' })).toBe(
+      confirmed,
+    );
+  });
+});
+
+describe('save and discard', () => {
+  const confirmed = excerptReducer(IDLE, { type: 'capture', range, source: 'selection' });
+
+  it('saves only from confirmed, and clears the range', () => {
+    const saved = excerptReducer(confirmed, { type: 'save' });
+
+    expect(saved.state).toBe('saved');
+    expect(saved.range).toBeNull();
+    expect(excerptReducer(IDLE, { type: 'save' })).toBe(IDLE);
+  });
+
+  it('discards a capture back to idle, creating nothing', () => {
+    expect(excerptReducer(confirmed, { type: 'discard' })).toEqual(IDLE);
+  });
+
+  it('forgets the reopened excerpt on discard', () => {
+    const reopened = excerptReducer(IDLE, { type: 'reopen', range, excerptId: 'ex-1' });
+
+    expect(excerptReducer(reopened, { type: 'discard' }).reopenedExcerptId).toBeNull();
+  });
+
+  it('does nothing when there is nothing to discard', () => {
+    expect(excerptReducer(IDLE, { type: 'discard' })).toBe(IDLE);
   });
 });
