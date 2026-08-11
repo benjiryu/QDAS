@@ -588,3 +588,43 @@ This makes a previously unasked question load-bearing: whether a confirmed excer
 ### What would reopen this
 
 Session evidence that coders cannot distinguish similar codes without leaving the panel: a participant applying the wrong code of a similar pair, hesitating over one, or abandoning the round trip and guessing.
+
+## D-036 Excerpt capture is native-selection-first; the boundary command system is removed
+
+Date: 2026-08 | Workflow: excerpt selection | Status: approved. Defines v0.2. Supersedes the in-progress-range half of D-001, and D-016's whole-sentence boundary rule; collapses D-029, D-031, and D-034; retires E-1, E-3, and E-5
+
+Feedback on v0.1 found the excerpt machinery too heavy: anchoring, boundary expansion and contraction, confirmation states. v0.2 removes it and tests the opposite bet.
+
+### The model
+
+- **Sighted and magnification users** drag a native selection and act on it through a custom right-click context menu (D-037). The selection is captured exactly as dragged.
+- **Screen reader users** select natively where their screen reader surfaces a real DOM selection, then fire one shortcut, `excerpt.code`, to capture it.
+- **When the shortcut fires with no observable selection** — the common NVDA and JAWS browse-mode case, since virtual-buffer selection reaches the DOM inconsistently — **the focused speaker turn is captured instead.** Turns are already focusable per D-002, so this always works, at turn granularity. The announcement states exactly what was captured: "Coding your selection, N sentences" versus "No selection detected. Coding the current turn, speaker, N sentences." A user must never believe their selection was captured when the fallback fired.
+- **Boundaries are stored as exact characters** via `startOffset` and `endOffset`, reserved since v0.1. Boundary variation between coders is data, not noise; review compares at sentence granularity per R-1 while storage preserves precision.
+
+### What is removed
+
+Boundary expansion and contraction commands, by sentence and by turn. Revert. The `anchored` and `adjusting` states. The excerpt read-back and context commands, since native selection reads natively. Sentence snapping. The two-control entry model. The strip shrinks to navigation, position, and a single visible "Code selection" control, which is the keyboard-operability twin of `excerpt.code` required by contract 2.2.
+
+### What survives unchanged
+
+The stored excerpt is still application-owned: capture converts a fragile native selection into a persistent record, which was always D-001's core claim. The code panel and pending assignment (D-027, D-030). Segment navigation and position reporting (D-009). `excerpt.open` for reopening coded excerpts. The transcript's two-level structure (D-002), which the fallback now depends on.
+
+### The bet being tested, stated honestly
+
+The storyboarding finding that started this project — a coder recognizes a codeable idea only at its end — now rides on native backward selection and on the turn fallback, not on app commands. If v0.2 sessions show screen reader participants failing to select backward, or living on the turn fallback and finding it too coarse, that is the evidence that reopens this decision, and v0.1's machinery is preserved at tag v0.1.
+
+Dead flags: `excerptInitialRange`, `boundaryChangeAnnouncement`, `deltaTruncationWords`, `adoptNativeSelection`. Marked deprecated rather than deleted, since v0.1 comparisons may still run.
+
+## D-037 A custom context menu on transcript selections, superseding D-028's accelerator-only scope
+
+Date: 2026-08 | Workflow: excerpt selection, code assignment | Status: approved
+
+Right-clicking a native selection inside the transcript opens a custom menu: **Code selection**, which captures per D-036 and opens the panel, and **Add note**, which does the same with focus landing in the panel's note field. Elsewhere in the transcript, and everywhere else in the application, the native browser menu is untouched.
+
+D-028 scoped a custom menu as accelerator-only. Feedback made it the primary pointer route, so that scope is superseded; D-028's conditions carry forward as requirements:
+
+- Every menu command exists on the strip and as a chord. The menu adds no capability.
+- The menu opens on Shift+F10 and the applications key when a selection exists, not only on pointer.
+- Proper menu semantics, arrow navigation, Escape closes and returns focus, focus entry and return defined per contract 2.4.
+- The native menu is only overridden when the pointer is over the transcript with a selection present. The cost of losing browser lookup and extension items on selections is accepted and recorded.

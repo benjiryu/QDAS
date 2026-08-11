@@ -30,6 +30,10 @@ Assumption until answered: real data is not deployed to an unauthenticated publi
 
 ### Awaiting evidence from a session or from a design pass
 
+**V-1. Does native backward selection carry the recognize-at-the-end workflow?** Owner: session evidence, v0.2. The storyboarding finding that motivated the v0.1 boundary system now rides on native shift-selection and the turn fallback. Reopens D-036 if participants cannot select backward to the start of an idea.
+
+**V-2. Is turn-level capture too coarse as the screen reader mainline?** Owner: session evidence, v0.2. Where browse-mode selection never reaches the DOM, the fallback is the route, at turn granularity. If NVDA and JAWS participants live on it and fight it, that is evidence for restoring minimal boundary adjustment.
+
 **C-5. Does a confirmed excerpt and its pending assignment survive navigating to the Codebook destination and back?**
 
 Owner: team. Opened by D-035, which moves definition lookup out of the code panel.
@@ -65,15 +69,15 @@ Not answered here. What settles it is a decision about whether the coding surfac
 
 ### Excerpt selection
 
-**E-1. RESOLVED.** Initial range is the active sentence. May be revisited after session one; the flag stays.
+**E-1. RETIRED by D-036.** There is no initial range; capture takes the selection or the focused turn.
 
 **E-2. RESOLVED.** Native text selection works as a secondary route for sighted and magnification users, snapping to sentence boundaries and producing the same application-managed excerpt. The screen reader workflow never depends on it.
 
-**E-3. RESOLVED.** A long cross-speaker excerpt reads in full on request, with size announced first so the user can decide whether to listen. May be revisited.
+**E-3. RETIRED by D-036.** Read-back commands removed; native selection reads natively.
 
 **E-4. RESOLVED.** A coder may edit boundaries of a saved excerpt within the same round. Original boundaries are preserved in history rather than overwritten. The create path proceeds now; the edit path is later work.
 
-**E-5. RESOLVED.** Boundary changes announce the delta. All three values stay behind `boundaryChangeAnnouncement` for comparison.
+**E-5. RETIRED by D-036.** No boundary changes exist to announce.
 
 ### Code selection
 

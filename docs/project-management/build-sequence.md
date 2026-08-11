@@ -4,7 +4,7 @@
 - Version: 0.3
 - Last updated: 2026-08-05
 
-Progress: Tasks 1 through 8 built per the working tree; verify against git log and update. Task 7b, native selection adoption, is next.
+Progress: v0.1 complete and tagged. Phase 4 defines v0.2. Task 18 is next.
 
 Update this line when a task lands. An agent reading a stale progress line will rebuild finished work.
 
@@ -632,6 +632,27 @@ the latest push would let the instrument change mid-round.
 Access control depends on B-3. Until that is answered, deploy the synthetic
 fixture only. A private repository protects the source, not the deployed site.
 
+Remote session delivery, once deployment exists:
+
+- Participants receive a URL and open it in their own browser with their own
+  assistive technology. No install, no account, no setup. Their configuration
+  is the object of interest; a lab machine cannot stand in for it
+- Send the frozen per-deploy URL, never the main URL, so every participant in a
+  round sees an identical build regardless of what lands on main between
+  sessions. Record the deploy URL and the flag preset per session; findings are
+  not comparable without both
+- The automatic deploys ship only the synthetic fixture, structurally: real
+  data lives in gitignored `data-local/` and never reaches the repository the
+  deploys build from. When a session requires real transcripts, run
+  `netlify deploy --prod` from a working tree containing `data-local/`. The
+  data rides that one deploy without entering version control. Whether that
+  deploy needs access control is B-3, and access control costs one emailed
+  code of participant friction; raise the tradeoff with AFB in those terms
+- Screen share alone conveys silence for a blind participant. Ask for computer
+  audio alongside the screen, and suggest NVDA users enable Speech Viewer,
+  which prints speech as on-screen text so observers can quote announcements
+  verbatim
+
 ## Before the first session
 
 - Verify chords against the participant's own screen reader and browser, not
@@ -648,6 +669,65 @@ fixture only. A private repository protects the source, not the deployed site.
 - Run the full twelve-item smoke test in `accessibility-contract.md` section 4
 - Deploy and name the version, 0.1 baseline coding
 - Record which flag preset the session runs under
+
+## Phase 4. Version 0.2, post-feedback rework
+
+v0.1 is tagged and its deploy permalink recorded; findings trace to it. Phase 4
+implements D-036 and D-037. Same discipline: plan mode, one task one commit,
+behavioral review, update the progress line.
+
+### Task 18. Excerpt capture rework
+
+```
+Implement the v0.2 excerpt capture model per docs/patterns/excerpt-selection.md
+(rewritten) and decision D-036. Read both fully; the pattern changed shape, not
+details.
+
+Remove: boundary expand/contract commands and their strip controls, revert,
+anchored and adjusting states, excerpt read-back and context commands, sentence
+snapping, the Start excerpt control, and the D-034 adoption listener as a
+separate mechanism.
+
+Add: excerpt.code and excerpt.note commands with the three-step capture rule in
+section 1.1, exact-character storage using startOffset/endOffset, the focused-
+turn fallback, and the two distinguishable capture announcements in 1.2. The
+strip keeps navigation, position, Code selection, and Add note controls with
+visible chords.
+
+Keybindings: remove dead commands, add excerpt.note. Flags: mark
+excerptInitialRange, boundaryChangeAnnouncement, deltaTruncationWords, and
+adoptNativeSelection deprecated with a comment pointing at D-036; do not
+delete them.
+
+The capture announcement distinction is the most important behavior in this
+task: selection capture and turn fallback must be unmistakably different.
+
+Update tests to the section 7 criteria. Remove tests for deleted behavior
+rather than keeping them skipped.
+```
+
+Done when: a mid-sentence drag captures exactly, the fallback announces itself
+as a fallback, and the panel flow from capture to save is unchanged.
+
+### Task 19. Context menu
+
+```
+Implement the custom context menu per docs/patterns/excerpt-selection.md
+section 2 and decision D-037.
+
+- Opens on contextmenu over the transcript only while a non-collapsed selection
+  intersects it; native menu everywhere else and with no selection
+- Also opens on Shift+F10 and the applications key when a selection exists
+- Two items: Code selection, Add note, invoking the same capture as the
+  commands. Menu role, arrow navigation, Escape closes and returns focus
+- Use React Aria Menu rather than hand-rolling
+
+Tests: menu appears only with selection over transcript; keyboard opening
+works; Escape returns focus; native menu untouched elsewhere.
+```
+
+Done when: right-click on a selection offers Code selection, right-click on
+plain text shows the browser menu, and Shift+F10 does what right-click does.
 
 ## Failure modes to watch for
 
