@@ -71,7 +71,7 @@ Not answered here. What settles it is a decision about whether the coding surfac
 
 **E-1. RETIRED by D-036.** There is no initial range; capture takes the selection or the focused turn.
 
-**E-2. RESOLVED.** Native text selection works as a secondary route for sighted and magnification users, snapping to sentence boundaries and producing the same application-managed excerpt. The screen reader workflow never depends on it.
+**E-2. SUPERSEDED by D-036.** Native selection was a secondary route with sentence snapping; it is now the primary capture route with exact-character storage and no snapping.
 
 **E-3. RETIRED by D-036.** Read-back commands removed; native selection reads natively.
 
