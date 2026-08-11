@@ -1,5 +1,13 @@
 # Pattern: Transcript Segment
 
+## v0.2 revision, D-038
+
+The navigation command layer described in sections 2 and 4 is retired. Movement belongs to the browser and the screen reader: Tab and Shift+Tab between focusable turns, browse-mode navigation, scrolling. Clicking a turn focuses it and draws nothing beyond the focus ring; click-to-set-active-segment and the active segment visual are removed.
+
+Three orientation commands survive, with visible strip controls, answering from the focused speaker turn: `segment.speaker`, `segment.timestamp`, and `position.report`. Position reports turn N of M and percentage; the ribbon derives from the same source, so spoken and visible reports cannot disagree. `SourcePosition` records the focused turn for restoration only.
+
+Sections 1 (segmentation model and identity), 7 (visual and reflow, minus the active segment indicator), 8, and 9 remain in force. Sections 2 through 6 below describe the v0.1 model and are retained as history; where they conflict with this banner, the banner governs. The full v0.1 pattern is at tag `v0.1`.
+
 ## Metadata
 
 - Status: Draft for team review

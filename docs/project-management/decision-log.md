@@ -628,3 +628,33 @@ D-028 scoped a custom menu as accelerator-only. Feedback made it the primary poi
 - The menu opens on Shift+F10 and the applications key when a selection exists, not only on pointer.
 - Proper menu semantics, arrow navigation, Escape closes and returns focus, focus entry and return defined per contract 2.4.
 - The native menu is only overridden when the pointer is over the transcript with a selection present. The cost of losing browser lookup and extension items on selections is accepted and recorded.
+
+## D-038 The navigation command layer is retired; orientation commands answer from the focused turn
+
+Date: 2026-08 | Workflow: transcript navigation | Status: approved. Continues D-036's downscaling; retires most of the transcript-segment command system and the active-segment visual
+
+v0.2 feedback: the strip's navigation controls are unnecessary, and clicking sentences leaves a lingering selected-excerpt visual that fights the native-selection model. Sighted excerpt selection should mirror Taguette and NVivo: drag, right-click, code.
+
+### What is removed
+
+- `segment.next`, `segment.previous`, `turn.next`, `turn.previous`, `segment.repeat`, `position.return`, and their strip controls. Movement belongs to the browser and the screen reader: Tab and Shift+Tab between focusable turns, browse-mode navigation, scrolling.
+- Click-to-set-active-segment and the active segment visual indicator. Clicking a turn focuses it, with nothing shown beyond the focus ring. No app-drawn selection visual exists except captured-excerpt highlights.
+- The `transcriptNavigationUnit` flag and the `turnLevelNavigation` preset, deprecated not deleted.
+
+### What remains, redefined
+
+`segment.speaker`, `segment.timestamp`, and `position.report` remain, with visible strip controls, and now answer from the **focused speaker turn** rather than an application-tracked active sentence. Position reports turn N of M and percentage; sentence-level position is gone with the active sentence. The visible position ribbon derives from the same source, so spoken and visible reports still cannot disagree (D-009 logic preserved at coarser grain).
+
+`excerpt.open` (D-030) now operates on the focused turn: available when the focused turn intersects at least one saved excerpt, with the existing list disambiguation when it intersects several.
+
+The turn fallback in D-036 is unaffected; it was already defined on the focused turn.
+
+### What this leans on, stated for the smoke test
+
+Focus is now the only position the application knows. Screen readers generally sync DOM focus when browse-mode navigation lands on a focusable element, but behavior varies; the pre-session smoke test must confirm that a JAWS or NVDA user moving through turns in browse mode can land focus on a turn well enough for the three orientation commands and the turn fallback to answer from the right place. If browse-mode reading does not move focus for a participant, their recourse is Tab. If sessions show that is not enough, that evidence reopens this decision, not D-036.
+
+### Consequences
+
+- D-002's sentence layer survives only as addressing for storage offsets, position percentage, and R-1 comparison. No interactive behavior touches sentences anymore.
+- `SourcePosition.activeSegmentId` now records the focused turn's first segment, for position restoration only.
+- The strip now holds: Code selection, Add note, speaker, timestamp, where am I. Five controls.

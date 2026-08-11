@@ -65,7 +65,7 @@ There is no adjustment phase. Fixing a wrong range means cancelling and reselect
 |---|---|---|
 | `excerpt.code` | Always | Capture per 1.1, open panel, focus in search |
 | `excerpt.note` | Always | Capture per 1.1, open panel, focus in note field |
-| `excerpt.open` | `idle`, active segment inside a saved excerpt | Reopen per D-030 |
+| `excerpt.open` | `idle`, focused turn intersects a saved excerpt | Reopen per D-030, list disambiguation when several intersect |
 
 Each has a visible strip control showing its chord. The strip otherwise carries only navigation and position controls; the v0.1 boundary controls are gone.
 

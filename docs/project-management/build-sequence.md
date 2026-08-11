@@ -729,6 +729,34 @@ works; Escape returns focus; native menu untouched elsewhere.
 Done when: right-click on a selection offers Code selection, right-click on
 plain text shows the browser menu, and Shift+F10 does what right-click does.
 
+### Task 20. Retire the navigation layer
+
+```
+Implement D-038. Read it and the v0.2 banner in transcript-segment.md first.
+
+Remove: segment.next, segment.previous, turn.next, turn.previous,
+segment.repeat, position.return, their chords and strip controls, the
+click-to-set-active-segment behavior, and the active segment visual indicator.
+Clicking a turn focuses it; only the focus ring shows.
+
+Rework: segment.speaker, segment.timestamp, and position.report answer from
+the focused speaker turn. Position reports turn N of M and percentage. The
+ribbon derives from the focused turn. excerpt.open availability keys on the
+focused turn intersecting a saved excerpt. SourcePosition records the focused
+turn.
+
+Deprecate transcriptNavigationUnit and the turnLevelNavigation preset with a
+comment pointing at D-038; do not delete. Remove tests for deleted behavior;
+update orientation and reopen tests to the focused-turn source.
+
+The strip afterward holds exactly: Code selection, Add note, speaker,
+timestamp, where am I.
+```
+
+Done when: Tab walks the turns, the three orientation controls answer for the
+turn you are on, clicking leaves no lingering highlight, and a captured
+excerpt's highlight is the only app-drawn selection visual anywhere.
+
 ## Failure modes to watch for
 
 **The agent builds something simulated.** Point it at `prototype-scope.md`. File import, authentication, and IRR are not gaps to fill.
