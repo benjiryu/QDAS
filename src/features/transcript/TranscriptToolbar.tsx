@@ -1,39 +1,39 @@
 import { useMemo } from 'react';
 import { bindingsFor, describeChord, detectPlatform } from '../../config/keybindings';
-import type { NavigationCommand, TranscriptNavigation } from './useTranscriptNavigation';
+import type { OrientationCommand, TranscriptOrientation } from './useTranscriptOrientation';
 
 /**
- * A visible control for every navigation command.
+ * A visible control for every orientation command.
  *
- * Specification: docs/patterns/transcript-segment.md section 4, accessibility
- * contract 2.2: every keyboard command has a visible control performing the
- * same action, so no participant is blocked by a chord that fails on their
- * setup.
+ * Specification: docs/patterns/transcript-segment.md section 4 as revised by
+ * D-038, accessibility contract 2.2: every keyboard command has a visible
+ * control performing the same action, so no participant is blocked by a chord
+ * that fails on their setup.
+ *
+ * Three controls where there were eight. The five movement controls went with
+ * D-038: Tab, Shift+Tab, browse mode and scrolling already move a reader
+ * through a transcript, and a second set of controls for it was a second thing
+ * to learn and a second thing to get wrong.
  *
  * Chords are read from src/config/keybindings.ts and never written here. The
  * hint beside each label is generated from the same binding table the keyboard
  * handler uses, so a reassignment cannot leave the label lying.
  */
 
-const CONTROLS: { command: NavigationCommand; label: string }[] = [
-  { command: 'segment.previous', label: 'Previous sentence' },
-  { command: 'segment.next', label: 'Next sentence' },
-  { command: 'turn.previous', label: 'Previous turn' },
-  { command: 'turn.next', label: 'Next turn' },
-  { command: 'segment.repeat', label: 'Repeat sentence' },
+const CONTROLS: { command: OrientationCommand; label: string }[] = [
   { command: 'segment.speaker', label: 'Speaker' },
   { command: 'segment.timestamp', label: 'Timestamp' },
   { command: 'position.report', label: 'Where am I' },
 ];
 
-export function TranscriptToolbar({ navigation }: { navigation: TranscriptNavigation }) {
+export function TranscriptToolbar({ orientation }: { orientation: TranscriptOrientation }) {
   const platform = useMemo(() => detectPlatform(), []);
   const bindings = useMemo(() => bindingsFor(platform), [platform]);
 
   return (
-    <div className="transcript-toolbar" role="group" aria-label="Transcript navigation">
+    <div className="transcript-toolbar" role="group" aria-label="Orientation">
       {CONTROLS.map(({ command, label }) => {
-        const available = navigation.availability[command];
+        const available = orientation.availability[command];
 
         return (
           <button
@@ -47,7 +47,7 @@ export function TranscriptToolbar({ navigation }: { navigation: TranscriptNaviga
               disabled button cannot be focused or activated at all.
             */
             aria-disabled={available ? undefined : true}
-            onClick={() => navigation.run(command)}
+            onClick={() => orientation.run(command)}
           >
             {label}
             {/*

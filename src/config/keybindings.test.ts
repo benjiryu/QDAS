@@ -43,7 +43,8 @@ describe('the binding table', () => {
   it('catches a collision when one is introduced', () => {
     // Guards the guard: a test that cannot fail would leave the real table
     // unchecked the day someone adds a duplicate.
-    const colliding = { ...bindingsFor('other'), 'help.shortcuts': { key: 'r', ctrl: true, alt: true } };
+    const speaker = bindingsFor('other')['segment.speaker'];
+    const colliding = { ...bindingsFor('other'), 'help.shortcuts': speaker };
 
     expect(() => assertNoDuplicateChords(colliding as Record<Command, Chord>)).toThrow(/collision/i);
   });

@@ -1,19 +1,21 @@
 /**
- * Movement between segments and turns, and position reporting.
+ * Where a reader is in a source.
  *
- * Specification: docs/patterns/transcript-segment.md sections 4.1 and 5.
+ * Specification: docs/patterns/transcript-segment.md section 5 and its v0.2
+ * banner, decision D-038.
  *
- * Pure. Movement functions return the segment a command would make active and
- * never mutate anything; the caller owns `activeSegmentId`.
+ * Pure. What remains after D-038 is orientation, not movement: the browser and
+ * the screen reader move the reader, and the application only answers where
+ * they have got to. The movement functions this file used to hold went with the
+ * commands that called them and are preserved at tag `v0.1`.
  *
- * Every function returns null at the ends of the source rather than clamping.
- * A caller that cannot tell "moved to the last sentence" from "was already at
- * the last sentence" would announce a move that did not happen, and the
- * position report and the spoken text would then disagree.
+ * `nextSegment` survives because the post-coding return in coding.ts still
+ * needs the sentence after an excerpt, which is a question about a stored
+ * range rather than about navigation.
  */
 
-import { positionOf, requireTurnOf, turnOf } from './source';
-import type { ResolvedSource, ResolvedTurn } from './source';
+import { positionOf } from './source';
+import type { ResolvedSource } from './source';
 import type { Id, TranscriptSegment } from './types';
 
 /** `segment.next`. Null at the last sentence of the source. */
@@ -26,57 +28,8 @@ export function nextSegment(
   return resolved.segments[position + 1] ?? null;
 }
 
-/** `segment.previous`. Null at the first sentence of the source. */
-export function previousSegment(
-  resolved: ResolvedSource,
-  segmentId: Id,
-): TranscriptSegment | null {
-  const position = positionOf(resolved, segmentId);
-  if (position === null || position === 0) return null;
-  return resolved.segments[position - 1] ?? null;
-}
-
-/**
- * `turn.next`. The first sentence of the following turn, per section 4.1.
- *
- * Movement is by turn regardless of where in the current turn the segment sits,
- * so a user midway through a long turn reaches the next speaker in one command
- * rather than in as many commands as there are remaining sentences.
- */
-export function nextTurn(resolved: ResolvedSource, segmentId: Id): TranscriptSegment | null {
-  const turn = turnOf(resolved, segmentId);
-  if (!turn) return null;
-  const following = resolved.turns[turn.index + 1];
-  return following?.segments[0] ?? null;
-}
-
-/**
- * `turn.previous`. The first sentence of the preceding turn.
- *
- * From anywhere inside a turn this moves to the previous turn, not to the start
- * of the current one. Section 4.1 describes the command as moving to a turn,
- * and a command whose destination depends on how far into a turn the user
- * happens to be is not predictable by ear.
- */
-export function previousTurn(
-  resolved: ResolvedSource,
-  segmentId: Id,
-): TranscriptSegment | null {
-  const turn = turnOf(resolved, segmentId);
-  if (!turn || turn.index === 0) return null;
-  return resolved.turns[turn.index - 1]?.segments[0] ?? null;
-}
-
-/** The turn containing a segment. Convenience for callers announcing speaker. */
-export function turnContaining(resolved: ResolvedSource, segmentId: Id): ResolvedTurn | null {
-  return turnOf(resolved, segmentId);
-}
-
 export interface PositionReport {
-  /** One based, for speech. "Sentence 12 of 330." */
-  sentenceIndex: number;
-  sentenceCount: number;
-  /** One based. "Speaker turn 4 of 78." */
+  /** One based, for speech. "Speaker turn 4 of 78." */
   turnIndex: number;
   turnCount: number;
   /** Whole percent through the source, by sentence count. */
@@ -87,58 +40,38 @@ export interface PositionReport {
 }
 
 /**
- * Position of the active segment, per section 5.
+ * Position of a speaker turn, per section 5 as revised by D-038.
  *
- * Derived from the active segment in all cases and for all users, so the
- * spoken report and the visible ribbon cannot disagree. Never derived from
- * scroll offset, per section 2.2 and D-009.
+ * Sentence-level position went with the active sentence: the application no
+ * longer tracks one, and reporting a sentence the reader is not necessarily on
+ * would be a number that means nothing.
  *
- * The percentage is the one-based sentence index over the sentence count, so
- * the last sentence reports 100 and the first sentence of a long source
- * reports 0. Section 5 fixes the quantity and not the rounding; this is the
- * arithmetic, and the wording belongs to the announcement layer.
+ * The percentage is still measured in sentences, from the turn's first
+ * sentence, because turns vary enormously in length and turn index over turn
+ * count would tell a reader halfway through a long interview that they were a
+ * fifth of the way in. It advances a turn at a time, which is the granularity
+ * the whole layer now works at.
+ *
+ * Derived from the focused turn for every user, so the spoken report and the
+ * visible ribbon cannot disagree. Never derived from scroll offset, per D-009.
  */
-export function positionReport(
-  resolved: ResolvedSource,
-  segmentId: Id,
-): PositionReport | null {
-  const position = positionOf(resolved, segmentId);
-  if (position === null) return null;
+export function positionReport(resolved: ResolvedSource, turnId: Id): PositionReport | null {
+  const index = resolved.turns.findIndex((candidate) => candidate.turn.turnId === turnId);
+  if (index < 0) return null;
 
-  const segment = resolved.segments[position];
-  const turn = requireTurnOf(resolved, segmentId);
+  const turn = resolved.turns[index];
+  const first = turn.segments[0];
+  const sentencesBefore = first ? positionOf(resolved, first.segmentId) : null;
   const sentenceCount = resolved.segments.length;
 
   return {
-    sentenceIndex: position + 1,
-    sentenceCount,
-    turnIndex: turn.index + 1,
+    turnIndex: index + 1,
     turnCount: resolved.turns.length,
-    percentage: Math.round(((position + 1) / sentenceCount) * 100),
-    timestampMs: segment.startTimeMs,
+    percentage:
+      sentencesBefore === null || sentenceCount === 0
+        ? 0
+        : Math.round(((sentencesBefore + 1) / sentenceCount) * 100),
+    timestampMs: first?.startTimeMs ?? null,
     speakerLabel: turn.speaker?.label ?? null,
-  };
-}
-
-/**
- * Whether a movement command has anywhere to go. The caller uses this to
- * disable a control and to say why, per accessibility contract 2.6.
- */
-export interface MovementAvailability {
-  'segment.next': boolean;
-  'segment.previous': boolean;
-  'turn.next': boolean;
-  'turn.previous': boolean;
-}
-
-export function movementAvailability(
-  resolved: ResolvedSource,
-  segmentId: Id,
-): MovementAvailability {
-  return {
-    'segment.next': nextSegment(resolved, segmentId) !== null,
-    'segment.previous': previousSegment(resolved, segmentId) !== null,
-    'turn.next': nextTurn(resolved, segmentId) !== null,
-    'turn.previous': previousTurn(resolved, segmentId) !== null,
   };
 }

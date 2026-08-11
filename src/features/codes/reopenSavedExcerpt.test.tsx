@@ -8,7 +8,7 @@ import { bindingsFor, detectPlatform } from '../../config/keybindings';
 import type { Chord, Command } from '../../config/keybindings';
 import { createSeedFixture } from '../../data/seed';
 import { clearSourcePositions } from '../../data/sourcePositionStore';
-import { positionOf, resolveSource } from '../../domain';
+import { positionOf, requireTurnOf, resolveSource } from '../../domain';
 import { TranscriptWorkspace } from '../transcript/TranscriptWorkspace';
 
 /**
@@ -152,13 +152,12 @@ describe('reopening a saved excerpt', () => {
   it('opens by command as well as by click, which is the keyboard route', () => {
     const { container } = renderWorkspace();
 
-    // Move the position onto the excerpt without clicking the highlight.
-    const target = positionOf(resolved, soleExcerpt.startSegmentId)!;
-    for (let step = 0; step <= target; step += 1) chord('segment.next');
-    expect(container.querySelector('[data-active="true"]')).toHaveAttribute(
-      'data-segment-id',
-      soleExcerpt.startSegmentId,
-    );
+    // Focus the turn the excerpt is in, without clicking the highlight.
+    // D-038: `excerpt.open` keys on the focused turn.
+    const turn = requireTurnOf(resolved, soleExcerpt.startSegmentId);
+    act(() => {
+      container.querySelector<HTMLElement>(`[data-turn-id="${turn.turn.turnId}"]`)!.focus();
+    });
 
     chord('excerpt.open');
 

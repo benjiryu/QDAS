@@ -81,10 +81,15 @@ function press(chord: Chord) {
 
 const chord = (command: Command) => press(bindings[command]);
 
-/** Captures a small excerpt, which opens the panel. */
+/** Focuses a turn and captures it, which opens the panel. */
+function focusTurn(index = 1) {
+  act(() => {
+    document.querySelectorAll<HTMLElement>('[data-turn-id]')[index].focus();
+  });
+}
+
 function openPanel() {
-  chord('segment.next');
-  chord('segment.next');
+  focusTurn();
   chord('excerpt.code');
 }
 
@@ -276,9 +281,11 @@ describe('the container, per section 2 and D-027', () => {
     expect(transcript.closest('[inert], [aria-hidden="true"]')).toBeNull();
     expect(container.querySelector('.backdrop, [data-backdrop]')).toBeNull();
 
-    // And the transcript still responds to navigation while the panel is open.
-    chord('segment.next');
-    expect(container.querySelector('[data-active="true"]')).not.toBeNull();
+    // And the transcript is still reachable and readable while it is open:
+    // every turn is a tab stop, which is the only movement D-038 leaves.
+    expect(container.querySelectorAll('[data-turn-id][tabindex="0"]').length).toBe(
+      resolved.turns.length,
+    );
   });
 
   it('names the excerpt by size and start speaker in its heading', () => {

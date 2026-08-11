@@ -25,8 +25,12 @@ interface TranscriptTurnProps {
   turn: ResolvedTurn;
   displayStates: SegmentDisplayStates;
   timestampVerbosity: TimestampVerbosity;
-  activeSegmentId?: Id | null;
-  onActivateSegment?: (segmentId: Id) => void;
+  /**
+   * Clicking a coded sentence reopens its excerpt, per D-030. That is the only
+   * thing a click does now: D-038 removed click-to-set-active-segment, so a
+   * click on uncoded prose focuses the turn and draws nothing.
+   */
+  onOpenSavedAt?: (segmentId: Id) => void;
   /** Segments inside the excerpt range, and which of them are its boundaries. */
   segmentsInRange?: Set<Id>;
   excerptStartSegmentId?: Id | null;
@@ -94,8 +98,7 @@ export function TranscriptTurn({
   turn,
   displayStates,
   timestampVerbosity,
-  activeSegmentId = null,
-  onActivateSegment,
+  onOpenSavedAt,
   segmentsInRange,
   excerptStartSegmentId = null,
   excerptEndSegmentId = null,
@@ -108,29 +111,25 @@ export function TranscriptTurn({
   const showTimestamp = timestampVerbosity !== 'never' && startTimeMs !== null;
 
   /*
-    Pointer affordance only, per section 2.1: clicking a sentence makes it
-    active, and clicking anywhere else in the turn makes the turn's first
-    sentence active. Every position it reaches is also reachable through the
-    movement commands, so this adds convenience without creating a path that
-    only a mouse can take.
+    The only pointer affordance left, per D-030: clicking a coded sentence
+    reopens its excerpt. Clicking anywhere else focuses the turn, which the
+    browser does on its own because the turn is a focusable element, and draws
+    nothing beyond the focus ring.
   */
   function handleClick(event: React.MouseEvent<HTMLLIElement>) {
-    if (!onActivateSegment) return;
+    if (!onOpenSavedAt) return;
 
     // A drag ends with a click, whose target is the common ancestor of where it
-    // started and where it finished rather than a sentence. Treating that as a
-    // click would move the reading position to the turn's first sentence, announce
-    // it, and scroll there, all while the user is only selecting text. A selection
-    // still standing means this click is the tail of that gesture, not a request
-    // to move.
+    // started and where it finished rather than a sentence. A selection still
+    // standing means this click is the tail of that gesture, not a request to
+    // open anything.
     if (typeof document !== 'undefined') {
       const selection = document.getSelection();
       if (selection && selection.rangeCount > 0 && !selection.isCollapsed) return;
     }
 
     const clicked = (event.target as HTMLElement).closest<HTMLElement>('[data-segment-id]');
-    const segmentId = clicked?.dataset.segmentId ?? first?.segmentId;
-    if (segmentId) onActivateSegment(segmentId);
+    if (clicked?.dataset.segmentId) onOpenSavedAt(clicked.dataset.segmentId);
   }
 
   return (
@@ -184,9 +183,6 @@ export function TranscriptTurn({
               className="transcript-segment"
               data-segment-id={segment.segmentId}
               data-display-state={displayStateOf(displayStates, segment.segmentId)}
-              /* Orthogonal to the coded state, per section 3: a segment can be
-                 active and coded at once and has to be legible as both. */
-              data-active={segment.segmentId === activeSegmentId ? 'true' : undefined}
               data-excerpt={marker}
               data-excerpt-state={
                 segmentsInRange?.has(segment.segmentId) ? excerptState : undefined

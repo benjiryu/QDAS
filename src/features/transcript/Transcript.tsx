@@ -19,9 +19,8 @@ interface TranscriptProps {
   displayStates: SegmentDisplayStates;
   /** Flags are read from src/config/flags.ts and passed in, never branched on inline. */
   flags?: PrototypeFlags;
-  activeSegmentId?: Id | null;
-  /** Pointer affordance only, per section 2.1. */
-  onActivateSegment?: (segmentId: Id) => void;
+  /** Clicking a coded sentence reopens its excerpt, per D-030. */
+  onOpenSavedAt?: (segmentId: Id) => void;
   containerRef?: React.RefObject<HTMLDivElement | null>;
   segmentsInRange?: Set<Id>;
   excerptStartSegmentId?: Id | null;
@@ -35,8 +34,7 @@ export function Transcript({
   resolved,
   displayStates,
   flags = defaultFlags,
-  activeSegmentId = null,
-  onActivateSegment,
+  onOpenSavedAt,
   containerRef,
   segmentsInRange,
   excerptStartSegmentId = null,
@@ -64,8 +62,7 @@ export function Transcript({
               turn={turn}
               displayStates={displayStates}
               timestampVerbosity={flags.timestampVerbosity}
-              activeSegmentId={activeSegmentId}
-              onActivateSegment={onActivateSegment}
+              onOpenSavedAt={onOpenSavedAt}
               segmentsInRange={segmentsInRange}
               excerptStartSegmentId={excerptStartSegmentId}
               excerptEndSegmentId={excerptEndSegmentId}

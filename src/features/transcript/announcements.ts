@@ -1,7 +1,8 @@
 /**
- * What navigation says, in one place.
+ * What orientation says, in one place.
  *
- * Specification: docs/patterns/transcript-segment.md section 6.
+ * Specification: docs/patterns/transcript-segment.md section 6 and its v0.2
+ * banner, decision D-038.
  *
  * Section 6 fixes the information content of each announcement and not its
  * phrasing; the accessibility contract 2.3 says the same. So the wording here
@@ -12,47 +13,27 @@
  * feature writes to a live region.
  */
 
-import type { SegmentCoding } from '../../domain';
 import type { PositionField } from './positionText';
 import { describePosition } from './positionText';
 import { formatTimestamp } from './formatTimestamp';
 
-/** Coded status and code count, announced automatically on entering a coded segment. */
-export function describeCoding(coding: SegmentCoding): string | null {
-  if (coding.state === 'inactive') return null;
-
-  const codes = coding.codeIds.length;
-  const overlap = coding.state === 'coded-multiple' ? `, in ${coding.excerptIds.length} excerpts` : '';
-  return `Coded${overlap}. ${codes} ${codes === 1 ? 'code' : 'codes'}.`;
-}
-
-/** Moving by sentence: the sentence text, and coded status when there is one. */
-export function movedToSegment(text: string, coding: SegmentCoding): string {
-  const coded = describeCoding(coding);
-  return coded ? `${text} ${coded}` : text;
-}
-
-/** Moving by turn: the speaker name first, then the sentence text. */
-export function movedToTurn(
-  speakerLabel: string | null,
-  text: string,
-  coding: SegmentCoding,
-): string {
-  const speaker = speakerLabel ? `${speakerLabel}. ` : '';
-  return `${speaker}${movedToSegment(text, coding)}`;
-}
+/*
+ * The movement announcements went with the movement commands. Nothing the
+ * application says now describes a move it made, because it no longer makes
+ * any: the reader moves, and these three answer where they are.
+ */
 
 export function positionReportText(fields: PositionField[]): string {
   return describePosition(fields);
 }
 
 export function speakerText(speakerLabel: string | null): string {
-  return speakerLabel ? `Speaker: ${speakerLabel}.` : 'This sentence has no speaker recorded.';
+  return speakerLabel ? `Speaker: ${speakerLabel}.` : 'This turn has no speaker recorded.';
 }
 
 export function timestampText(timestampMs: number | null): string {
   return timestampMs === null
-    ? 'This sentence has no timestamp.'
+    ? 'This turn has no timestamp.'
     : `Timestamp ${formatTimestamp(timestampMs)}.`;
 }
 
@@ -72,13 +53,12 @@ export function enteredSource(
 }
 
 /**
- * Why a movement did nothing. Announced on attempt rather than left silent, so
- * an unavailable control is never a dead end (contract 2.6).
+ * Why a command answered nothing. Announced on attempt rather than left silent,
+ * so an unavailable control is never a dead end (contract 2.6).
+ *
+ * It names the way in, because after D-038 there is no application command that
+ * would establish a position: the reader has to be on a turn.
  */
 export const UNAVAILABLE_TEXT: Record<string, string> = {
-  atSourceStart: 'Already at the first sentence.',
-  atSourceEnd: 'Already at the last sentence.',
-  atFirstTurn: 'Already in the first speaker turn.',
-  atLastTurn: 'Already in the last speaker turn.',
-  noPosition: 'No position set. Move to the next sentence to begin.',
+  noFocusedTurn: 'No speaker turn is focused. Press Tab to move into the transcript.',
 };

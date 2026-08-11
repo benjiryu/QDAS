@@ -1,4 +1,4 @@
-import type { TranscriptNavigation } from './useTranscriptNavigation';
+import type { TranscriptOrientation } from './useTranscriptOrientation';
 
 /**
  * Where the reader is in the source.
@@ -6,16 +6,21 @@ import type { TranscriptNavigation } from './useTranscriptNavigation';
  * Specification: docs/patterns/transcript-segment.md section 5.
  *
  * Per D-009 this reports reading position and not coding completion, so no
- * label here says "Progress", and the value is derived from the active segment
- * rather than from scroll offset or audio time. It is built from the same
- * fields the spoken report uses, so the two cannot disagree.
+ * label here says "Progress", and since D-038 the value is derived from the
+ * focused speaker turn rather than from scroll offset or audio time. It is
+ * built from the same fields the spoken report uses, so the two cannot
+ * disagree.
+ *
+ * The return-to-position control went with `position.return`. There is nothing
+ * to return to that the reader did not put focus on themselves, and a browser
+ * returns focus to where it was without being asked.
  *
  * Not a live region. The application has exactly two, both owned by the
  * announcement service (contract 2.3), and this is read on request rather than
  * announced on every movement, which section 5 rules out as unusable verbosity.
  */
-export function PositionRibbon({ navigation }: { navigation: TranscriptNavigation }) {
-  const { fields, isActiveInView, run } = navigation;
+export function PositionRibbon({ orientation }: { orientation: TranscriptOrientation }) {
+  const { fields } = orientation;
 
   return (
     <div className="position-ribbon">
@@ -29,24 +34,9 @@ export function PositionRibbon({ navigation }: { navigation: TranscriptNavigatio
             </span>
           ))
         ) : (
-          <span className="position-ribbon__field">Not set</span>
+          <span className="position-ribbon__field">No speaker turn focused</span>
         )}
       </p>
-
-      {/*
-        Offered only once the active segment has scrolled out of view, per
-        section 5. It is also the cheap way back for a magnification user who
-        panned away to read context.
-      */}
-      {fields && !isActiveInView ? (
-        <button
-          type="button"
-          className="position-ribbon__return"
-          onClick={() => run('position.return')}
-        >
-          Return to active segment
-        </button>
-      ) : null}
     </div>
   );
 }

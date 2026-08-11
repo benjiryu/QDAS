@@ -77,8 +77,9 @@ function press(chord: Chord) {
 const chord = (command: Command) => press(bindings[command]);
 
 function openPanel() {
-  chord('segment.next');
-  chord('segment.next');
+  act(() => {
+    document.querySelectorAll<HTMLElement>('[data-turn-id]')[1].focus();
+  });
   chord('excerpt.code');
 }
 

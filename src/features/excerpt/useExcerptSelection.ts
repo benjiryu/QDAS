@@ -93,12 +93,8 @@ export interface ExcerptSelectionApi {
 
 interface Options {
   resolved: ResolvedSource;
-  /** The reading position, which the turn fallback falls back to. Section 1.1. */
-  activeSegmentId?: Id | null;
   /** The element containing the rendered turns, which capture reads. */
   containerRef: React.RefObject<HTMLDivElement | null>;
-  /** Capture and discard set the active segment, per transcript-segment 2.1. */
-  onSetActiveSegment?: (segmentId: Id) => void;
   /** Escape belongs to the code panel while it is open, per section 4. */
   panelOpen?: boolean;
   /** Saved excerpts covering the active segment, for `excerpt.open`. D-030. */
@@ -113,9 +109,7 @@ interface Options {
 
 export function useExcerptSelection({
   resolved,
-  activeSegmentId = null,
   containerRef,
-  onSetActiveSegment,
   panelOpen = false,
   savedAt = [],
   onReopen,
@@ -238,15 +232,14 @@ export function useExcerptSelection({
       // Section 6: from here the application highlight is the only selection
       // visual, and it shows exactly what will be coded.
       clearNativeSelection();
-      onSetActiveSegment?.(capture.range.startSegmentId);
       onCapture?.(target);
     },
-    [announcer, onCapture, onSetActiveSegment, resolved],
+    [announcer, onCapture, resolved],
   );
 
   const runCapture = useCallback(
     (target: CaptureTarget) => {
-      const capture = resolveCapture(containerRef.current, resolved, activeSegmentId);
+      const capture = resolveCapture(containerRef.current, resolved);
 
       // Step 3 of the capture rule: nothing to capture, so say so and do
       // nothing. Reached only with focus outside the transcript.
@@ -257,7 +250,7 @@ export function useExcerptSelection({
 
       applyCapture(capture, target);
     },
-    [activeSegmentId, announcer, applyCapture, containerRef, resolved],
+    [announcer, applyCapture, containerRef, resolved],
   );
 
   const run = useCallback(
@@ -286,8 +279,8 @@ export function useExcerptSelection({
           dispatch({ type: 'discard' });
           onClosePanel?.();
           announcer.announce(discarded(reopened));
-          if (origin) onSetActiveSegment?.(origin);
-          // Section 6: focus returns to the turn the capture started in.
+          // Section 6: focus returns to the turn the capture started in, which
+          // since D-038 is also what restores the reading position.
           focusTurnOf(origin);
           return;
         }
@@ -298,7 +291,6 @@ export function useExcerptSelection({
       availability,
       focusTurnOf,
       onClosePanel,
-      onSetActiveSegment,
       runCapture,
       runOpenAt,
       savedAt,

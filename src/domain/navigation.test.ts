@@ -1,178 +1,99 @@
 import { describe, expect, it } from 'vitest';
 import { createSeedFixture } from '../data/seed';
-import {
-  movementAvailability,
-  nextSegment,
-  nextTurn,
-  positionReport,
-  previousSegment,
-  previousTurn,
-} from './navigation';
+import { nextSegment, positionReport } from './navigation';
 import { resolveSource } from './source';
 import { buildTestSource } from './testing/buildTestSource';
 
-/** Specification: docs/patterns/transcript-segment.md sections 4.1 and 5. */
+/**
+ * Specification: docs/patterns/transcript-segment.md section 5 and its v0.2
+ * banner, decision D-038.
+ *
+ * The movement tests this file used to carry went with the commands they
+ * covered. They are preserved at tag `v0.1`.
+ */
 
 const resolved = buildTestSource(); // turns of 3, 1, 4, 2 sentences; s0 to s9
+const turnIds = resolved.turns.map((turn) => turn.turn.turnId);
 
-describe('segment movement', () => {
+describe('the sentence after a stored range', () => {
   it('advances one sentence', () => {
     expect(nextSegment(resolved, 's0')?.segmentId).toBe('s1');
   });
 
-  it('moves back one sentence', () => {
-    expect(previousSegment(resolved, 's5')?.segmentId).toBe('s4');
-  });
-
-  it('crosses a turn boundary by sentence', () => {
-    // s2 is the last sentence of turn 0, s3 the only sentence of turn 1.
+  it('crosses a turn boundary, because a range does not stop at one', () => {
     expect(nextSegment(resolved, 's2')?.segmentId).toBe('s3');
-    expect(previousSegment(resolved, 's3')?.segmentId).toBe('s2');
-  });
-
-  it('returns null at the first sentence rather than clamping', () => {
-    expect(previousSegment(resolved, 's0')).toBeNull();
   });
 
   it('returns null at the last sentence rather than clamping', () => {
+    // A caller that could not tell "moved" from "was already there" would
+    // announce a move that did not happen.
     expect(nextSegment(resolved, 's9')).toBeNull();
   });
 
   it('returns null for a segment that is not in the source', () => {
     expect(nextSegment(resolved, 'nope')).toBeNull();
-    expect(previousSegment(resolved, 'nope')).toBeNull();
   });
 });
 
-describe('turn movement', () => {
-  it('moves to the first sentence of the next turn', () => {
-    expect(nextTurn(resolved, 's0')?.segmentId).toBe('s3');
+describe('position of a speaker turn', () => {
+  it('reports the turn index and count, one based for speech', () => {
+    expect(positionReport(resolved, turnIds[0])).toMatchObject({ turnIndex: 1, turnCount: 4 });
+    expect(positionReport(resolved, turnIds[3])).toMatchObject({ turnIndex: 4, turnCount: 4 });
   });
 
-  it('moves to the next turn from anywhere inside the current one', () => {
-    expect(nextTurn(resolved, 's1')?.segmentId).toBe('s3');
-    expect(nextTurn(resolved, 's2')?.segmentId).toBe('s3');
+  it('reports no sentence index, since there is no active sentence', () => {
+    // D-038: sentence-level position went with the active segment. A number
+    // the reader is not necessarily on is worse than no number.
+    expect(positionReport(resolved, turnIds[1])).not.toHaveProperty('sentenceIndex');
   });
 
-  it('moves to the first sentence of the previous turn, not the current one', () => {
-    // From s6, midway through turn 2, the destination is turn 1 rather than s4.
-    expect(previousTurn(resolved, 's6')?.segmentId).toBe('s3');
+  it('measures the percentage in sentences, from the turn’s first sentence', () => {
+    // Turn index over turn count would tell a reader most of the way through a
+    // long interview that they were a quarter of the way in.
+    // t0 = s0..s2, t1 = s3, t2 = s4..s7, t3 = s8..s9, of ten sentences.
+    expect(positionReport(resolved, turnIds[0])?.percentage).toBe(10);
+    expect(positionReport(resolved, turnIds[1])?.percentage).toBe(40);
+    expect(positionReport(resolved, turnIds[2])?.percentage).toBe(50);
+    expect(positionReport(resolved, turnIds[3])?.percentage).toBe(90);
   });
 
-  it('returns null in the first turn', () => {
-    expect(previousTurn(resolved, 's0')).toBeNull();
-    expect(previousTurn(resolved, 's2')).toBeNull();
+  it('carries the speaker and the turn’s opening timestamp', () => {
+    const report = positionReport(resolved, turnIds[2])!;
+
+    expect(report.speakerLabel).toBe(resolved.turns[2].speaker?.label ?? null);
+    expect(report.timestampMs).toBe(resolved.turns[2].segments[0].startTimeMs);
   });
 
-  it('returns null in the last turn', () => {
-    expect(nextTurn(resolved, 's8')).toBeNull();
-    expect(nextTurn(resolved, 's9')).toBeNull();
-  });
-});
-
-describe('movement availability', () => {
-  it('reports both directions unavailable at the ends of a source', () => {
-    expect(movementAvailability(resolved, 's0')).toEqual({
-      'segment.next': true,
-      'segment.previous': false,
-      'turn.next': true,
-      'turn.previous': false,
-    });
-
-    expect(movementAvailability(resolved, 's9')).toEqual({
-      'segment.next': false,
-      'segment.previous': true,
-      'turn.next': false,
-      'turn.previous': true,
-    });
-  });
-});
-
-describe('position report', () => {
-  it('reports sentence index, turn index, and percentage', () => {
-    const report = positionReport(resolved, 's4');
-
-    expect(report).toMatchObject({
-      sentenceIndex: 5,
-      sentenceCount: 10,
-      turnIndex: 3,
-      turnCount: 4,
-      percentage: 50,
-    });
-  });
-
-  it('reports the speaker and the timestamp of the active segment', () => {
-    expect(positionReport(resolved, 's3')).toMatchObject({
-      speakerLabel: 'Ben',
-      timestampMs: 15000,
-    });
-  });
-
-  it('reports one based indexes at the first and last sentence', () => {
-    expect(positionReport(resolved, 's0')).toMatchObject({
-      sentenceIndex: 1,
-      turnIndex: 1,
-      percentage: 10,
-    });
-    expect(positionReport(resolved, 's9')).toMatchObject({
-      sentenceIndex: 10,
-      turnIndex: 4,
-      percentage: 100,
-    });
-  });
-
-  it('returns null for a segment that is not in the source', () => {
+  it('returns null for a turn that is not in the source', () => {
     expect(positionReport(resolved, 'nope')).toBeNull();
   });
-
-  it('agrees with a walk through the source, so spoken and visible cannot diverge', () => {
-    let current = resolved.segments[0];
-    let steps = 1;
-    for (;;) {
-      const report = positionReport(resolved, current.segmentId);
-      expect(report?.sentenceIndex).toBe(steps);
-
-      const next = nextSegment(resolved, current.segmentId);
-      if (!next) break;
-      current = next;
-      steps += 1;
-    }
-    expect(steps).toBe(resolved.segments.length);
-  });
 });
 
-describe('against the seed fixture', () => {
+describe('against the seeded fixture', () => {
   const fixture = createSeedFixture();
-  const built = resolveSource({
+  const seeded = resolveSource({
     source: fixture.sources[0],
     segments: fixture.segments,
     turns: fixture.turns,
     speakers: fixture.speakers,
   });
 
-  it('walks the whole transcript by sentence and lands on the last one', () => {
-    let current = built.segments[0];
-    let visited = 1;
-    for (let next = nextSegment(built, current.segmentId); next; ) {
-      current = next;
-      visited += 1;
-      next = nextSegment(built, current.segmentId);
-    }
+  it('reaches 100 percent only at the turn holding the last sentence', () => {
+    const last = seeded.turns[seeded.turns.length - 1];
+    const report = positionReport(seeded, last.turn.turnId)!;
 
-    expect(visited).toBe(built.segments.length);
-    expect(current.segmentId).toBe(built.segments[built.segments.length - 1].segmentId);
-    expect(positionReport(built, current.segmentId)?.percentage).toBe(100);
+    expect(report.turnIndex).toBe(report.turnCount);
+    // The last turn starts before its own last sentence, so the percentage is
+    // the position of where the reader is, not of where the source ends.
+    expect(report.percentage).toBeLessThanOrEqual(100);
+    expect(report.percentage).toBeGreaterThan(90);
   });
 
-  it('walks the whole transcript by turn', () => {
-    let current = built.segments[0];
-    let turns = 1;
-    for (let next = nextTurn(built, current.segmentId); next; ) {
-      current = next;
-      turns += 1;
-      next = nextTurn(built, current.segmentId);
+  it('never reports a position outside one and the turn count', () => {
+    for (const turn of seeded.turns) {
+      const report = positionReport(seeded, turn.turn.turnId)!;
+      expect(report.turnIndex).toBeGreaterThanOrEqual(1);
+      expect(report.turnIndex).toBeLessThanOrEqual(report.turnCount);
     }
-
-    expect(turns).toBe(built.turns.length);
   });
 });

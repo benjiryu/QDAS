@@ -8,7 +8,7 @@ import { bindingsFor, detectPlatform } from '../../config/keybindings';
 import type { Chord, Command } from '../../config/keybindings';
 import { createSeedFixture } from '../../data/seed';
 import { clearSourcePositions } from '../../data/sourcePositionStore';
-import { resolveSource } from '../../domain';
+import { requireTurnOf, resolveSource } from '../../domain';
 import { TranscriptWorkspace } from '../transcript/TranscriptWorkspace';
 
 /**
@@ -83,6 +83,12 @@ function drag(from: [string, number], to: [string, number]) {
   const selection = document.getSelection()!;
   selection.removeAllRanges();
   selection.addRange(range);
+}
+
+function focusTurn(index: number) {
+  act(() => {
+    document.querySelectorAll<HTMLElement>('[data-turn-id]')[index].focus();
+  });
 }
 
 /** Captures a two-sentence excerpt, which opens the panel. */
@@ -232,7 +238,8 @@ describe('acceptance: return location is announced', () => {
 
     const message = announced().find((text) => /codes applied/i.test(text))!;
     expect(message).toContain('2 codes applied');
-    expect(message).toMatch(/returned to sentence \d+ of \d+/i);
+    // Turn rather than sentence: D-038 retired sentence-level position.
+    expect(message).toMatch(/returned to speaker turn \d+ of \d+/i);
   });
 
   it('lands focus on the turn holding the return target', () => {
@@ -247,12 +254,10 @@ describe('acceptance: return location is announced', () => {
     const turn = resolved.turns.find((candidate) =>
       candidate.segments.some((segment) => segment.segmentId === start.segmentId),
     )!;
+    // Focus is the return, and since D-038 focus is also the position: there
+    // is no second value that could disagree with it.
     expect(document.activeElement).toBe(
       container.querySelector(`[data-turn-id="${turn.turn.turnId}"]`),
-    );
-    expect(container.querySelector('[data-active="true"]')).toHaveAttribute(
-      'data-segment-id',
-      start.segmentId,
     );
   });
 
@@ -266,9 +271,9 @@ describe('acceptance: return location is announced', () => {
 
     fireEvent.click(within(panel()).getByRole('button', { name: 'Save' }));
 
-    expect(container.querySelector('[data-active="true"]')).toHaveAttribute(
-      'data-segment-id',
-      resolved.segments[2].segmentId,
+    const end = requireTurnOf(resolved, resolved.segments[2].segmentId);
+    expect(document.activeElement).toBe(
+      container.querySelector(`[data-turn-id="${end.turn.turnId}"]`),
     );
   });
 });
@@ -344,7 +349,7 @@ describe('what save writes, per section 8', () => {
     expect(screen.queryByRole('region', { name: /code selection/i })).toBeNull();
 
     // And a second excerpt can be captured straight from `saved`.
-    chord('segment.next');
+    focusTurn(2);
     chord('excerpt.code');
     expect(excerptState()).toBe('confirmed');
   });
@@ -418,7 +423,7 @@ describe('acceptance: save failure preserves everything', () => {
     expect(saved(container).excerpts).toBe(1);
 
     // A second excerpt saves first time.
-    chord('segment.next');
+    focusTurn(2);
     chord('excerpt.code');
     checkCode('Mutual aid');
     fireEvent.click(within(panel()).getByRole('button', { name: 'Save' }));

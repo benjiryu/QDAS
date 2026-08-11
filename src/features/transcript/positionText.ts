@@ -10,7 +10,7 @@
  * assembled differently.
  *
  * Per D-009 these report reading position, never coding completion, so no label
- * here says "Progress".
+ * here says "Progress". Since D-038 the position is the focused speaker turn.
  */
 
 import type { PositionReportDetail } from '../../config/flags';
@@ -19,7 +19,7 @@ import { formatTimestamp } from './formatTimestamp';
 
 export interface PositionField {
   /** Stable key for rendering and for tests. */
-  name: 'sentence' | 'turn' | 'percentage' | 'timestamp';
+  name: 'turn' | 'percentage' | 'timestamp';
   /** Shown beside the value in the ribbon and spoken as part of the report. */
   label: string;
   value: string;
@@ -28,8 +28,9 @@ export interface PositionField {
 /**
  * Fields for the current detail level.
  *
- * `brief` is sentence index and percentage; `full` adds the turn index and the
- * timestamp. Section 11 defines both. The timestamp appears only when the
+ * `brief` is the turn index and percentage; `full` adds the timestamp. Section
+ * 11 defines both, and D-038 removed the sentence index that used to lead:
+ * there is no active sentence to report. The timestamp appears only when the
  * source has audio, per section 5.
  */
 export function positionFields(
@@ -39,21 +40,12 @@ export function positionFields(
 ): PositionField[] {
   const fields: PositionField[] = [
     {
-      name: 'sentence',
-      label: 'Sentence',
-      value: `${report.sentenceIndex} of ${report.sentenceCount}`,
-    },
-  ];
-
-  if (detail === 'full') {
-    fields.push({
       name: 'turn',
       label: 'Speaker turn',
       value: `${report.turnIndex} of ${report.turnCount}`,
-    });
-  }
-
-  fields.push({ name: 'percentage', label: 'Through source', value: `${report.percentage}%` });
+    },
+    { name: 'percentage', label: 'Through source', value: `${report.percentage}%` },
+  ];
 
   if (detail === 'full' && hasAudio && report.timestampMs !== null) {
     fields.push({

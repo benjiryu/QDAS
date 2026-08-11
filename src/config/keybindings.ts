@@ -20,15 +20,9 @@
  */
 
 export type Command =
-  | 'segment.next'
-  | 'segment.previous'
-  | 'turn.next'
-  | 'turn.previous'
-  | 'segment.repeat'
   | 'segment.speaker'
   | 'segment.timestamp'
   | 'position.report'
-  | 'position.return'
   | 'excerpt.code'
   | 'excerpt.note'
   | 'excerpt.open'
@@ -54,17 +48,18 @@ export function detectPlatform(): Platform {
   return /Mac|iPhone|iPad/.test(navigator.userAgent) ? 'mac' : 'other';
 }
 
-/** Windows and Linux: Ctrl+Alt base layer, Ctrl+Alt+Shift for excerpt boundaries. */
+/**
+ * Windows and Linux: Ctrl+Alt base layer.
+ *
+ * The movement chords went with D-038. Moving through a transcript is the
+ * browser's and the screen reader's job — Tab, Shift+Tab, browse mode, scroll —
+ * and an application layer over the top of that was a second set of keys to
+ * learn for something the user's own software already did.
+ */
 const windowsLinuxBindings: Record<Command, Chord> = {
-  'segment.next': { key: 'ArrowDown', ctrl: true, alt: true },
-  'segment.previous': { key: 'ArrowUp', ctrl: true, alt: true },
-  'turn.next': { key: 'ArrowRight', ctrl: true, alt: true },
-  'turn.previous': { key: 'ArrowLeft', ctrl: true, alt: true },
-  'segment.repeat': { key: 'r', ctrl: true, alt: true },
   'segment.speaker': { key: 's', ctrl: true, alt: true },
   'segment.timestamp': { key: 't', ctrl: true, alt: true },
   'position.report': { key: 'p', ctrl: true, alt: true },
-  'position.return': { key: 'Home', ctrl: true, alt: true },
 
   'excerpt.code': { key: 'Enter', ctrl: true, alt: true },
   'excerpt.note': { key: 'n', ctrl: true, alt: true },
@@ -81,15 +76,9 @@ const windowsLinuxBindings: Record<Command, Chord> = {
 
 /** macOS: Ctrl+Shift base layer, avoiding Ctrl+Option which VoiceOver owns. */
 const macBindings: Record<Command, Chord> = {
-  'segment.next': { key: 'ArrowDown', ctrl: true, shift: true },
-  'segment.previous': { key: 'ArrowUp', ctrl: true, shift: true },
-  'turn.next': { key: 'ArrowRight', ctrl: true, shift: true },
-  'turn.previous': { key: 'ArrowLeft', ctrl: true, shift: true },
-  'segment.repeat': { key: 'r', ctrl: true, shift: true },
   'segment.speaker': { key: 's', ctrl: true, shift: true },
   'segment.timestamp': { key: 't', ctrl: true, shift: true },
   'position.report': { key: 'p', ctrl: true, shift: true },
-  'position.return': { key: 'Home', ctrl: true, shift: true },
 
   'excerpt.code': { key: 'Enter', ctrl: true, shift: true },
   'excerpt.note': { key: 'n', ctrl: true, shift: true },

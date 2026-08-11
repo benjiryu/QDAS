@@ -14,7 +14,7 @@
  * let a coder believe their selection was captured when it was not.
  */
 
-import { requireTurnOf, turnOf, wholeSegments } from '../../domain';
+import { requireTurnOf, wholeSegments } from '../../domain';
 import type { CapturedRange, Id, ResolvedSource } from '../../domain';
 
 export type CaptureSource = 'selection' | 'turn';
@@ -139,24 +139,14 @@ export function captureFromSelection(
 }
 
 /**
- * Step 2: the current speaker turn, captured whole.
+ * Step 2: the focused speaker turn, captured whole.
  *
- * "Current" is DOM focus first, then the active segment's turn.
- *
- * Section 1.1 names only the focused turn, and says the step always resolves
- * because turns are focusable per D-002. In this application it would not: the
- * movement commands in transcript-segment section 2 change `activeSegmentId`
- * without moving focus, so a screen reader user who has navigated to sentence
- * nine has no focused turn and would be told there is nothing to capture. That
- * same document calls the active segment "the anchor for excerpt selection", so
- * both readings name a turn, and taking whichever exists keeps the step's
- * promise. Raised in the task report; the ordering here is the open part.
+ * Turns are focusable per D-002, and since D-038 focus is the only position the
+ * application knows, so this reads exactly as section 1.1 writes it. The
+ * active-segment fallback this carried in v0.2's first pass went with the
+ * navigation layer that made it necessary.
  */
-function fromCurrentTurn(
-  container: HTMLElement,
-  resolved: ResolvedSource,
-  activeSegmentId: Id | null,
-): Capture | null {
+function fromFocusedTurn(container: HTMLElement, resolved: ResolvedSource): Capture | null {
   const active = document.activeElement;
   const focusedElement =
     active instanceof Element ? active.closest<HTMLElement>('[data-turn-id]') : null;
@@ -165,9 +155,7 @@ function fromCurrentTurn(
 
   const turn = focusedId
     ? resolved.turns.find((candidate) => candidate.turn.turnId === focusedId)
-    : activeSegmentId
-      ? turnOf(resolved, activeSegmentId)
-      : null;
+    : null;
 
   if (!turn || turn.segments.length === 0) return null;
 
@@ -190,13 +178,9 @@ function fromCurrentTurn(
 export function resolveCapture(
   container: HTMLElement | null,
   resolved: ResolvedSource,
-  activeSegmentId: Id | null = null,
 ): Capture | null {
   if (!container || typeof document === 'undefined') return null;
-  return (
-    captureFromSelection(container, resolved) ??
-    fromCurrentTurn(container, resolved, activeSegmentId)
-  );
+  return captureFromSelection(container, resolved) ?? fromFocusedTurn(container, resolved);
 }
 
 /**

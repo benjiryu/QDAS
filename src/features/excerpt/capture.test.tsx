@@ -164,6 +164,13 @@ describe('step 1: an observable selection', () => {
 });
 
 describe('step 2: the focused turn', () => {
+  it('resolves from focus alone, since D-038 leaves no other position', () => {
+    // The active-segment fallback this step carried in v0.2's first pass went
+    // with the navigation layer. Nothing focused means nothing to capture.
+    const container = renderTranscript();
+    expect(resolveCapture(container, resolved)).toBeNull();
+  });
+
   it('captures the whole turn when there is no selection', () => {
     const container = renderTranscript();
     const turnElement = document.querySelector<HTMLElement>(
@@ -214,35 +221,5 @@ describe('step 3: nothing to capture', () => {
     selection.addRange(range);
 
     expect(resolveCapture(container, resolved)).toBeNull();
-  });
-});
-
-describe('the current turn when nothing is focused', () => {
-  it('falls back to the active segment’s turn, which the movement commands set', () => {
-    // transcript-segment section 2: the movement commands change the active
-    // segment without moving focus, and section 2 calls that value the anchor
-    // for excerpt selection. Without this the primary keyboard route would
-    // reach step 3 and be told there is nothing to capture.
-    const container = renderTranscript();
-    const segment = multiSentenceTurn.segments[1];
-
-    const capture = resolveCapture(container, resolved, segment.segmentId)!;
-    const last = multiSentenceTurn.segments[multiSentenceTurn.segments.length - 1];
-
-    expect(capture.source).toBe('turn');
-    expect(capture.range.startSegmentId).toBe(multiSentenceTurn.segments[0].segmentId);
-    expect(capture.range.endSegmentId).toBe(last.segmentId);
-  });
-
-  it('prefers the focused turn over the active segment when both exist', () => {
-    const container = renderTranscript();
-    const elsewhere = resolved.turns.find(
-      (turn) => turn.turn.turnId !== multiSentenceTurn.turn.turnId,
-    )!;
-    document.querySelector<HTMLElement>(`[data-turn-id="${elsewhere.turn.turnId}"]`)!.focus();
-
-    const capture = resolveCapture(container, resolved, multiSentenceTurn.segments[0].segmentId)!;
-
-    expect(capture.range.startSegmentId).toBe(elsewhere.segments[0].segmentId);
   });
 });

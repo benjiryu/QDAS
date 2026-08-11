@@ -111,20 +111,11 @@
 }
 
 /*
- * The active segment. Section 7 requires an indicator distinct from the browser
- * focus ring and from excerpt highlighting, since three states have to be
- * separable at a glance.
- *
- * A ring around the sentence, where coded state is an underline and focus is an
- * outline on the turn. Shape, not only hue, so the three do not collapse into
- * each other in greyscale or at high zoom. The active segment is also named in
- * words in the position ribbon, which is the text channel contract 2.5 asks for.
+ * There is no active segment indicator. D-038 removed it along with the
+ * position it drew: the browser focus ring shows where the reader is, and a
+ * captured excerpt's highlight is the only thing the application draws on the
+ * transcript itself.
  */
-.transcript-segment[data-active='true'] {
-  box-shadow: 0 0 0 3px var(--active-ring);
-  border-radius: 2px;
-  background: var(--active-bg);
-}
 
 /* ---------- Position ribbon ---------- */
 
@@ -167,8 +158,7 @@
   margin-bottom: 1rem;
 }
 
-.transcript-toolbar__button,
-.position-ribbon__return {
+.transcript-toolbar__button {
   display: inline-flex;
   flex-direction: column;
   align-items: flex-start;
@@ -198,13 +188,9 @@
 }
 
 :root {
-  --active-ring: #1f6feb;
-  --active-bg: #dbeafe;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --active-ring: #79c0ff;
-    --active-bg: #17324f;
   }
 }

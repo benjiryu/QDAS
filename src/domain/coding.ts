@@ -184,6 +184,38 @@ export interface SavedExcerptSummary {
 }
 
 /**
+ * Saved excerpts a whole speaker turn intersects, per D-030 as revised by
+ * D-038.
+ *
+ * A turn rather than a sentence, because focus is the only position the
+ * application knows since D-038, and focus lands on turns. An excerpt that
+ * covers any part of the turn is offered; the coder chooses when there are
+ * several, exactly as before.
+ */
+export function savedExcerptsInTurn(
+  resolved: ResolvedSource,
+  turnId: Id,
+  excerpts: Excerpt[],
+  assignments: CodeAssignment[],
+): SavedExcerptSummary[] {
+  const turn = resolved.turns.find((candidate) => candidate.turn.turnId === turnId);
+  if (!turn) return [];
+
+  const seen = new Set<Id>();
+  const summaries: SavedExcerptSummary[] = [];
+
+  for (const segment of turn.segments) {
+    for (const summary of savedExcerptsAt(resolved, segment.segmentId, excerpts, assignments)) {
+      if (seen.has(summary.excerptId)) continue;
+      seen.add(summary.excerptId);
+      summaries.push(summary);
+    }
+  }
+
+  return summaries;
+}
+
+/**
  * The saved excerpts covering a segment, in canonical order.
  *
  * Returns every match rather than a best one. Where a segment falls inside two

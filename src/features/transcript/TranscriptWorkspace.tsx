@@ -13,6 +13,7 @@ import {
   postCodingReturnTarget,
   requireTurnOf,
   savedExcerptsAt,
+  savedExcerptsInTurn,
 } from '../../domain';
 import type {
   Code,
@@ -32,13 +33,13 @@ import { useExcerptSelection } from '../excerpt/useExcerptSelection';
 import { PositionRibbon } from './PositionRibbon';
 import { Transcript } from './Transcript';
 import { TranscriptToolbar } from './TranscriptToolbar';
-import { useTranscriptNavigation } from './useTranscriptNavigation';
+import { useTranscriptOrientation } from './useTranscriptOrientation';
 
 /**
  * The reading and selection surface: position, controls, and the transcript.
  *
- * Specification: docs/patterns/transcript-segment.md sections 2, 4, 5, 6, and
- * docs/patterns/excerpt-selection.md sections 3 to 7.
+ * Specification: docs/patterns/transcript-segment.md section 5 and its v0.2
+ * banner, docs/patterns/excerpt-selection.md sections 1 to 7, decision D-038.
  *
  * Reading order matches workflow order and does not change with viewport width,
  * per accessibility contract 2.1: where you are, what you can do to move, what
@@ -141,7 +142,7 @@ export function TranscriptWorkspace({
     [allExcerpts, effectiveAssignments, resolved],
   );
 
-  const navigation = useTranscriptNavigation({ resolved, displayStates, userId, flags });
+  const orientation = useTranscriptOrientation({ resolved, userId, flags });
 
   /**
    * Whether code selection is open. Held here because Escape resolves against
@@ -160,7 +161,7 @@ export function TranscriptWorkspace({
   const panelClear = useRef<(() => void) | null>(null);
 
   /**
-   * Saved excerpts covering the active segment, for `excerpt.open`.
+   * Saved excerpts the focused turn intersects, for `excerpt.open`. D-038.
    *
    * Every excerpt the transcript shows as coded is reachable, including the
    * seeded second coder's. Whether a participant should be able to reopen
@@ -169,19 +170,20 @@ export function TranscriptWorkspace({
    */
   const savedAt = useMemo(
     () =>
-      navigation.activeSegmentId
-        ? savedExcerptsAt(resolved, navigation.activeSegmentId, allExcerpts, effectiveAssignments)
+      orientation.focusedTurnId
+        ? savedExcerptsInTurn(
+            resolved,
+            orientation.focusedTurnId,
+            allExcerpts,
+            effectiveAssignments,
+          )
         : [],
-    [allExcerpts, effectiveAssignments, navigation.activeSegmentId, resolved],
+    [allExcerpts, effectiveAssignments, orientation.focusedTurnId, resolved],
   );
 
   const excerpt = useExcerptSelection({
     resolved,
-    activeSegmentId: navigation.activeSegmentId,
-    containerRef: navigation.containerRef,
-    // Capturing or discarding sets the active segment, per transcript-segment
-    // section 2.1.
-    onSetActiveSegment: navigation.setActiveSegment,
+    containerRef: orientation.containerRef,
     panelOpen,
     onCapture: (target) => {
       setPanelFocus(target);
@@ -259,20 +261,19 @@ export function TranscriptWorkspace({
 
         excerpt.markSaved();
         setPanelOpen(false);
-        navigation.setActiveSegment(target);
 
-        const report = positionReport(resolved, target);
+        // Focus is the position now, so the return is the focus move: nothing
+        // else has to be told where the reader ended up. D-038.
+        const turn = requireTurnOf(resolved, target);
+        orientation.focusTurn(turn.turn.turnId);
+
+        const report = positionReport(resolved, turn.turn.turnId);
         const kept = diff.unchangedCodeIds.length;
         announcer.announce(
-          `Saved. ${diff.added.length} added, ${diff.supersededAssignmentIds.length} removed, ${kept} unchanged. Returned to sentence ${
-            report?.sentenceIndex ?? 0
-          } of ${report?.sentenceCount ?? 0}.`,
+          `Saved. ${diff.added.length} added, ${diff.supersededAssignmentIds.length} removed, ${kept} unchanged. Returned to speaker turn ${
+            report?.turnIndex ?? 0
+          } of ${report?.turnCount ?? 0}.`,
         );
-
-        const turn = requireTurnOf(resolved, target);
-        navigation.containerRef.current
-          ?.querySelector<HTMLElement>(`[data-turn-id="${turn.turn.turnId}"]`)
-          ?.focus?.();
 
         panelClear.current?.();
         return { ok: true };
@@ -308,20 +309,17 @@ export function TranscriptWorkspace({
 
       excerpt.markSaved();
       setPanelOpen(false);
-      navigation.setActiveSegment(target);
 
-      const report = positionReport(resolved, target);
+      const turn = requireTurnOf(resolved, target);
+      orientation.focusTurn(turn.turn.turnId);
+
+      const report = positionReport(resolved, turn.turn.turnId);
       const count = records.assignments.length;
       announcer.announce(
         `${count} ${count === 1 ? 'code' : 'codes'} applied.${
           records.note ? ' Note saved.' : ''
-        } Returned to sentence ${report?.sentenceIndex ?? 0} of ${report?.sentenceCount ?? 0}.`,
+        } Returned to speaker turn ${report?.turnIndex ?? 0} of ${report?.turnCount ?? 0}.`,
       );
-
-      const turn = requireTurnOf(resolved, target);
-      navigation.containerRef.current
-        ?.querySelector<HTMLElement>(`[data-turn-id="${turn.turn.turnId}"]`)
-        ?.focus?.();
 
       panelClear.current?.();
       return { ok: true };
@@ -334,7 +332,7 @@ export function TranscriptWorkspace({
       effectiveAssignments,
       excerpt,
       flags.postCodingReturn,
-      navigation,
+      orientation,
       resolved,
       savedAssignments,
       savedExcerpts,
@@ -373,17 +371,15 @@ export function TranscriptWorkspace({
    * route D-030 names. With nothing coded there it just sets the position, and
    * with an excerpt already in progress it does not interrupt.
    */
-  const activateAndMaybeOpen = useCallback(
+  const openSavedAt = useCallback(
     (segmentId: Id) => {
-      navigation.activate(segmentId);
-
       if (excerpt.selection.state === 'confirmed') return;
       const here = savedExcerptsAt(resolved, segmentId, allExcerpts, effectiveAssignments);
       if (here.length === 0) return;
       // One opens; several ask, exactly as the command does.
       excerpt.runOpenAt(here);
     },
-    [allExcerpts, effectiveAssignments, excerpt, navigation, resolved],
+    [allExcerpts, effectiveAssignments, excerpt, resolved],
   );
 
   return (
@@ -394,8 +390,8 @@ export function TranscriptWorkspace({
         data-saved-notes={savedSummary.notes}
         hidden
       />
-      <PositionRibbon navigation={navigation} />
-      <TranscriptToolbar navigation={navigation} />
+      <PositionRibbon orientation={orientation} />
+      <TranscriptToolbar orientation={orientation} />
       <ExcerptToolbar excerpt={excerpt} resolved={resolved} />
       {/* Section 2: opens over the transcript on a selection, and nowhere
           else. It renders nothing until then. */}
@@ -404,9 +400,8 @@ export function TranscriptWorkspace({
         resolved={resolved}
         displayStates={displayStates}
         flags={flags}
-        activeSegmentId={navigation.activeSegmentId}
-        onActivateSegment={activateAndMaybeOpen}
-        containerRef={navigation.containerRef}
+        onOpenSavedAt={openSavedAt}
+        containerRef={orientation.containerRef}
         segmentsInRange={excerpt.segmentsInRange}
         excerptStartSegmentId={excerpt.startSegmentId}
         excerptEndSegmentId={excerpt.endSegmentId}

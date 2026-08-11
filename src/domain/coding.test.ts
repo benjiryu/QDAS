@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { buildCodingRecords, postCodingReturnTarget } from './coding';
+import { buildCodingRecords, postCodingReturnTarget, savedExcerptsInTurn } from './coding';
 import { deriveSegmentDisplayStates } from './segmentDisplayState';
 import { buildTestSource } from './testing/buildTestSource';
-import type { Code, Id } from './types';
+import type { Code, CodeAssignment, Excerpt, Id } from './types';
 
 /** Specification: docs/patterns/code-selection.md sections 8, 9, 13. */
 
@@ -173,5 +173,88 @@ describe('where a save returns', () => {
     });
 
     expect(postCodingReturnTarget(resolved, range, 'nextUncodedSegment', coded)).toBe('s9');
+  });
+});
+
+describe('saved excerpts a focused turn intersects, per D-038', () => {
+  const excerptAt = (excerptId: Id, startSegmentId: Id, endSegmentId: Id): Excerpt => ({
+    excerptId,
+    sourceId: resolved.source.sourceId,
+    startSegmentId,
+    endSegmentId,
+    startOffset: 0,
+    endOffset: 0,
+    coderId: 'us-1',
+    codingRoundId: 'rd-1',
+    createdAt: NOW,
+    updatedAt: NOW,
+  });
+
+  const assignmentFor = (excerptId: Id, assignmentId: Id): CodeAssignment => ({
+    assignmentId,
+    excerptId,
+    codeId: 'cd-a',
+    coderId: 'us-1',
+    codingRoundId: 'rd-1',
+    codebookVersionId: 'cv-1',
+    status: 'active',
+    uncertaintyFlag: false,
+    visibility: 'team',
+    createdAt: NOW,
+    updatedAt: NOW,
+  });
+
+  // t2 is s4..s7, so an excerpt on s6 starts three sentences into the turn.
+  const turnId = resolved.turns[2].turn.turnId;
+
+  it('finds an excerpt that starts partway through the turn', () => {
+    // Checking only the turn's first sentence would miss this, and the coder
+    // would be told there is nothing here to reopen while looking at a
+    // highlight.
+    const found = savedExcerptsInTurn(
+      resolved,
+      turnId,
+      [excerptAt('ex-mid', 's6', 's6')],
+      [assignmentFor('ex-mid', 'as-mid')],
+    );
+
+    expect(found.map((summary) => summary.excerptId)).toEqual(['ex-mid']);
+  });
+
+  it('finds an excerpt that merely overlaps the turn from outside it', () => {
+    const found = savedExcerptsInTurn(
+      resolved,
+      turnId,
+      [excerptAt('ex-across', 's2', 's5')],
+      [assignmentFor('ex-across', 'as-across')],
+    );
+
+    expect(found.map((summary) => summary.excerptId)).toEqual(['ex-across']);
+  });
+
+  it('lists each overlapping excerpt once, in order, for the coder to choose', () => {
+    const found = savedExcerptsInTurn(
+      resolved,
+      turnId,
+      [excerptAt('ex-1', 's4', 's6'), excerptAt('ex-2', 's5', 's7')],
+      [assignmentFor('ex-1', 'as-1'), assignmentFor('ex-2', 'as-2')],
+    );
+
+    expect(found.map((summary) => summary.excerptId)).toEqual(['ex-1', 'ex-2']);
+  });
+
+  it('finds nothing in a turn no excerpt reaches', () => {
+    expect(
+      savedExcerptsInTurn(
+        resolved,
+        resolved.turns[0].turn.turnId,
+        [excerptAt('ex-mid', 's6', 's6')],
+        [assignmentFor('ex-mid', 'as-mid')],
+      ),
+    ).toEqual([]);
+  });
+
+  it('finds nothing for a turn that is not in the source', () => {
+    expect(savedExcerptsInTurn(resolved, 'nope', [], [])).toEqual([]);
   });
 });

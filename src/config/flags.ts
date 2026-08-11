@@ -24,7 +24,12 @@ export type CodeFrequencyVisibility = 'administratorOnly' | 'reviewPhase' | 'alw
 export type LayoutPreference = 'singlePanel' | 'multiPanel';
 
 export interface PrototypeFlags {
-  /** Addressing unit for navigation and excerpt boundaries. See T-1. */
+  /**
+   * @deprecated Dead since D-038. There is no navigation layer left for this to
+   * configure: movement belongs to the browser and the screen reader, and
+   * excerpt boundaries come from the selection. Kept, not deleted, because v0.1
+   * comparisons may still run.
+   */
   transcriptNavigationUnit: TranscriptNavigationUnit;
   timestampVerbosity: TimestampVerbosity;
   positionReportDetail: PositionReportDetail;
@@ -113,6 +118,7 @@ export const flagPresets: Record<string, Partial<PrototypeFlags>> = {
   baseline: {},
   centeredModalCodebook: { codebookPresentation: 'centeredModal' },
   fullPageCodebook: { codebookPresentation: 'fullPage' },
+  /** @deprecated Governs nothing since D-038. Retained for v0.1 comparisons. */
   turnLevelNavigation: {
     transcriptNavigationUnit: 'speakerTurn',
     excerptInitialRange: 'activeSpeakerTurn',
