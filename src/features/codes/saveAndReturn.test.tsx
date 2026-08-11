@@ -16,9 +16,7 @@ import { TranscriptWorkspace } from '../transcript/TranscriptWorkspace';
  * docs/patterns/excerpt-selection.md section 9.
  *
  * The remaining acceptance criteria from section 14 are here under their own
- * names. "Save failure preserves everything" is not: the simulated failure and
- * its retry control belong to task 11, and asserting it now would test a path
- * that does not exist yet.
+ * names, including "Save failure preserves everything".
  */
 
 const fixture = createSeedFixture();
@@ -98,9 +96,17 @@ function saved(container: HTMLElement) {
   };
 }
 
+/**
+ * Checks a code by identifier.
+ *
+ * By id rather than by accessible name: a name query computes the accessible
+ * name of every checkbox in a fifty-code panel, which is slow enough to time
+ * out under a loaded test run, and it cannot tell the fixture's deliberately
+ * similar names apart.
+ */
 function checkCode(name: string) {
-  const box = within(region('codebook')).getByRole('checkbox', { name: new RegExp(name) });
-  fireEvent.click(box);
+  const code = fixture.codes.find((candidate) => candidate.name === name)!;
+  fireEvent.click(region('codebook').querySelector(`[data-code-id="${code.codeId}"]`)!);
 }
 
 function writeNote(text: string) {
@@ -326,6 +332,96 @@ describe('what save writes, per section 8', () => {
     chord('segment.next');
     chord('excerpt.begin');
     expect(excerptState()).toBe('anchored');
+  });
+});
+
+describe('acceptance: save failure preserves everything', () => {
+  const armed = { ...defaultFlags, simulateSaveFailure: true };
+
+  it('keeps both codes, the note, and the excerpt, and offers a retry', () => {
+    const { container } = renderWorkspace(armed);
+    openPanel();
+    checkCode('Waiting list');
+    checkCode('Mutual aid');
+    writeNote('A note I would hate to retype.');
+
+    fireEvent.click(within(panel()).getByRole('button', { name: 'Save' }));
+
+    // Nothing written.
+    expect(saved(container)).toEqual({ excerpts: 0, assignments: 0, notes: 0 });
+    // Everything still here.
+    expect(within(region('pending')).getAllByRole('listitem')).toHaveLength(2);
+    expect(within(region('note')).getByLabelText(/note about this excerpt/i)).toHaveValue(
+      'A note I would hate to retype.',
+    );
+    expect(excerptState()).toBe('confirmed');
+    expect(panel()).toBeInTheDocument();
+    // And a retry.
+    expect(within(panel()).getByRole('button', { name: /retry save/i })).toBeInTheDocument();
+  });
+
+  it('announces what failed and that nothing was lost, assertively', () => {
+    renderWorkspace(armed);
+    openPanel();
+    checkCode('Waiting list');
+    writeNote('Kept.');
+
+    fireEvent.click(within(panel()).getByRole('button', { name: 'Save' }));
+
+    const failure = announcer.getHistory().find((entry) => /could not be written/i.test(entry.message))!;
+    // Contract 2.3 reserves the assertive region for exactly this.
+    expect(failure.politeness).toBe('assertive');
+    expect(failure.reason).toBe('saveFailure');
+    expect(failure.message).toMatch(/nothing was lost/i);
+    expect(failure.message).toMatch(/1 pending code and your note/i);
+    expect(failure.message).toMatch(/retry is available/i);
+  });
+
+  it('succeeds on retry, writing everything that was held', () => {
+    const { container } = renderWorkspace(armed);
+    openPanel();
+    checkCode('Waiting list');
+    checkCode('Mutual aid');
+    writeNote('Survived the failure.');
+
+    fireEvent.click(within(panel()).getByRole('button', { name: 'Save' }));
+    fireEvent.click(within(panel()).getByRole('button', { name: /retry save/i }));
+
+    expect(saved(container)).toEqual({ excerpts: 1, assignments: 2, notes: 1 });
+    expect(excerptState()).toBe('saved');
+    expect(screen.queryByRole('region', { name: /code selection/i })).toBeNull();
+  });
+
+  it('fails one save, not every save', () => {
+    // The point is rehearsing recovery. A failure that never clears would make
+    // the retry untestable and the workflow unfinishable.
+    const { container } = renderWorkspace(armed);
+    openPanel();
+    checkCode('Waiting list');
+    fireEvent.click(within(panel()).getByRole('button', { name: 'Save' }));
+    fireEvent.click(within(panel()).getByRole('button', { name: /retry save/i }));
+    expect(saved(container).excerpts).toBe(1);
+
+    // A second excerpt saves first time.
+    chord('segment.next');
+    chord('excerpt.begin');
+    chord('excerpt.confirm');
+    checkCode('Mutual aid');
+    fireEvent.click(within(panel()).getByRole('button', { name: 'Save' }));
+
+    expect(saved(container).excerpts).toBe(2);
+    expect(screen.queryByRole('button', { name: /retry save/i })).toBeNull();
+  });
+
+  it('does not fail at all without the flag', () => {
+    const { container } = renderWorkspace();
+    openPanel();
+    checkCode('Waiting list');
+
+    fireEvent.click(within(panel()).getByRole('button', { name: 'Save' }));
+
+    expect(saved(container).excerpts).toBe(1);
+    expect(screen.queryByRole('button', { name: /retry save/i })).toBeNull();
   });
 });
 

@@ -73,6 +73,8 @@ export function CodePanel({
     canSave,
     saveUnavailableReason,
     cancelPending,
+    saveError,
+    setErrorElement,
   } = panel;
 
   if (!panel.isOpen) return null;
@@ -276,6 +278,27 @@ export function CodePanel({
           </div>
         ) : (
           <>
+            {/* The error, with retry adjacent, per section 9. Focus lands here
+                on a failure so the first thing heard is what happened and that
+                nothing was lost. */}
+            {saveError ? (
+              <div
+                className="code-panel__save-error"
+                data-save-error
+                ref={setErrorElement}
+                tabIndex={-1}
+              >
+                <p>
+                  {saveError} Nothing was lost: {pendingCodeIds.length}{' '}
+                  {pendingCodeIds.length === 1 ? 'code' : 'codes'}
+                  {noteText.trim() === '' ? '' : ', your note,'} and the excerpt are still here.
+                </p>
+                <button type="button" onClick={panel.retrySave}>
+                  Retry save
+                </button>
+              </div>
+            ) : null}
+
             <button
               type="button"
               aria-disabled={canSave ? undefined : true}

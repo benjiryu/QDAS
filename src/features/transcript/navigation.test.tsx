@@ -153,14 +153,16 @@ describe('the active segment', () => {
   });
 
   it('announces coded status and code count on entering a coded segment', () => {
-    // Section 6, third row.
+    // Section 6, third row. Clicking a coded highlight also reopens that saved
+    // excerpt, per D-030, so the coded announcement is not the last thing said.
     const { container } = renderWorkspace();
     const coded = segmentsWithState(displayStates, 'coded')[0];
 
     fireEvent.click(container.querySelector(`[data-segment-id="${coded}"]`)!);
 
-    expect(lastAnnouncement()).toMatch(/coded/i);
-    expect(lastAnnouncement()).toMatch(/\d+ codes?/);
+    const codedMessage = announced().find((message) => /coded/i.test(message))!;
+    expect(codedMessage).toMatch(/coded/i);
+    expect(codedMessage).toMatch(/\d+ codes?/);
   });
 
   it('says nothing about coding on an uncoded segment', () => {

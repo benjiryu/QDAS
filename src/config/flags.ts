@@ -105,6 +105,8 @@ export const flagPresets: Record<string, Partial<PrototypeFlags>> = {
   },
   verboseBoundaries: { boundaryChangeAnnouncement: 'fullRange' },
   commandEntryOnly: { adoptNativeSelection: false },
+  /** Arms one save failure, for rehearsing recovery before a session. */
+  saveFailure: { simulateSaveFailure: true },
 };
 
 export function resolveFlags(presetName = 'baseline'): PrototypeFlags {

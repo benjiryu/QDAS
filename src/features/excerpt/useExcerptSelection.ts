@@ -27,7 +27,13 @@ import {
   segmentById,
   turnOf,
 } from '../../domain';
-import type { ExcerptRange, Id, ResolvedSource, TranscriptSegment } from '../../domain';
+import type {
+  ExcerptRange,
+  Id,
+  ResolvedSource,
+  SavedExcerptSummary,
+  TranscriptSegment,
+} from '../../domain';
 import {
   adopted,
   adoptedAndConfirmed,
@@ -73,6 +79,7 @@ const CHORD_COMMANDS = [
   'excerpt.revert',
   'excerpt.confirm',
   'excerpt.discard',
+  'excerpt.open',
 ] as const satisfies readonly Command[];
 
 /**
@@ -103,6 +110,15 @@ export interface ExcerptSelectionApi {
   segmentsInRange: Set<Id>;
   startSegmentId: Id | null;
   endSegmentId: Id | null;
+  /**
+   * Saved excerpts the active segment falls inside, offered for choice when
+   * there is more than one. Empty when there is nothing to choose. D-030.
+   */
+  openChoices: SavedExcerptSummary[];
+  chooseSavedExcerpt: (excerptId: Id) => void;
+  dismissChoices: () => void;
+  /** Opens one, or offers a choice among several. Used by the command and by a click. */
+  runOpenAt: (summaries: SavedExcerptSummary[]) => void;
 }
 
 interface Options {
@@ -113,8 +129,12 @@ interface Options {
   containerRef: React.RefObject<HTMLDivElement | null>;
   /** Confirming or cancelling sets the active segment, per transcript-segment 2.1. */
   onSetActiveSegment?: (segmentId: Id) => void;
-  /** Escape belongs to the code panel while it is open, per section 4.1. */
+  /** Escape belongs to the code panel while it is open, per section 4.2. */
   panelOpen?: boolean;
+  /** Saved excerpts covering the active segment, for `excerpt.open`. D-030. */
+  savedAt?: SavedExcerptSummary[];
+  /** Opens the panel pre-populated with a saved excerpt's codes. */
+  onReopen?: (summary: SavedExcerptSummary) => void;
   /** Confirm opens code selection, per section 3 and code-selection section 9. */
   onConfirm?: () => void;
   /**
@@ -136,6 +156,8 @@ export function useExcerptSelection({
   containerRef,
   onSetActiveSegment,
   panelOpen = false,
+  savedAt = [],
+  onReopen,
   onConfirm,
   onClosePanel,
   nativeSelection,
@@ -147,6 +169,9 @@ export function useExcerptSelection({
 
   /** Which turn holds focus, so `excerpt.begin` can start from it. */
   const [focusedTurnId, setFocusedTurnId] = useState<Id | null>(null);
+
+  /** Overlapping saved excerpts awaiting a choice. D-030 does not guess. */
+  const [openChoices, setOpenChoices] = useState<SavedExcerptSummary[]>([]);
 
   /**
    * How far out the context walk has gone in each direction. Section 5 offers
@@ -200,6 +225,11 @@ export function useExcerptSelection({
       allowed ? { available: true, reason: null } : { available: false, reason };
 
     const boundary = (command: keyof NonNullable<typeof boundaries>): CommandState => {
+      // Reopening changes codes, not boundaries. The edit path stays deferred
+      // under E-4, so every boundary command is unavailable and says why.
+      if (selection.reopenedExcerptId !== null) {
+        return gate(false, EXCERPT_UNAVAILABLE.reopenedIsLocked);
+      }
       if (!live || !boundaries) return gate(false, EXCERPT_UNAVAILABLE.noExcerpt);
       const entry = boundaries[command];
       return entry.available
@@ -238,8 +268,23 @@ export function useExcerptSelection({
           : EXCERPT_UNAVAILABLE.noExcerpt,
       ),
       'excerpt.discard': gate(live, EXCERPT_UNAVAILABLE.noExcerpt),
+      'excerpt.open': gate(
+        (state === 'idle' || state === 'saved') && savedAt.length > 0,
+        state === 'idle' || state === 'saved'
+          ? EXCERPT_UNAVAILABLE.noSavedExcerptHere
+          : EXCERPT_UNAVAILABLE.alreadyStarted,
+      ),
     };
-  }, [activeSegmentId, adoptable, focusedTurnId, resolved, selection.range, selection.state]);
+  }, [
+    activeSegmentId,
+    adoptable,
+    focusedTurnId,
+    resolved,
+    savedAt.length,
+    selection.range,
+    selection.reopenedExcerptId,
+    selection.state,
+  ]);
 
   /* ---------- Focus and scrolling helpers ---------- */
 
@@ -308,6 +353,43 @@ export function useExcerptSelection({
   );
 
   /* ---------- Commands ---------- */
+
+  const reopen = useCallback(
+    (summary: SavedExcerptSummary) => {
+      setOpenChoices([]);
+      dispatch({ type: 'reopen', range: summary.range, excerptId: summary.excerptId });
+      onReopen?.(summary);
+    },
+    [onReopen],
+  );
+
+  const runOpenAt = useCallback(
+    (summaries: SavedExcerptSummary[]) => {
+      if (summaries.length === 0) return;
+      if (summaries.length === 1) {
+        reopen(summaries[0]);
+        return;
+      }
+      setOpenChoices(summaries);
+      announcer.announce(
+        `${summaries.length} saved excerpts cover this sentence. Choose which one to open.`,
+      );
+    },
+    [announcer, reopen],
+  );
+
+  const chooseSavedExcerpt = useCallback(
+    (excerptId: Id) => {
+      const summary = openChoices.find((choice) => choice.excerptId === excerptId);
+      if (summary) reopen(summary);
+    },
+    [openChoices, reopen],
+  );
+
+  const dismissChoices = useCallback(() => {
+    setOpenChoices([]);
+    announcer.announce('No excerpt opened.');
+  }, [announcer]);
 
   const run = useCallback(
     (command: ExcerptCommand) => {
@@ -476,6 +558,13 @@ export function useExcerptSelection({
           return;
         }
 
+        case 'excerpt.open': {
+          // One opens; two or more, the `coded-multiple` case, are presented
+          // for choice. Guessing would silently edit the wrong excerpt. D-030.
+          runOpenAt(savedAt);
+          return;
+        }
+
         case 'excerpt.discard': {
           const origin = originSegmentId;
           dispatch({ type: 'discard' });
@@ -506,6 +595,8 @@ export function useExcerptSelection({
       onConfirm,
       onSetActiveSegment,
       resolved,
+      runOpenAt,
+      savedAt,
       selection,
     ],
   );
@@ -560,5 +651,9 @@ export function useExcerptSelection({
     segmentsInRange,
     startSegmentId: selection.range?.startSegmentId ?? null,
     endSegmentId: selection.range?.endSegmentId ?? null,
+    openChoices,
+    chooseSavedExcerpt,
+    dismissChoices,
+    runOpenAt,
   };
 }

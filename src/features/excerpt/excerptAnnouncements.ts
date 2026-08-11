@@ -128,4 +128,7 @@ export const EXCERPT_UNAVAILABLE: Record<string, string> = {
   alreadyStarted: 'An excerpt is already in progress.',
   notAdjusted: 'The excerpt has not been adjusted, so there is nothing to revert.',
   alreadyConfirmed: 'The excerpt is already confirmed.',
+  noSavedExcerptHere: 'This sentence is not inside a saved excerpt.',
+  reopenedIsLocked:
+    'This excerpt was reopened to change its codes. Its boundaries cannot be moved.',
 };

@@ -177,8 +177,10 @@ describe('acceptance: stable code order', () => {
     openPanel();
     const before = codebookOrder();
 
-    fireEvent.click(checkboxFor(region('codebook'), 'Water access rules'));
-    fireEvent.click(checkboxFor(region('codebook'), 'Waiting list'));
+    const byName = (name: string) =>
+      fixture.codes.find((candidate) => candidate.name === name)!.codeId;
+    fireEvent.click(checkboxById(region('codebook'), byName('Water access rules')));
+    fireEvent.click(checkboxById(region('codebook'), byName('Waiting list')));
 
     expect(codebookOrder()).toEqual(before);
   });

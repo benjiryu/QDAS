@@ -6,10 +6,12 @@ import {
   buildCodingRecords,
   deriveSegmentDisplayStates,
   describeExcerptSize,
+  diffReopenedAssignments,
   excerptSize,
   positionReport,
   postCodingReturnTarget,
   requireTurnOf,
+  savedExcerptsAt,
 } from '../../domain';
 import type {
   Code,
@@ -21,6 +23,7 @@ import type {
 } from '../../domain';
 import { CodePanel } from '../codes/CodePanel';
 import { useCodePanel } from '../codes/useCodePanel';
+import type { SaveOutcome } from '../codes/useCodePanel';
 import { ExcerptToolbar } from '../excerpt/ExcerptToolbar';
 import { useExcerptSelection } from '../excerpt/useExcerptSelection';
 import { useNativeSelection } from '../excerpt/useNativeSelection';
@@ -76,6 +79,24 @@ export function TranscriptWorkspace({
   const [savedExcerpts, setSavedExcerpts] = useState<Excerpt[]>([]);
   const [savedAssignments, setSavedAssignments] = useState<CodeAssignment[]>([]);
   const [savedNotes, setSavedNotes] = useState<Note[]>([]);
+  /**
+   * Assignments the coder removed from a reopened excerpt.
+   *
+   * Superseded, never deleted: the project preserves before-and-after history,
+   * and a removed assignment is evidence about how interpretation changed.
+   * D-030.
+   */
+  const [supersededIds, setSupersededIds] = useState<Set<Id>>(() => new Set());
+  const panelLoad = useRef<((codeIds: Id[]) => void) | null>(null);
+
+  /**
+   * Whether the next save is set to fail, from `simulateSaveFailure`.
+   *
+   * One save, not every save: the point is to rehearse recovery, and a retry
+   * that could never succeed would test half the behaviour. Disarmed by the
+   * attempt it fails.
+   */
+  const failureArmed = useRef(flags.simulateSaveFailure);
 
   /*
    * Exposed on the element for tests and for the development announcement log:
@@ -88,15 +109,34 @@ export function TranscriptWorkspace({
     notes: savedNotes.length,
   };
 
+  /** Every assignment in play, with superseded ones marked as such. */
+  const effectiveAssignments = useMemo(
+    () =>
+      [...seedAssignments, ...savedAssignments].map((assignment) =>
+        supersededIds.has(assignment.assignmentId)
+          ? { ...assignment, status: 'superseded' as const }
+          : assignment,
+      ),
+    [savedAssignments, seedAssignments, supersededIds],
+  );
+
+  const allExcerpts = useMemo(
+    () => [...seedExcerpts, ...savedExcerpts],
+    [savedExcerpts, seedExcerpts],
+  );
+
   // Coded state covers seeded work and this session's saves alike, so a
-  // sentence the coder just saved reads as coded immediately.
+  // sentence the coder just saved reads as coded immediately. An excerpt whose
+  // assignments have all been superseded is no longer coded.
   const displayStates = useMemo(
     () =>
       deriveSegmentDisplayStates(resolved, {
-        excerpts: [...seedExcerpts, ...savedExcerpts],
-        codeAssignments: [...seedAssignments, ...savedAssignments],
+        excerpts: allExcerpts,
+        codeAssignments: effectiveAssignments,
+        includeExcerpt: (_excerpt, assignments) =>
+          assignments.some((assignment) => assignment.status !== 'superseded'),
       }),
-    [resolved, savedAssignments, savedExcerpts, seedAssignments, seedExcerpts],
+    [allExcerpts, effectiveAssignments, resolved],
   );
 
   const navigation = useTranscriptNavigation({ resolved, displayStates, userId, flags });
@@ -122,6 +162,22 @@ export function TranscriptWorkspace({
     resolved,
   });
 
+  /**
+   * Saved excerpts covering the active segment, for `excerpt.open`.
+   *
+   * Every excerpt the transcript shows as coded is reachable, including the
+   * seeded second coder's. Whether a participant should be able to reopen
+   * another coder's work is the same open question as whether they should see
+   * it, so the filter stays here at the call site.
+   */
+  const savedAt = useMemo(
+    () =>
+      navigation.activeSegmentId
+        ? savedExcerptsAt(resolved, navigation.activeSegmentId, allExcerpts, effectiveAssignments)
+        : [],
+    [allExcerpts, effectiveAssignments, navigation.activeSegmentId, resolved],
+  );
+
   const excerpt = useExcerptSelection({
     resolved,
     activeSegmentId: navigation.activeSegmentId,
@@ -133,6 +189,12 @@ export function TranscriptWorkspace({
     panelOpen,
     onConfirm: () => setPanelOpen(true),
     onClosePanel: () => setPanelOpen(false),
+    savedAt,
+    onReopen: (summary) => {
+      // The panel opens pre-populated with what is already saved, per D-030.
+      panelLoad.current?.(summary.codeIds);
+      setPanelOpen(true);
+    },
     nativeSelection,
   });
 
@@ -152,9 +214,70 @@ export function TranscriptWorkspace({
    * makes a failed save non-destructive.
    */
   const handleSave = useCallback(
-    (pending: { codeIds: Id[]; noteText: string; uncertain: boolean }) => {
+    (pending: { codeIds: Id[]; noteText: string; uncertain: boolean }): SaveOutcome => {
       const range = excerpt.selection.range;
-      if (!range) return;
+      if (!range) return { ok: true };
+
+      // Checked before anything is written, so a failed save leaves no partial
+      // record behind and nothing to unwind.
+      if (failureArmed.current) {
+        failureArmed.current = false;
+        return { ok: false, message: 'The save could not be written.' };
+      }
+
+      // A reopened excerpt writes the difference rather than a new set.
+      const reopenedId = excerpt.selection.reopenedExcerptId;
+      if (reopenedId) {
+        const diff = diffReopenedAssignments(
+          reopenedId,
+          effectiveAssignments,
+          pending.codeIds,
+          {
+            sourceId: resolved.source.sourceId,
+            coderId: userId,
+            codingRoundId,
+            codebookVersionId,
+          },
+          panelCodeById.current,
+          pending.uncertain,
+          new Date().toISOString(),
+        );
+
+        setSavedAssignments((current) => [...current, ...diff.added]);
+        setSupersededIds((current) => {
+          const next = new Set(current);
+          for (const id of diff.supersededAssignmentIds) next.add(id);
+          return next;
+        });
+
+        const range = excerpt.selection.range!;
+        const target = postCodingReturnTarget(
+          resolved,
+          range,
+          flags.postCodingReturn,
+          displayStates,
+        );
+
+        excerpt.markSaved();
+        setPanelOpen(false);
+        navigation.setActiveSegment(target);
+
+        const report = positionReport(resolved, target);
+        const kept = diff.unchangedCodeIds.length;
+        announcer.announce(
+          `Saved. ${diff.added.length} added, ${diff.supersededAssignmentIds.length} removed, ${kept} unchanged. Returned to sentence ${
+            report?.sentenceIndex ?? 0
+          } of ${report?.sentenceCount ?? 0}.`,
+        );
+
+        const turn = requireTurnOf(resolved, target);
+        navigation.containerRef.current
+          ?.querySelector<HTMLElement>(`[data-turn-id="${turn.turn.turnId}"]`)
+          ?.focus?.();
+
+        panelClear.current?.();
+        return { ok: true };
+      }
 
       const records = buildCodingRecords(
         resolved,
@@ -168,7 +291,7 @@ export function TranscriptWorkspace({
         panelCodeById.current,
         new Date().toISOString(),
       );
-      if (!records) return;
+      if (!records) return { ok: true };
 
       const nextExcerpts = [...savedExcerpts, records.excerpt];
       const nextAssignments = [...savedAssignments, ...records.assignments];
@@ -202,11 +325,14 @@ export function TranscriptWorkspace({
         ?.focus?.();
 
       panelClear.current?.();
+      return { ok: true };
     },
     [
       announcer,
       codebookVersionId,
       codingRoundId,
+      displayStates,
+      effectiveAssignments,
       excerpt,
       flags.postCodingReturn,
       navigation,
@@ -226,6 +352,7 @@ export function TranscriptWorkspace({
     excerptSummary,
     onSave: handleSave,
     onCancel: () => {
+      // A reopened excerpt's saved assignments are untouched by cancel. D-030.
       setPanelOpen(false);
       // Section 9: cancel returns focus to the command strip, with the excerpt
       // still confirmed.
@@ -239,7 +366,26 @@ export function TranscriptWorkspace({
   useEffect(() => {
     panelCodeById.current = panel.codeById;
     panelClear.current = panel.clearAfterSave;
-  }, [panel.clearAfterSave, panel.codeById]);
+    panelLoad.current = panel.loadPending;
+  }, [panel.clearAfterSave, panel.codeById, panel.loadPending]);
+
+  /**
+   * Clicking a coded highlight opens that saved excerpt, which is the sighted
+   * route D-030 names. With nothing coded there it just sets the position, and
+   * with an excerpt already in progress it does not interrupt.
+   */
+  const activateAndMaybeOpen = useCallback(
+    (segmentId: Id) => {
+      navigation.activate(segmentId);
+
+      if (excerpt.selection.state !== 'idle' && excerpt.selection.state !== 'saved') return;
+      const here = savedExcerptsAt(resolved, segmentId, allExcerpts, effectiveAssignments);
+      if (here.length === 0) return;
+      // One opens; several ask, exactly as the command does.
+      excerpt.runOpenAt(here);
+    },
+    [allExcerpts, effectiveAssignments, excerpt, navigation, resolved],
+  );
 
   return (
     <>
@@ -257,7 +403,7 @@ export function TranscriptWorkspace({
         displayStates={displayStates}
         flags={flags}
         activeSegmentId={navigation.activeSegmentId}
-        onActivateSegment={navigation.activate}
+        onActivateSegment={activateAndMaybeOpen}
         containerRef={navigation.containerRef}
         segmentsInRange={excerpt.segmentsInRange}
         excerptStartSegmentId={excerpt.startSegmentId}

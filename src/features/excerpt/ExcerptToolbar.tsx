@@ -34,6 +34,7 @@ const GROUPS: { label: string; commands: { command: ExcerptCommand; label: strin
       // context-sensitive control whose meaning depends on how you arrived.
       { command: 'excerpt.begin', label: 'Start excerpt' },
       { command: 'excerpt.confirm', label: 'Code this excerpt' },
+      { command: 'excerpt.open', label: 'Open saved excerpt' },
       { command: 'excerpt.discard', label: 'Discard' },
     ],
   },
@@ -119,6 +120,38 @@ export function ExcerptToolbar({ excerpt, resolved }: ExcerptToolbarProps) {
           })}
         </div>
       ))}
+
+      {/*
+        Two or more saved excerpts cover this sentence, so the coder chooses.
+        A temporary view: focus enters on the first option and returns to the
+        strip when it is dismissed, per accessibility contract 2.4.
+      */}
+      {excerpt.openChoices.length > 0 ? (
+        <div className="excerpt-toolbar__choices" role="group" aria-label="Saved excerpts here">
+          <p>
+            {excerpt.openChoices.length} saved excerpts cover this sentence. Choose one to open.
+          </p>
+          <ul className="excerpt-toolbar__choice-list">
+            {excerpt.openChoices.map((choice, index) => (
+              <li key={choice.excerptId}>
+                <button
+                  type="button"
+                  autoFocus={index === 0}
+                  onClick={() => excerpt.chooseSavedExcerpt(choice.excerptId)}
+                >
+                  {/* Identified by range and code count, never by coder: R-4
+                      keeps identities hidden until independent coding closes. */}
+                  Sentences {choice.startSentence} to {choice.endSentence}, {choice.codeIds.length}{' '}
+                  {choice.codeIds.length === 1 ? 'code' : 'codes'}
+                </button>
+              </li>
+            ))}
+          </ul>
+          <button type="button" onClick={excerpt.dismissChoices}>
+            Open none of them
+          </button>
+        </div>
+      ) : null}
 
       {selection.state === 'adjusting' ? (
         <div className="excerpt-toolbar__group" role="group" aria-label="Revert">

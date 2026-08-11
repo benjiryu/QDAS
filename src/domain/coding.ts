@@ -170,3 +170,125 @@ export function postCodingReturnTarget(
     }
   }
 }
+
+/* ---------- Reopening a saved excerpt, per D-030 ---------- */
+
+export interface SavedExcerptSummary {
+  excerptId: Id;
+  range: ExcerptRange;
+  /** Assignments still standing. Superseded ones are not counted. */
+  codeIds: Id[];
+  /** One based, for identifying the excerpt by range in a chooser. */
+  startSentence: number;
+  endSentence: number;
+}
+
+/**
+ * The saved excerpts covering a segment, in canonical order.
+ *
+ * Returns every match rather than a best one. Where a segment falls inside two
+ * or more, per D-030 the command does not guess: the caller presents the list
+ * and the coder chooses.
+ */
+export function savedExcerptsAt(
+  resolved: ResolvedSource,
+  segmentId: Id,
+  excerpts: Excerpt[],
+  assignments: CodeAssignment[],
+): SavedExcerptSummary[] {
+  const position = positionOf(resolved, segmentId);
+  if (position === null) return [];
+
+  return excerpts
+    .filter((excerpt) => excerpt.sourceId === resolved.source.sourceId)
+    .map((excerpt) => {
+      const start = positionOf(resolved, excerpt.startSegmentId);
+      const end = positionOf(resolved, excerpt.endSegmentId);
+      if (start === null || end === null || position < start || position > end) return null;
+
+      const codeIds = assignments
+        .filter(
+          (assignment) =>
+            assignment.excerptId === excerpt.excerptId && assignment.status !== 'superseded',
+        )
+        .map((assignment) => assignment.codeId);
+
+      // An excerpt with nothing standing on it is not coded, so it is not
+      // something to reopen.
+      if (codeIds.length === 0) return null;
+
+      return {
+        excerptId: excerpt.excerptId,
+        range: {
+          startSegmentId: excerpt.startSegmentId,
+          endSegmentId: excerpt.endSegmentId,
+        },
+        codeIds,
+        startSentence: start + 1,
+        endSentence: end + 1,
+      };
+    })
+    .filter((summary): summary is SavedExcerptSummary => summary !== null)
+    .sort((a, b) => a.startSentence - b.startSentence || a.endSentence - b.endSentence);
+}
+
+export interface ReopenedSaveDiff {
+  /** Codes checked that were not saved before. */
+  added: CodeAssignment[];
+  /** Assignments whose code was unchecked. Superseded, never deleted. */
+  supersededAssignmentIds: Id[];
+  /** Codes that were saved and are still checked. Untouched. */
+  unchangedCodeIds: Id[];
+}
+
+/**
+ * What a save writes when the excerpt was reopened, per D-030.
+ *
+ * Save writes the difference rather than creating a new set. A removed code
+ * sets its assignment to `superseded` and the row is retained: the project
+ * preserves before-and-after history rather than overwriting it, and a removed
+ * assignment is evidence about how interpretation changed.
+ */
+export function diffReopenedAssignments(
+  excerptId: Id,
+  existing: CodeAssignment[],
+  pendingCodeIds: Id[],
+  identity: CodingIdentity,
+  codeById: Map<Id, Code>,
+  uncertain: boolean,
+  now: string,
+): ReopenedSaveDiff {
+  const standing = existing.filter(
+    (assignment) => assignment.excerptId === excerptId && assignment.status !== 'superseded',
+  );
+  const savedCodeIds = new Set(standing.map((assignment) => assignment.codeId));
+  const pending = new Set(pendingCodeIds);
+
+  const added = pendingCodeIds
+    .filter((codeId) => !savedCodeIds.has(codeId))
+    .map((codeId, index) => ({
+      assignmentId: `as-${excerptId.slice(3)}-r${now.slice(11, 19).replace(/:/g, '')}-${index}`,
+      excerptId,
+      codeId,
+      coderId: identity.coderId,
+      codingRoundId: identity.codingRoundId,
+      codebookVersionId: identity.codebookVersionId,
+      status: (codeById.get(codeId)?.status === 'provisional'
+        ? 'provisional'
+        : 'active') as CodeAssignment['status'],
+      uncertaintyFlag: uncertain,
+      visibility: 'afterIndependentCoding' as const,
+      createdAt: now,
+      updatedAt: now,
+    }));
+
+  const supersededAssignmentIds = standing
+    .filter((assignment) => !pending.has(assignment.codeId))
+    .map((assignment) => assignment.assignmentId);
+
+  const unchangedCodeIds = standing
+    .filter((assignment) => pending.has(assignment.codeId))
+    .map((assignment) => assignment.codeId);
+
+  return { added, supersededAssignmentIds, unchangedCodeIds };
+}

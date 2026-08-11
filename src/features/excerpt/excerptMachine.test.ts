@@ -12,18 +12,21 @@ const anchored: ExcerptSelection = {
   range,
   originSegmentId: 's4',
   originRange: range,
+  reopenedExcerptId: null,
 };
 const adjusting: ExcerptSelection = {
   state: 'adjusting',
   range: wider,
   originSegmentId: 's4',
   originRange: range,
+  reopenedExcerptId: null,
 };
 const confirmedSelection: ExcerptSelection = {
   state: 'confirmed',
   range: wider,
   originSegmentId: 's4',
   originRange: range,
+  reopenedExcerptId: null,
 };
 
 describe('the transition table', () => {
@@ -35,6 +38,7 @@ describe('the transition table', () => {
       range,
       originSegmentId: 's4',
       originRange: range,
+      reopenedExcerptId: null,
     });
   });
 
@@ -44,6 +48,7 @@ describe('the transition table', () => {
       range: wider,
       originSegmentId: 's4',
       originRange: range,
+      reopenedExcerptId: null,
     });
   });
 

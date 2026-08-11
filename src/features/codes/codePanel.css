@@ -222,6 +222,27 @@
   color: var(--error, #a2231d);
 }
 
+/*
+ * A save failure. Bordered and stated in words, never signalled by colour
+ * alone, and it holds its place until the save succeeds or is cancelled.
+ */
+.code-panel__save-error {
+  flex: 1 1 100%;
+  padding: 0.5rem 0.75rem;
+  border: 2px solid var(--error, #a2231d);
+  border-radius: 4px;
+  color: var(--error, #a2231d);
+}
+
+.code-panel__save-error p {
+  margin: 0 0 0.5rem;
+}
+
+.code-panel__save-error:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
 .code-panel__note {
   margin: 0 0 0.35rem;
   color: var(--text-muted);

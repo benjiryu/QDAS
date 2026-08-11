@@ -35,6 +35,14 @@ export interface ExcerptSelection {
    * sentence would silently discard most of what the user dragged.
    */
   originRange: ExcerptRange | null;
+  /**
+   * The saved excerpt this selection reopened, per D-030.
+   *
+   * Non-null means the range is locked: reopening changes codes, not
+   * boundaries, and the boundary edit path stays deferred under E-4. It also
+   * tells save to write the difference rather than create a new set.
+   */
+  reopenedExcerptId: Id | null;
 }
 
 export const IDLE: ExcerptSelection = {
@@ -42,10 +50,12 @@ export const IDLE: ExcerptSelection = {
   range: null,
   originSegmentId: null,
   originRange: null,
+  reopenedExcerptId: null,
 };
 
 export type ExcerptEvent =
   | { type: 'begin'; range: ExcerptRange; originSegmentId: Id }
+  | { type: 'reopen'; range: ExcerptRange; excerptId: Id }
   | { type: 'boundaryChange'; range: ExcerptRange }
   | { type: 'revert' }
   | { type: 'confirm' }
@@ -83,13 +93,27 @@ export function excerptReducer(
         range: event.range,
         originSegmentId: event.originSegmentId,
         originRange: event.range,
+        reopenedExcerptId: null,
+      };
+
+    case 'reopen':
+      // Straight to `confirmed` with the range fixed. D-030: reopening changes
+      // codes only, so there is no anchored or adjusting phase to pass through.
+      if (current.state !== 'idle' && current.state !== 'saved') return current;
+      return {
+        state: 'confirmed',
+        range: event.range,
+        originSegmentId: event.range.startSegmentId,
+        originRange: event.range,
+        reopenedExcerptId: event.excerptId,
       };
 
     case 'boundaryChange':
       // From `confirmed` too: the range reopens for editing rather than being
       // locked. That is the recovery path, and the most common reason to back
       // out of code selection is realising the boundaries are wrong.
-      if (!canAdjust(current.state)) return current;
+      // A reopened excerpt has locked boundaries, so nothing moves them.
+      if (!canAdjust(current.state) || current.reopenedExcerptId !== null) return current;
       return { ...current, state: 'adjusting', range: event.range };
 
     case 'revert':
@@ -108,7 +132,13 @@ export function excerptReducer(
       // moves into the stored record, so the live selection is cleared and the
       // transcript shows it as coded from that record instead.
       if (current.state !== 'confirmed') return current;
-      return { state: 'saved', range: null, originSegmentId: null, originRange: null };
+      return {
+        state: 'saved',
+        range: null,
+        originSegmentId: null,
+        originRange: null,
+        reopenedExcerptId: null,
+      };
 
     case 'discard':
       // From every live state, including `confirmed`. Cancelling creates no

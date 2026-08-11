@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { useParams } from 'react-router';
+import { useParams, useSearchParams } from 'react-router';
+import { defaultFlags, resolveFlags } from '../config/flags';
 import { createSeedFixture } from '../data/seed';
 import { CURRENT_CODER_ID } from '../data/seed/project';
 import { resolveSource } from '../domain';
@@ -18,6 +19,25 @@ import { TranscriptWorkspace } from '../features/transcript/TranscriptWorkspace'
  */
 export function SourcePage() {
   const { sourceId } = useParams();
+  const [searchParams] = useSearchParams();
+
+  /**
+   * The flag preset this session runs under, named in the URL.
+   *
+   * The pre-session checklist requires recording which preset a session ran
+   * under, and `?preset=` is how a facilitator selects one. An unknown name
+   * falls back to the defaults rather than blanking the page mid-session.
+   */
+  const flags = useMemo(() => {
+    const preset = searchParams.get('preset');
+    if (!preset) return defaultFlags;
+    try {
+      return resolveFlags(preset);
+    } catch (error) {
+      if (import.meta.env.DEV) console.error(error);
+      return defaultFlags;
+    }
+  }, [searchParams]);
 
   const view = useMemo(() => {
     const fixture = createSeedFixture();
@@ -71,6 +91,7 @@ export function SourcePage() {
         codes={view.codes}
         projectId={view.projectId}
         userId={CURRENT_CODER_ID}
+        flags={flags}
       />
     </>
   );

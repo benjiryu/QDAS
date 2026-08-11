@@ -28,6 +28,15 @@ function newCodeId(): Id {
   return `cd-${random}`;
 }
 
+/**
+ * What a save attempt reported.
+ *
+ * A failure carries what failed. Nothing is cleared and nothing is closed on a
+ * failure: excerpt-selection.md section 9 and code-selection.md section 12 both
+ * require that a failed save discards nothing and resets no state.
+ */
+export type SaveOutcome = { ok: true } | { ok: false; message: string };
+
 export interface NewCodeDraft {
   name: string;
   shortDefinition: string;
@@ -50,6 +59,8 @@ export interface CodePanelApi {
   /** Codes created this session. Never part of the canonical codebook. */
   proposedCodes: Code[];
   createProvisionalCode: (draft: NewCodeDraft) => Code | null;
+  /** Seeds the pending assignment when reopening a saved excerpt. D-030. */
+  loadPending: (codeIds: Id[]) => void;
   /** One note per excerpt, plain text, no type. D-011 and D-020. */
   noteText: string;
   setNoteText: (text: string) => void;
@@ -60,6 +71,11 @@ export interface CodePanelApi {
   canSave: boolean;
   saveUnavailableReason: string | null;
   save: () => void;
+  /** The last save failure, still on screen until it is resolved. */
+  saveError: string | null;
+  /** Retries the save that failed. Same action, named for what it is. */
+  retrySave: () => void;
+  setErrorElement: (node: HTMLElement | null) => void;
   /** Cancel asks first when there are unsaved changes. Section 8. */
   cancelPending: boolean;
   requestCancel: () => void;
@@ -86,6 +102,7 @@ interface Options {
   isOpen: boolean;
   /** Announced when the panel opens: excerpt size and start speaker, per section 10. */
   excerptSummary: string | null;
+
   /** Cancel closes the panel and returns focus to the command strip, per section 9. */
   onCancel: () => void;
   /**
@@ -93,7 +110,11 @@ interface Options {
    * assignment; where it is written and where the user lands belong to the
    * workspace that owns the transcript.
    */
-  onSave?: (pending: { codeIds: Id[]; noteText: string; uncertain: boolean }) => void;
+  onSave?: (pending: {
+    codeIds: Id[];
+    noteText: string;
+    uncertain: boolean;
+  }) => SaveOutcome | void;
 }
 
 export function useCodePanel({
@@ -117,11 +138,33 @@ export function useCodePanel({
 
   const [query, setQueryState] = useState('');
   const [pendingCodeIds, setPendingCodeIds] = useState<Id[]>([]);
+
+  /**
+   * The pending list, mirrored so it can be read synchronously.
+   *
+   * Computing the next list inside a state updater would be the obvious way to
+   * avoid a stale closure, but an updater must be pure: React may run it during
+   * a render, and twice in development, so announcing from inside one produces
+   * duplicate speech and updates the announcement log mid-render. Every write
+   * goes through `applyPending`, which keeps the two in step.
+   */
+  const pendingListRef = useRef<Id[]>([]);
+  const applyPending = useCallback((next: Id[]) => {
+    pendingListRef.current = next;
+    setPendingCodeIds(next);
+  }, []);
   const [recentCodeIds, setRecentCodeIds] = useState<Id[]>([]);
   const [proposedCodes, setProposedCodes] = useState<Code[]>([]);
   const [noteText, setNoteText] = useState('');
   const [uncertain, setUncertainState] = useState(false);
   const [cancelPending, setCancelPending] = useState(false);
+  /** How many codes the panel opened with, for the opening announcement. */
+  const loadedCountRef = useRef(0);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const errorRef = useRef<HTMLElement | null>(null);
+  const setErrorElement = useCallback((node: HTMLElement | null) => {
+    errorRef.current = node;
+  }, []);
 
   const codeById = useMemo(
     () => new Map([...codes, ...proposedCodes].map((code) => [code.codeId, code])),
@@ -150,9 +193,17 @@ export function useCodePanel({
     // the destination excerpt-selection.md section 6 names for confirm.
     searchRef.current?.focus?.();
 
-    // Section 10: panel name, excerpt size, and start speaker.
+    // Section 10: panel name, excerpt size, start speaker, and for a reopened
+    // excerpt that existing codes are loaded and how many, so they are not
+    // mistaken for codes the coder just applied. The count is read from a ref
+    // written by `loadPending` just before the panel opened.
+    const loaded = loadedCountRef.current;
     announcer.announce(
-      `Code selection. ${excerptSummary ?? 'No excerpt.'} Search field focused.`,
+      `Code selection. ${excerptSummary ?? 'No excerpt.'}${
+        loaded > 0
+          ? ` ${loaded} existing ${loaded === 1 ? 'code' : 'codes'} loaded from the saved excerpt.`
+          : ''
+      } Search field focused.`,
     );
   }, [announcer, excerptSummary, isOpen]);
 
@@ -204,22 +255,22 @@ export function useCodePanel({
       const code = codeById.get(codeId);
       if (!code) return;
 
-      setPendingCodeIds((current) => {
-        // Checking a parent does not check its children. Coding a parent is a
-        // distinct analytic act from coding its children, per section 4.
-        const next = checked
-          ? current.includes(codeId)
-            ? current
-            : [...current, codeId]
-          : current.filter((id) => id !== codeId);
+      // Checking a parent does not check its children. Coding a parent is a
+      // distinct analytic act from coding its children, per section 4.
+      const current = pendingListRef.current;
+      const next = checked
+        ? current.includes(codeId)
+          ? current
+          : [...current, codeId]
+        : current.filter((id) => id !== codeId);
 
-        announcer.announce(
-          checked
-            ? `${code.name} added. ${next.length} pending.`
-            : `${code.name} removed. ${next.length} pending.`,
-        );
-        return next;
-      });
+      applyPending(next);
+
+      announcer.announce(
+        checked
+          ? `${code.name} added. ${next.length} pending.`
+          : `${code.name} removed. ${next.length} pending.`,
+      );
 
       if (checked) {
         setRecentCodeIds((current) =>
@@ -227,7 +278,7 @@ export function useCodePanel({
         );
       }
     },
-    [announcer, codeById],
+    [announcer, applyPending, codeById],
   );
 
   /**
@@ -238,6 +289,20 @@ export function useCodePanel({
    * change until a qualitative lead approves the code, so the index that would
    * place it there does not exist yet.
    */
+  /**
+   * Starts the pending assignment from an excerpt's saved codes, per D-030.
+   *
+   * Called from the event that reopens the excerpt, before the panel opens, so
+   * nothing here happens during a render or an effect.
+   */
+  const loadPending = useCallback(
+    (codeIds: Id[]) => {
+      loadedCountRef.current = codeIds.length;
+      applyPending(codeIds);
+    },
+    [applyPending],
+  );
+
   const createProvisionalCode = useCallback(
     (draft: NewCodeDraft): Code | null => {
       const name = draft.name.trim();
@@ -263,21 +328,20 @@ export function useCodePanel({
         canonicalOrderIndex: -1,
       };
 
+      const next = [...pendingListRef.current, code.codeId];
       setProposedCodes((current) => [...current, code]);
-      setPendingCodeIds((current) => {
-        const next = [...current, code.codeId];
-        announcer.announce(
-          `${code.name} created as provisional and added to pending. ${next.length} pending.`,
-        );
-        return next;
-      });
+      applyPending(next);
       setRecentCodeIds((current) => [code.codeId, ...current].slice(0, RECENT_LIMIT));
+
+      announcer.announce(
+        `${code.name} created as provisional and added to pending. ${next.length} pending.`,
+      );
 
       // Section 9: focus lands on the pending assignment region.
       pendingRef.current?.focus?.();
       return code;
     },
-    [announcer, projectId],
+    [announcer, applyPending, projectId],
   );
 
   const setUncertain = useCallback(
@@ -305,7 +369,30 @@ export function useCodePanel({
       );
       return;
     }
-    onSave?.({ codeIds: pendingCodeIds, noteText, uncertain });
+
+    const outcome = onSave?.({ codeIds: pendingCodeIds, noteText, uncertain });
+    if (!outcome || outcome.ok) {
+      setSaveError(null);
+      return;
+    }
+
+    // Nothing here clears anything. The pending codes, the note, and the
+    // excerpt are exactly as they were a moment ago, and the announcement says
+    // so, because a save failure that silently drops work ends a session.
+    setSaveError(outcome.message);
+
+    const codes = `${pendingCodeIds.length} pending ${
+      pendingCodeIds.length === 1 ? 'code' : 'codes'
+    }`;
+    const note = noteText.trim() === '' ? '' : ' and your note';
+    announcer.announce(
+      `${outcome.message} Nothing was lost: your ${codes}${note} and the excerpt are still here. Retry is available.`,
+      'assertive',
+      'saveFailure',
+    );
+
+    // Section 9: focus lands on the error message, with retry adjacent.
+    queueMicrotask(() => errorRef.current?.focus?.());
   }, [announcer, noteText, onSave, pendingCodeIds, uncertain]);
 
   /**
@@ -313,18 +400,22 @@ export function useCodePanel({
    * written, never before: nothing is discarded until the records exist.
    */
   const clearAfterSave = useCallback(() => {
-    setPendingCodeIds([]);
+    loadedCountRef.current = 0;
+    setSaveError(null);
+    applyPending([]);
     setNoteText('');
     setUncertainState(false);
     setQueryState('');
     setCancelPending(false);
     announcedFor.current = null;
-  }, []);
+  }, [applyPending]);
 
   /** Section 2.1: discard pending codes and the draft note, close the panel,
       leave the excerpt confirmed. No records are created. */
   const cancelNow = useCallback(() => {
-    setPendingCodeIds([]);
+    loadedCountRef.current = 0;
+    setSaveError(null);
+    applyPending([]);
     setNoteText('');
     setUncertainState(false);
     setQueryState('');
@@ -332,7 +423,7 @@ export function useCodePanel({
     announcedFor.current = null;
     announcer.announce('Code selection cancelled. The excerpt is still confirmed.');
     onCancel();
-  }, [announcer, onCancel]);
+  }, [announcer, applyPending, onCancel]);
 
   /**
    * Cancel asks first when there is unsaved work, because it destroys pending
@@ -362,13 +453,14 @@ export function useCodePanel({
 
   const removePending = useCallback(
     (codeId: Id) => {
-      const index = pendingCodeIds.indexOf(codeId);
+      const index = pendingListRef.current.indexOf(codeId);
+      const remainingIds = pendingListRef.current.filter((id) => id !== codeId);
       toggle(codeId, false);
 
       // Section 9: focus the next pending code, or the region heading once the
       // list is empty, rather than leaving focus on a control that is gone.
       queueMicrotask(() => {
-        const remaining = pendingCodeIds.filter((id) => id !== codeId);
+        const remaining = remainingIds;
         const nextId = remaining[index] ?? remaining[remaining.length - 1];
         const next = nextId
           ? document.querySelector<HTMLElement>(`[data-remove-pending="${nextId}"]`)
@@ -376,7 +468,7 @@ export function useCodePanel({
         (next ?? pendingRef.current)?.focus?.();
       });
     },
-    [pendingCodeIds, toggle],
+    [toggle],
   );
 
 
@@ -454,6 +546,7 @@ export function useCodePanel({
     codeById,
     proposedCodes,
     createProvisionalCode,
+    loadPending,
     noteText,
     setNoteText,
     uncertain,
@@ -461,6 +554,9 @@ export function useCodePanel({
     canSave,
     saveUnavailableReason,
     save,
+    saveError,
+    retrySave: save,
+    setErrorElement,
     clearAfterSave,
     cancelPending,
     requestCancel,
