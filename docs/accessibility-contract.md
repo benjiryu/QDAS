@@ -26,7 +26,6 @@ This boundary exists so that effort goes into the workflow behaviors the researc
 ### 2.2 Keyboard
 
 - Every action is keyboard operable.
-- Every keyboard command has a visible control performing the same action.
 - No single unmodified character keys as application commands. Screen readers consume them in browse mode.
 - Chords are platform-conditional and defined only in `src/config/keybindings.ts`. See `docs/patterns/transcript-segment.md` section 4.2 for why no single modifier family works across targets.
 - No keyboard traps. Every container is exitable by keyboard alone.
