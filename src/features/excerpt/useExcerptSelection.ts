@@ -173,7 +173,11 @@ export function useExcerptSelection({
       const element = containerRef.current?.querySelector<HTMLElement>(
         `[data-turn-id="${turn?.turn.turnId}"]`,
       );
-      element?.focus?.();
+
+      // After the code panel's dialog has finished unwinding its own focus
+      // restore. The dialog puts focus back where it was before it opened; the
+      // workflow says where the reader goes next, and the workflow wins.
+      queueMicrotask(() => element?.focus?.());
     },
     [containerRef, resolved],
   );

@@ -48,7 +48,7 @@ export function CreateCodeDisclosure({ panel }: { panel: CodePanelApi }) {
         <span className="code-panel__create-plus" aria-hidden="true">
           +
         </span>
-        Create code
+        Create new code
       </button>
 
       {isOpen ? (

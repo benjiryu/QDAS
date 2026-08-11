@@ -46,6 +46,13 @@ async function assertive(page: Page): Promise<string> {
  * Deduplicated: one code can have a row in the codebook, in the search results,
  * and in recently used at the same time.
  */
+/** Expands the note disclosure if it is collapsed, and returns the field. */
+async function noteField(page: Page) {
+  const row = page.locator('[data-region="note"] button[aria-expanded]');
+  if ((await row.getAttribute('aria-expanded')) !== 'true') await row.click();
+  return page.getByLabel(/note about this excerpt/i);
+}
+
 async function pendingCodeIds(page: Page): Promise<string[]> {
   const ids = await page
     .locator('.code-panel [data-code-id]')
@@ -73,13 +80,13 @@ test('a failed save loses nothing, and the retry succeeds', async ({ page }) => 
   // capture rule 1.1 step 2 resolves and the whole turn is captured.
   await page.locator('[data-turn-id]').nth(1).click();
   await press(page, 'excerpt.code');
-  await expect(page.getByRole('region', { name: /select code/i })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: /code assignment/i })).toBeVisible();
 
   // Two codes and a note.
   const codebook = page.locator('[data-region="codebook"]');
   await codebook.getByRole('checkbox', { name: /Waiting list/ }).check();
   await codebook.getByRole('checkbox', { name: /Mutual aid/ }).check();
-  await page.getByLabel(/note about this excerpt/i).fill(NOTE);
+  await (await noteField(page)).fill(NOTE);
 
   expect(await pendingCodeIds(page)).toHaveLength(2);
 
@@ -94,9 +101,9 @@ test('a failed save loses nothing, and the retry succeeds', async ({ page }) => 
       page.locator('[data-region="codebook"]').getByRole('checkbox', { name: new RegExp(name) }),
     ).toBeChecked();
   }
-  await expect(page.getByLabel(/note about this excerpt/i)).toHaveValue(NOTE);
+  await expect(await noteField(page)).toHaveValue(NOTE);
   await expect(page.locator('.excerpt-toolbar__state')).toHaveAttribute('data-state', 'confirmed');
-  await expect(page.getByRole('region', { name: /select code/i })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: /code assignment/i })).toBeVisible();
 
   // Nothing was written.
   await expect(page.locator('[data-saved-excerpts]')).toHaveAttribute('data-saved-excerpts', '0');
@@ -121,7 +128,7 @@ test('a failed save loses nothing, and the retry succeeds', async ({ page }) => 
   // Retry succeeds.
   await page.getByRole('button', { name: 'Retry save' }).click();
 
-  await expect(page.getByRole('region', { name: /select code/i })).toHaveCount(0);
+  await expect(page.getByRole('dialog', { name: /code assignment/i })).toHaveCount(0);
   await expect(page.locator('[data-saved-excerpts]')).toHaveAttribute('data-saved-excerpts', '1');
   await expect(page.locator('[data-saved-assignments]')).toHaveAttribute(
     'data-saved-assignments',
@@ -149,4 +156,79 @@ test('without the preset, the first save simply succeeds', async ({ page }) => {
 
   await expect(page.locator('[data-save-error]')).toHaveCount(0);
   await expect(page.locator('[data-saved-excerpts]')).toHaveAttribute('data-saved-excerpts', '1');
+});
+
+test('the dialog is modal, dismissable by clicking outside, and announceable', async ({
+  page,
+}) => {
+  await page.goto(`/projects/${source.projectId}/sources/${source.sourceId}`);
+  await expect(page.getByRole('heading', { level: 1, name: source.title })).toBeVisible();
+
+  await page.locator('[data-turn-id]').nth(1).click();
+  await press(page, 'excerpt.code');
+
+  const dialog = page.getByRole('dialog', { name: /code assignment/i });
+  await expect(dialog).toBeVisible();
+
+  // Centred on the viewport, not the document: a magnified user panned into a
+  // corner still finds it. D-026.
+  const box = (await dialog.boundingBox())!;
+  const viewport = page.viewportSize()!;
+  const centreOffset = Math.abs(box.x + box.width / 2 - viewport.width / 2);
+  expect(centreOffset).toBeLessThan(2);
+
+  // The page behind is dimmed and taken out of the accessibility tree. Chromium
+  // gets `inert` here rather than `aria-hidden`; either satisfies the claim,
+  // which is that what is dimmed is genuinely unavailable.
+  await expect(page.locator('.code-panel__overlay')).toBeVisible();
+  expect(
+    await page.evaluate(
+      () =>
+        document.querySelector('[data-transcript]')?.closest('[aria-hidden="true"], [inert]') !==
+        null,
+    ),
+  ).toBe(true);
+
+  // The live regions are not, or the panel would announce into a void: every
+  // check, every count, and the assertive save failure come from in here.
+  expect(
+    await page.evaluate(() =>
+      ['live-region-polite', 'live-region-assertive'].every(
+        (id) =>
+          document
+            .querySelector(`[data-testid="${id}"]`)
+            ?.closest('[aria-hidden="true"], [inert]') === null,
+      ),
+    ),
+  ).toBe(true);
+
+  // Focus is trapped: tabbing many times never leaves the dialog.
+  for (let press = 0; press < 30; press += 1) {
+    await page.keyboard.press('Tab');
+    expect(
+      await page.evaluate(() => document.activeElement?.closest('[role="dialog"]') !== null),
+    ).toBe(true);
+  }
+
+  // The divider under the heading belongs to the header, which does not
+  // scroll, so it stays put as the codebook moves under it. Checked here
+  // because jsdom drops any declaration using a `var()`.
+  const borders = await page.evaluate(() => {
+    const style = (selector: string) => {
+      const element = document.querySelector(selector)!;
+      const computed = getComputedStyle(element);
+      return { top: computed.borderTopStyle, bottom: computed.borderBottomStyle };
+    };
+    return {
+      header: style('.code-panel__header'),
+      firstRegion: style('.code-panel__scroll > .code-panel__region'),
+    };
+  });
+  expect(borders.header.bottom).toBe('solid');
+  // And no second line immediately beneath it.
+  expect(borders.firstRegion.top).toBe('none');
+
+  // And a real click on the backdrop dismisses it, with nothing pending.
+  await page.mouse.click(8, 8);
+  await expect(dialog).toHaveCount(0);
 });

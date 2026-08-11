@@ -183,7 +183,7 @@ test('add note opens the panel in the note field', async ({ page }) => {
 
   await press(page, 'excerpt.note');
 
-  await expect(page.getByRole('region', { name: /select code/i })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: /code assignment/i })).toBeVisible();
   await expect(page.getByLabel(/note about this excerpt/i)).toBeFocused();
 });
 
@@ -205,7 +205,7 @@ test('a saved mid-sentence excerpt is coded exactly, not rounded to the sentence
     .first()
     .check();
   await page.getByRole('button', { name: 'Save & Close' }).click();
-  await expect(page.getByRole('region', { name: /select code/i })).toHaveCount(0);
+  await expect(page.getByRole('dialog', { name: /code assignment/i })).toHaveCount(0);
 
   // What is painted after the save is what was dragged.
   expect(squashed(await codedTextIn(page, segmentIds.slice(0, 2)))).toBe(squashed(dragged));

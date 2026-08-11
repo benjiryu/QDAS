@@ -83,7 +83,7 @@ function openPanel() {
   chord('excerpt.code');
 }
 
-const panel = () => screen.getByRole('region', { name: /select code/i });
+const panel = () => screen.getByRole('dialog', { name: /code assignment/i });
 const region = (name: string) => panel().querySelector<HTMLElement>(`[data-region="${name}"]`)!;
 
 function codebookOrder(): string[] {
@@ -93,7 +93,7 @@ function codebookOrder(): string[] {
 }
 
 function search(query: string) {
-  fireEvent.change(screen.getByRole('searchbox', { name: /search the codebook/i }), {
+  fireEvent.change(screen.getByRole('searchbox', { name: /find codes/i }), {
     target: { value: query },
   });
 }
@@ -102,7 +102,7 @@ const lastAnnouncement = () => announcer.getLast()?.message ?? '';
 
 /** Expands the Create code disclosure, per D-039. */
 function openCreate() {
-  fireEvent.click(within(region('create')).getByRole('button', { name: /create code/i }));
+  fireEvent.click(within(region('create')).getByRole('button', { name: /create new code/i }));
 }
 
 /** How many codes are checked, which is the pending assignment now. */
@@ -130,7 +130,7 @@ function createCode(name: string, shortDefinition: string, fullDefinition = '') 
 
 describe('acceptance: provisional codes do not enter the canonical list', () => {
   it('appears under Proposed codes with the codebook order unchanged', () => {
-    const { container } = renderWorkspace();
+    renderWorkspace();
     openPanel();
     const before = codebookOrder();
 
@@ -148,23 +148,25 @@ describe('acceptance: provisional codes do not enter the canonical list', () => 
 
     expect(within(region('proposed')).getByText('Compost queue')).toBeInTheDocument();
     expect(codebookOrder()).toEqual(before);
-    expect(container.querySelectorAll('[data-region="proposed"]')).toHaveLength(1);
+    expect(document.querySelectorAll('[data-region="proposed"]')).toHaveLength(1);
   });
 
-  it('shows its short definition in the row, like any other code', () => {
-    // The only definition text the panel shows, per D-035.
+  it('shows its name and no definition, like any other code', () => {
+    // The definition is still required and still stored; the panel simply
+    // stopped showing definitions on rows.
     renderWorkspace();
     openPanel();
     createCode('Tool sharing', 'Borrowing and returning shared tools.', 'The full account.');
 
+    expect(within(region('proposed')).getByText('Tool sharing')).toBeInTheDocument();
     expect(
-      within(region('proposed')).getByText('Borrowing and returning shared tools.'),
-    ).toBeInTheDocument();
+      within(region('proposed')).queryByText('Borrowing and returning shared tools.'),
+    ).toBeNull();
   });
 });
 
 describe('the Create code disclosure, per D-039', () => {
-  const row = () => within(region('create')).getByRole('button', { name: /create code/i });
+  const row = () => within(region('create')).getByRole('button', { name: /create new code/i });
 
   it('starts collapsed, as one row', () => {
     // Creating a code is the rare act; five fields of permanent clutter above
@@ -250,7 +252,7 @@ describe('creating a provisional code, per section 7', () => {
     // The return runs on a microtask, after the form has gone.
     await act(async () => {});
 
-    const row = within(region('create')).getByRole('button', { name: /create code/i });
+    const row = within(region('create')).getByRole('button', { name: /create new code/i });
     expect(row).toHaveFocus();
     expect(row).toHaveAttribute('aria-expanded', 'false');
   });
@@ -339,7 +341,6 @@ describe('creating a provisional code, per section 7', () => {
     );
     expect(order).toEqual([
       'search-results',
-      'recent',
       'codebook',
       'proposed',
       'create',

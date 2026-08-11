@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { ReactNode } from 'react';
 import { AnnouncementLog } from './AnnouncementLog';
 import { announcer as defaultAnnouncer } from './announcer';
@@ -7,12 +8,23 @@ import { AnnouncerContext } from './announcerContext';
 import './liveRegions.css';
 
 /**
- * Mounts the application's two live regions, once, at the app root.
+ * Mounts the application's two live regions, once, beside the app root.
  *
  * Specification: docs/accessibility-contract.md section 2.3.
  *
  * The region nodes carry no text of their own. The announcer writes them; this
  * component only puts them in the document and hands over the nodes.
+ *
+ * They are portalled to their own element under `body`, tagged
+ * `data-live-announcer`, rather than rendered inside the application. A modal
+ * dialog hides everything outside itself from assistive technology, and the
+ * code panel is the noisiest surface in the application: every check, every
+ * count, and the assertive save failure. Rendered inside the app root they
+ * would be hidden along with it, and the failure would be silent. That
+ * attribute is the one react-aria's own `ariaHideOutside` skips.
+ *
+ * Still exactly two regions, still owned by the announcer. Only their place in
+ * the document changed.
  */
 
 let mountedProviders = 0;
@@ -29,6 +41,19 @@ export function AnnouncerProvider({
 }: AnnouncerProviderProps) {
   const politeRef = useRef<HTMLDivElement>(null);
   const assertiveRef = useRef<HTMLDivElement>(null);
+  /** State rather than a ref: the element is made once and read during render. */
+  const [host] = useState(() => {
+    if (typeof document === 'undefined') return null;
+    const element = document.createElement('div');
+    element.setAttribute('data-live-announcer', 'true');
+    return element;
+  });
+
+  useEffect(() => {
+    if (!host) return;
+    document.body.appendChild(host);
+    return () => host.remove();
+  }, [host]);
 
   useEffect(() => {
     announcer.attachRegion('polite', politeRef.current);
@@ -61,20 +86,27 @@ export function AnnouncerProvider({
         aria-atomic="true" so the message is read whole rather than as a diff
         against what was there before.
       */}
-      <div
-        ref={politeRef}
-        className="live-region"
-        aria-live="polite"
-        aria-atomic="true"
-        data-testid="live-region-polite"
-      />
-      <div
-        ref={assertiveRef}
-        className="live-region"
-        aria-live="assertive"
-        aria-atomic="true"
-        data-testid="live-region-assertive"
-      />
+      {host
+        ? createPortal(
+            <>
+              <div
+                ref={politeRef}
+                className="live-region"
+                aria-live="polite"
+                aria-atomic="true"
+                data-testid="live-region-polite"
+              />
+              <div
+                ref={assertiveRef}
+                className="live-region"
+                aria-live="assertive"
+                aria-atomic="true"
+                data-testid="live-region-assertive"
+              />
+            </>,
+            host,
+          )
+        : null}
 
       {/*
         Development only, per docs/testing/manual-testing.md section 4. Vite

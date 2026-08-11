@@ -30,7 +30,6 @@ export type Command =
   | 'codes.save'
   | 'codes.cancel'
   | 'codes.focusSearch'
-  | 'codes.clearSearch'
   | 'help.shortcuts';
 
 export interface Chord {
@@ -69,7 +68,6 @@ const windowsLinuxBindings: Record<Command, Chord> = {
   'codes.save': { key: 'Enter', ctrl: true, alt: true, shift: true },
   'codes.cancel': { key: 'Escape' },
   'codes.focusSearch': { key: 'f', ctrl: true, alt: true },
-  'codes.clearSearch': { key: 'Backspace', ctrl: true, alt: true },
 
   'help.shortcuts': { key: '/', ctrl: true, alt: true },
 };
@@ -91,7 +89,6 @@ const macBindings: Record<Command, Chord> = {
   'codes.save': { key: 'Enter', ctrl: true, shift: true, meta: true },
   'codes.cancel': { key: 'Escape' },
   'codes.focusSearch': { key: 'f', ctrl: true, shift: true },
-  'codes.clearSearch': { key: 'Backspace', ctrl: true, shift: true },
 
   'help.shortcuts': { key: '/', ctrl: true, shift: true },
 };

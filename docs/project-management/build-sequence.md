@@ -791,6 +791,94 @@ Done when: the panel reads like the Figma card, checking boxes is the only
 pending state, and a screen reader hears the same check and count announcements
 as before.
 
+## Phase 5. Visual design
+
+Applies the extracted tokens surface by surface. Two rules govern every task
+in this phase, and both belong in every prompt:
+
+1. The Figma decides visual language; the specifications decide structure and
+   behavior. No task in this phase reintroduces anything the decision log
+   removed.
+2. CSS-only diffs. Component CSS references tokens from src/styles/tokens.css,
+   never raw values. If a visual requirement seems to need a DOM change, stop
+   and say so rather than making it.
+
+Per-surface verification, after every task, ten minutes: text and control
+contrast against the new palette; the focus indicator visible on every new
+background it can land on; a greyscale screenshot to confirm nothing became
+color-only; 400 percent zoom to confirm the new spacing did not break reflow.
+For magnification participants this styling is the interface, not polish.
+
+### Task 22. Token foundation
+
+```
+Wire the design tokens into the application.
+
+- Import src/styles/tokens.css globally, before all other styles
+- Download Luciole from luciole-vision.com into public/fonts, add @font-face
+  declarations for regular and bold with font-display: swap, and apply
+  --font-family and the weight tokens to the base body styles
+- Replace every raw color, radius, border-width, spacing, and shadow value in
+  existing CSS with the corresponding token. Where no token fits, stop and
+  list the orphans rather than inventing tokens
+- Add a unit test that fails if any file under src/ other than tokens.css
+  contains a hex color literal. This is the enforcement for the tokens-only
+  rule; it makes drift a test failure instead of a review catch
+```
+
+Done when: the app renders in Luciole, the hex-literal test passes, and
+nothing has visibly moved, only recolored.
+
+### Task 23. Transcript surface
+
+```
+Style the transcript per the wireframe and tokens: turn rows, speaker and
+timestamp treatment, the captured-excerpt highlight, coded and coded-multiple
+segment treatments, and the focus ring on turn containers.
+
+The highlight and coded treatments must keep their non-color channel. The
+focus ring uses a token and must be visible against every row background,
+including inside highlights.
+
+Per D-041, add the code rail: assigned code pills on the right of coded turns
+and a note icon when a note exists, both aria-hidden. The turn container gains
+a compact accessible description derived from the same stored excerpts:
+"N excerpts, M codes" plus "note" when present. Announced on focus, silent in
+continuous reading, no code names. Test both: the rail absent from the
+accessibility tree, and the description present and correct on a turn with
+overlapping excerpts.
+```
+
+### Task 24. Command strip and context menu
+
+```
+Style the five-control strip and the selection context menu: button levels
+per the token mappings (primary, secondary, tertiary), disabled treatment
+with the exposed reason unchanged, chord labels, hover shadow, and menu
+item treatment. Respect prefers-reduced-motion for any transition.
+```
+
+### Task 25. Select Code panel
+
+```
+Style the panel to the Select Code card: tag pills with shade-2 fill,
+shade-1 border, black text; hierarchy indentation; checkbox treatment;
+Create code disclosure; Save & Close as primary button; Mark uncertain
+checkbox. Tag hue is assigned per top-level code family from the thirteen
+token families. The four annotated low-contrast borders (orange, yellow,
+light green, sea green) are used last in the assignment order.
+```
+
+### Task 26. Shell, project pages, and remaining chrome
+
+```
+Style the banner, navigation, source lists, and any remaining unstyled
+surface. Then run the full per-surface verification on every surface in one
+pass, since interactions between surfaces (focus ring against new banner
+color, highlight against new row background) only show when everything is
+styled.
+```
+
 ## Failure modes to watch for
 
 **The agent builds something simulated.** Point it at `prototype-scope.md`. File import, authentication, and IRR are not gaps to fill.

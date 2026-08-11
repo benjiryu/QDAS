@@ -16,9 +16,6 @@ import type { CodeNode, CodeSearchResult } from './codeTree';
  * or reopen boundary adjustment while it is open.
  */
 
-/** How many session-recent codes region 5 keeps. */
-const RECENT_LIMIT = 5;
-
 /** Opaque identifier for a code the coder proposes during a session. */
 function newCodeId(): Id {
   const random =
@@ -45,15 +42,15 @@ export interface NewCodeDraft {
 
 export interface CodePanelApi {
   isOpen: boolean;
+  /** Which field the panel opened on, so the note row can open with it. */
+  openFocus: 'search' | 'note';
   query: string;
   setQuery: (query: string) => void;
-  clearQuery: () => void;
   results: CodeSearchResult[];
   tree: CodeNode[];
   pendingCodeIds: Id[];
   isPending: (codeId: Id) => boolean;
   toggle: (codeId: Id, checked: boolean) => void;
-  recentCodes: Code[];
   /** Every code, canonical and proposed, for resolving names and definitions. */
   codeById: Map<Id, Code>;
   /** Codes created this session. Never part of the canonical codebook. */
@@ -67,15 +64,28 @@ export interface CodePanelApi {
   /** D-021. Set on every assignment written at save; affects no ordering. */
   uncertain: boolean;
   setUncertain: (uncertain: boolean) => void;
-  /** Save is unavailable while nothing is pending, and says why. Section 8. */
+  /**
+   * Save is unavailable while nothing is pending. The reason is spoken on
+   * attempt rather than shown: the panel carries no help text for it.
+   */
   canSave: boolean;
-  saveUnavailableReason: string | null;
   save: () => void;
   /** The last save failure, still on screen until it is resolved. */
   saveError: string | null;
   /** Retries the save that failed. Same action, named for what it is. */
   retrySave: () => void;
   setErrorElement: (node: HTMLElement | null) => void;
+  /**
+   * Deleting the saved excerpt, offered only where there is one to delete.
+   *
+   * The route D-030 named and left unbuilt: "Deleting a coded excerpt is a
+   * separate explicit action." Emptying the codes and saving is still not it.
+   */
+  canDelete: boolean;
+  deletePending: boolean;
+  requestDelete: () => void;
+  confirmDelete: () => void;
+  keepExcerpt: () => void;
   /** Cancel asks first when there are unsaved changes. Section 8. */
   cancelPending: boolean;
   requestCancel: () => void;
@@ -109,6 +119,15 @@ interface Options {
    * navigate past eight regions to reach it.
    */
   openFocus?: 'search' | 'note';
+  /** True when a saved excerpt was reopened, per D-030. Gates deletion. */
+  isReopened?: boolean;
+  /**
+   * Supersedes every assignment standing on the reopened excerpt. The excerpt
+   * row itself is retained: D-030 keeps before-and-after history rather than
+   * overwriting it, and an excerpt with nothing standing on it stops reading as
+   * coded on its own.
+   */
+  onDelete?: () => void;
 
   /** Cancel closes the panel and returns focus to the command strip, per section 9. */
   onCancel: () => void;
@@ -130,8 +149,10 @@ export function useCodePanel({
   isOpen,
   excerptSummary,
   openFocus = 'search',
+  isReopened = false,
   onCancel,
   onSave,
+  onDelete,
 }: Options): CodePanelApi {
   const announcer = useAnnouncer();
   const searchRef = useRef<HTMLInputElement | null>(null);
@@ -161,11 +182,11 @@ export function useCodePanel({
     pendingListRef.current = next;
     setPendingCodeIds(next);
   }, []);
-  const [recentCodeIds, setRecentCodeIds] = useState<Id[]>([]);
   const [proposedCodes, setProposedCodes] = useState<Code[]>([]);
   const [noteText, setNoteText] = useState('');
   const [uncertain, setUncertainState] = useState(false);
   const [cancelPending, setCancelPending] = useState(false);
+  const [deletePending, setDeletePending] = useState(false);
   /** How many codes the panel opened with, for the opening announcement. */
   const loadedCountRef = useRef(0);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -180,14 +201,6 @@ export function useCodePanel({
   );
   const tree = useMemo(() => buildCodeTree(codes), [codes]);
   const results = useMemo(() => searchCodes(tree, query), [query, tree]);
-
-  const recentCodes = useMemo(
-    () =>
-      recentCodeIds
-        .map((codeId) => codeById.get(codeId))
-        .filter((code): code is Code => code !== undefined),
-    [codeById, recentCodeIds],
-  );
 
   /* ---------- Opening ---------- */
 
@@ -212,7 +225,7 @@ export function useCodePanel({
     // what is heard when browsing to the region are the same words.
     const loaded = loadedCountRef.current;
     announcer.announce(
-      `Select Code. ${excerptSummary ?? 'No excerpt.'}${
+      `Code Assignment. ${excerptSummary ?? 'No excerpt.'}${
         loaded > 0
           ? ` ${loaded} existing ${loaded === 1 ? 'code' : 'codes'} loaded from the saved excerpt.`
           : ''
@@ -240,15 +253,6 @@ export function useCodePanel({
     setQueryState(next);
     if (next.trim() === '') announcedFor.current = null;
   }, []);
-
-  const clearQuery = useCallback(() => {
-    setQueryState('');
-    announcedFor.current = null;
-    // Section 5: clearing removes the results region and returns focus to the
-    // search field.
-    searchRef.current?.focus?.();
-    announcer.announce('Search cleared.');
-  }, [announcer]);
 
   const focusSearch = useCallback(() => {
     // Without clearing it, per section 2.1. Focus can legitimately be in the
@@ -285,11 +289,6 @@ export function useCodePanel({
           : `${code.name} removed. ${next.length} pending.`,
       );
 
-      if (checked) {
-        setRecentCodeIds((current) =>
-          [codeId, ...current.filter((id) => id !== codeId)].slice(0, RECENT_LIMIT),
-        );
-      }
     },
     [announcer, applyPending, codeById],
   );
@@ -344,7 +343,6 @@ export function useCodePanel({
       const next = [...pendingListRef.current, code.codeId];
       setProposedCodes((current) => [...current, code]);
       applyPending(next);
-      setRecentCodeIds((current) => [code.codeId, ...current].slice(0, RECENT_LIMIT));
 
       announcer.announce(
         `${code.name} created as provisional and added to pending. ${next.length} pending.`,
@@ -371,9 +369,6 @@ export function useCodePanel({
   );
 
   const canSave = pendingCodeIds.length > 0;
-  const saveUnavailableReason = canSave
-    ? null
-    : 'Save is unavailable because no codes are pending. Check at least one code.';
 
   const save = useCallback(() => {
     if (pendingCodeIds.length === 0) {
@@ -420,6 +415,7 @@ export function useCodePanel({
     setUncertainState(false);
     setQueryState('');
     setCancelPending(false);
+    setDeletePending(false);
     announcedFor.current = null;
   }, [applyPending]);
 
@@ -437,6 +433,7 @@ export function useCodePanel({
     setUncertainState(false);
     setQueryState('');
     setCancelPending(false);
+    setDeletePending(false);
     announcedFor.current = null;
     announcer.announce('Code selection cancelled.');
     onCancel();
@@ -462,6 +459,31 @@ export function useCodePanel({
       'destructiveConfirmation',
     );
   }, [announcer, cancelNow, noteText, pendingCodeIds]);
+
+  /* ---------- Deleting a saved excerpt, per D-030 ---------- */
+
+  const requestDelete = useCallback(() => {
+    setDeletePending(true);
+    // Assertive, because contract 2.3 reserves that region for save failures
+    // and destructive confirmations, and this is the second of those.
+    announcer.announce(
+      `Delete this excerpt and its ${pendingCodeIds.length} ${
+        pendingCodeIds.length === 1 ? 'code' : 'codes'
+      }? Nothing is deleted until you confirm.`,
+      'assertive',
+      'destructiveConfirmation',
+    );
+  }, [announcer, pendingCodeIds]);
+
+  const confirmDelete = useCallback(() => {
+    setDeletePending(false);
+    onDelete?.();
+  }, [onDelete]);
+
+  const keepExcerpt = useCallback(() => {
+    setDeletePending(false);
+    announcer.announce('Nothing was deleted.');
+  }, [announcer]);
 
   const keepEditing = useCallback(() => {
     setCancelPending(false);
@@ -502,21 +524,13 @@ export function useCodePanel({
         return;
       }
 
-      if (matched === 'codes.clearSearch') {
-        // Available only with a query, per section 2.1.
-        if (query.trim() === '') return;
-        event.preventDefault();
-        clearQuery();
-        return;
-      }
-
       // Everything else, including typing in the search field, is left alone.
       void inField;
     }
 
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [bindings, clearQuery, focusSearch, isOpen, query, requestCancel]);
+  }, [bindings, focusSearch, isOpen, requestCancel]);
 
   /* ---------- Closing ---------- */
 
@@ -530,15 +544,14 @@ export function useCodePanel({
 
   return {
     isOpen,
+    openFocus,
     query,
     setQuery,
-    clearQuery,
     results,
     tree,
     pendingCodeIds,
     isPending,
     toggle,
-    recentCodes,
     codeById,
     proposedCodes,
     createProvisionalCode,
@@ -548,12 +561,16 @@ export function useCodePanel({
     uncertain,
     setUncertain,
     canSave,
-    saveUnavailableReason,
     save,
     saveError,
     retrySave: save,
     setErrorElement,
     clearAfterSave,
+    canDelete: isReopened,
+    deletePending,
+    requestDelete,
+    confirmDelete,
+    keepExcerpt,
     cancelPending,
     requestCancel,
     keepEditing,

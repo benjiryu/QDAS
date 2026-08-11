@@ -1,13 +1,15 @@
 import { useId } from 'react';
+import { Dialog, Modal, ModalOverlay } from 'react-aria-components';
 import type { PrototypeFlags } from '../../config/flags';
 import type { Code } from '../../domain';
 import { CreateCodeDisclosure } from './CreateCodeDisclosure';
+import { NoteDisclosure } from './NoteDisclosure';
 import type { CodeNode } from './codeTree';
 import type { CodePanelApi } from './useCodePanel';
 import './codePanel.css';
 
 /**
- * The Select Code card.
+ * The Code Assignment card.
  *
  * Specification: docs/patterns/code-selection.md sections 2 to 7, as revised by
  * decisions D-039 and D-040.
@@ -26,19 +28,24 @@ import './codePanel.css';
  * definition on each row is the only definition text here; the rest is read at
  * the Codebook destination.
  *
- * Non-modal, per D-027: no `role="dialog"`, no focus trap, no dimmed backdrop.
- * The transcript stays reachable and readable while this is open, which is the
- * property D-026 gave up and the reason it was reversed.
+ * A centered modal dialog, reinstating D-026's container over D-027's fixed
+ * non-modal panel. Two of D-027's four reasons for the reversal no longer
+ * exist: D-036 removed the boundary adjustment a focus trap could not reach,
+ * and D-040 put the excerpt inside the panel, which is what a coder previously
+ * had to leave the panel to re-read. Raised in the task report.
  *
- * The panel is a labelled region so a screen reader user browsing the document
- * finds it without tabbing. Its sub-regions are heading-labelled rather than
- * landmarks: D-039 fixes their order, and more landmarks inside one panel would
- * crowd the landmark list the accessibility contract keeps short.
+ * React Aria owns the dialog because focus trapping, focus restore, scroll
+ * locking, and click-outside are precisely the things a hand-rolled one gets
+ * subtly wrong, which is the case `CLAUDE.md` reserves the library for.
  *
- * Layout follows D-033. The narrow form is primary: a full-width region below
- * the transcript. The wide form is the same sequence with the panel alongside,
- * fixed right at 360 to 400 pixels. The logical order is identical in both, and
- * the panel scrolls internally rather than holding fixed dimensions.
+ * Its sub-regions are heading-labelled rather than landmarks: D-039 fixes their
+ * order, and more landmarks inside one dialog would crowd the landmark list the
+ * accessibility contract keeps short.
+ *
+ * D-026's sizing constraint still holds and is in the stylesheet: the dialog
+ * resizes and scrolls internally rather than holding 441 by 568, which cannot
+ * fit at 400 percent zoom, and it centres on the viewport rather than the
+ * document so a magnified user panned into a corner still finds it.
  */
 
 interface CodePanelProps {
@@ -51,9 +58,7 @@ interface CodePanelProps {
 export function CodePanel({ panel, flags, excerptText }: CodePanelProps) {
   const headingId = useId();
   const searchId = useId();
-  const noteId = useId();
   const uncertainId = useId();
-  const saveReasonId = useId();
 
   // Destructured, so the search input's callback ref is a plain local. Reading
   // it off the panel object in JSX makes the ref rule treat every other read of
@@ -62,35 +67,49 @@ export function CodePanel({ panel, flags, excerptText }: CodePanelProps) {
     setSearchElement,
     query,
     setQuery,
-    clearQuery,
     results,
     tree,
     pendingCodeIds,
     proposedCodes,
     noteText,
-    setNoteText,
     uncertain,
     setUncertain,
     canSave,
-    saveUnavailableReason,
+    canDelete,
+    deletePending,
     cancelPending,
     saveError,
     setErrorElement,
-    setNoteElement,
   } = panel;
 
-  if (!panel.isOpen) return null;
-
   return (
-    <section
-      className="code-panel"
-      aria-labelledby={headingId}
-      data-presentation={flags.codebookPresentation}
+    <ModalOverlay
+      className="code-panel__overlay"
+      isOpen={panel.isOpen}
+      /*
+        Controlled, which is what makes cancelling safe. `requestCancel` closes
+        only when there is nothing to lose; with pending codes or a draft note
+        it raises its confirmation instead, `isOpen` stays true, and the dialog
+        stays put. So clicking outside cannot silently discard work, which is
+        the one thing that separates it from the other three exits.
+      */
+      onOpenChange={(open) => {
+        if (!open) panel.requestCancel();
+      }}
+      isDismissable
+      /*
+        Escape stays with the binding module. `resolveEscape` decides who owns
+        it and `useCodePanel` acts on that; letting React Aria also close on
+        Escape would give one key two handlers racing to cancel.
+      */
+      isKeyboardDismissDisabled
     >
+      <Modal className="code-panel__modal">
+        <Dialog className="code-panel" aria-labelledby={headingId}>
       {/* 1. Heading and close. */}
       <div className="code-panel__header">
         <h2 id={headingId} className="code-panel__heading">
-          Select Code
+          Code Assignment
         </h2>
         {/*
           The card's close control. Named "Cancel" rather than "Close" because
@@ -106,7 +125,6 @@ export function CodePanel({ panel, flags, excerptText }: CodePanelProps) {
           <span aria-hidden="true">×</span>
           <span className="code-panel__close-label">Cancel</span>
         </button>
-      </div>
 
       {/*
         The captured excerpt, per D-040. Visually hidden static text, read on
@@ -121,11 +139,22 @@ export function CodePanel({ panel, flags, excerptText }: CodePanelProps) {
       <p className="code-panel__hidden-excerpt" data-selected-excerpt>
         Selected excerpt: {excerptText ?? 'none.'}
       </p>
+      </div>
 
-      {/* 2. Search field. First control in the panel, per D-005. */}
+      {/*
+        Everything between the two fixed ends. The header and the footer hold
+        still while this scrolls, so the excerpt's name and the way out are
+        always where the coder left them.
+      */}
+      <div className="code-panel__scroll" data-scroll-region>
+
+      {/* 2. Search field. First control in the panel, per D-005.
+          No region heading: the field's own label names it, and a heading one
+          line above saying the same thing is one more thing to browse past.
+          No Clear search control either — `type="search"` gives pointer users
+          the browser's own clear, and a keyboard user selects and deletes. */}
       <div className="code-panel__region">
-        <h3>Search codes</h3>
-        <label htmlFor={searchId}>Search the codebook</label>
+        <label htmlFor={searchId}>Find codes</label>
         <input
           id={searchId}
           ref={setSearchElement}
@@ -134,9 +163,6 @@ export function CodePanel({ panel, flags, excerptText }: CodePanelProps) {
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />
-        <button type="button" onClick={clearQuery} aria-disabled={query === '' || undefined}>
-          Clear search
-        </button>
       </div>
 
       {/* 3. Search results. Present only with an active query: an always-present
@@ -165,29 +191,7 @@ export function CodePanel({ panel, flags, excerptText }: CodePanelProps) {
         </div>
       ) : null}
 
-      {/* 4. Recently used codes, collapsed by default. */}
-      {flags.showRecentCodes ? (
-        <div className="code-panel__region" data-region="recent">
-          <details>
-            <summary>
-              <h3 className="code-panel__inline-heading">Recently used codes</h3>
-            </summary>
-            {panel.recentCodes.length === 0 ? (
-              <p>No codes used yet in this session.</p>
-            ) : (
-              <ul className="code-panel__list">
-                {panel.recentCodes.map((code) => (
-                  <li key={code.codeId}>
-                    <CodeCheckbox code={code} panel={panel} />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </details>
-        </div>
-      ) : null}
-
-      {/* 5. Codebook, in canonical order, present and unchanged whatever the
+      {/* 4. Codebook, in canonical order, present and unchanged whatever the
           search is doing. The checked boxes here are the pending assignment:
           D-039 removed the region that used to restate them. */}
       <div className="code-panel__region" data-region="codebook">
@@ -195,7 +199,7 @@ export function CodePanel({ panel, flags, excerptText }: CodePanelProps) {
         <CodeList nodes={tree} panel={panel} />
       </div>
 
-      {/* 6. Proposed codes. D-039's region order does not name this one, and
+      {/* 5. Proposed codes. D-039's region order does not name this one, and
           does not list it as removed either; it has to stay, because a created
           code must be visible and checkable somewhere and the acceptance
           criterion in section 7 keeps it out of the canonical codebook. Raised
@@ -216,29 +220,38 @@ export function CodePanel({ panel, flags, excerptText }: CodePanelProps) {
         </div>
       ) : null}
 
-      {/* 7. Create code, collapsed. Offered only where the project permits
+      {/* 6. Create code, collapsed. Offered only where the project permits
           provisional codes: a form that cannot produce one is a dead control. */}
       {flags.allowProvisionalCodes ? <CreateCodeDisclosure panel={panel} /> : null}
 
-      {/* 8. Note. One per excerpt, plain text, no type: types belong to the
-          notes page specification, per D-020. D-032 keeps it here rather than
-          on the top bar. */}
-      <div className="code-panel__region" data-region="note">
-        <h3>Note</h3>
-        <label htmlFor={noteId}>Note about this excerpt (optional)</label>
-        <textarea
-          id={noteId}
-          ref={setNoteElement}
-          className="code-panel__note-input"
-          rows={3}
-          value={noteText}
-          onChange={(event) => setNoteText(event.target.value)}
-        />
+      {/* 7. Note, collapsed. One per excerpt, plain text, no type: types
+          belong to the notes page specification, per D-020. D-032 keeps it
+          here rather than on the top bar. */}
+      <NoteDisclosure panel={panel} openExpanded={panel.openFocus === 'note'} />
+
       </div>
 
-      {/* 9. The footer: uncertainty and Save & Close. */}
+      {/* 8. The footer: the flag, delete where it applies, and Save & Close. */}
       <div className="code-panel__region code-panel__actions" data-region="actions">
-        {cancelPending ? (
+        {deletePending ? (
+          /*
+            Deleting asks first, in the same shape as cancelling. D-030 built
+            the confirmation into the requirement: a destructive action that is
+            easy to perform by accident is the thing it was guarding against.
+          */
+          <div className="code-panel__confirm" data-confirm="delete">
+            <p>
+              Delete this excerpt and its {pendingCodeIds.length}{' '}
+              {pendingCodeIds.length === 1 ? 'code' : 'codes'}? Nothing has been deleted yet.
+            </p>
+            <button type="button" autoFocus onClick={panel.confirmDelete}>
+              Delete it
+            </button>
+            <button type="button" onClick={panel.keepExcerpt}>
+              Keep it
+            </button>
+          </div>
+        ) : cancelPending ? (
           // Cancel asks before destroying pending codes and a draft note.
           <div className="code-panel__confirm" data-confirm="cancel">
             <p>
@@ -276,8 +289,44 @@ export function CodePanel({ panel, flags, excerptText }: CodePanelProps) {
               </div>
             ) : null}
 
-            {/* D-040: a checkbox rather than a button, because uncertainty is
-                state that modifies the save and not an action of its own. */}
+            {/* Nothing on screen says why this is unavailable. Pressing it
+                with nothing checked still announces the reason, so contract
+                2.6's "a disabled control with no explanation is a dead end"
+                holds through the ear rather than the eye. */}
+            {/* Only where there is a saved excerpt to delete. On a fresh
+                capture Cancel already discards everything, so a delete control
+                would be a second name for it. */}
+            {canDelete ? (
+              <button
+                type="button"
+                className="code-panel__delete"
+                onClick={panel.requestDelete}
+                data-command="codes.delete"
+              >
+                Delete excerpt
+              </button>
+            ) : null}
+
+            <button
+              type="button"
+              aria-disabled={canSave ? undefined : true}
+              onClick={panel.save}
+              data-command="codes.save"
+            >
+              Save &amp; Close
+            </button>
+
+            {/* A checkbox rather than a button, because this is state that
+                modifies the save and not an action of its own. D-040.
+
+                After Save & Close in the markup as well as on screen: a flex
+                `order` that moved it visually while leaving it earlier in the
+                tab sequence is the mismatch contract 2.1 exists to prevent.
+
+                Labelled generally, but still writing `uncertaintyFlag`, which
+                D-023 reads as uncertainty when it orders slice 3 review. The
+                label and the field no longer mean quite the same thing; raised
+                in the task report. */}
             <span className="code-panel__code code-panel__uncertain">
               <input
                 id={uncertainId}
@@ -285,29 +334,14 @@ export function CodePanel({ panel, flags, excerptText }: CodePanelProps) {
                 checked={uncertain}
                 onChange={(event) => setUncertain(event.target.checked)}
               />
-              <label htmlFor={uncertainId}>Mark uncertain</label>
+              <label htmlFor={uncertainId}>Flag</label>
             </span>
-
-            <button
-              type="button"
-              aria-disabled={canSave ? undefined : true}
-              aria-describedby={canSave ? undefined : saveReasonId}
-              onClick={panel.save}
-              data-command="codes.save"
-            >
-              Save &amp; Close
-            </button>
-            {/* A disabled control with no explanation is a dead end for a
-                screen reader user. Contract 2.6. */}
-            {canSave ? null : (
-              <p className="code-panel__deferred" id={saveReasonId}>
-                {saveUnavailableReason}
-              </p>
-            )}
           </>
         )}
       </div>
-    </section>
+        </Dialog>
+      </Modal>
+    </ModalOverlay>
   );
 }
 
@@ -368,13 +402,16 @@ function CodeCheckbox({
         <span className="code-panel__code-name">{code.name}</span>
         {/* Colour is a redundant channel only, never carrying meaning that is
             not also in text. Section 4. D-039 removed the visible level label;
-            the nested lists still expose depth programmatically. */}
+            the nested lists still expose depth programmatically.
+
+            No definition text: a list scanned by name does not need a second
+            line of prose against every row. Definitions are read at the
+            Codebook destination, per D-035. */}
         <span
           className="code-panel__swatch"
           data-color-token={code.colorToken}
           aria-hidden="true"
         />
-        <span className="code-panel__short">{code.shortDefinition}</span>
       </label>
     </span>
   );

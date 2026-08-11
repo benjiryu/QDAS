@@ -26,8 +26,12 @@ export interface CodeNode {
 export interface CodeSearchResult {
   code: Code;
   parentPath: string[];
-  /** Which field matched, for the result's supporting text. */
-  matchedOn: 'name' | 'definition' | 'criteria' | 'synonym' | 'parentPath';
+  /**
+   * Which field matched. The two are worth keeping apart: a parent path match
+   * is the one case where the reason is not the row's own name, and the panel
+   * renders the path beside exactly those rows.
+   */
+  matchedOn: 'name' | 'parentPath';
 }
 
 function byCanonicalOrder(a: Code, b: Code): number {
@@ -75,13 +79,20 @@ export function parentPathOf(nodes: CodeNode[], codeId: Id): string[] {
 }
 
 /**
- * Search over name, short and full definition, inclusion and exclusion
- * criteria, parent path, and synonyms, per section 5.
+ * Search over the code name and the parent path, and nothing else.
+ *
+ * Only what the panel displays. The rows carry a name and a colour pill; the
+ * results region adds the parent path. Matching on definitions, criteria, or
+ * synonyms would put a code in front of a coder with no visible reason for it
+ * being there and no way to find out, which is worse than not finding it.
+ *
+ * The cost is real and belongs to the research team: a coder who remembers a
+ * phrase from a definition can no longer reach the code by typing it, and the
+ * fixture's deliberately similar name pairs have no disambiguation channel left
+ * inside the panel. Recorded in the task report.
  *
  * Results come back in canonical order, not in relevance order. A list that
- * reorders itself between queries is the thing section 4 rules out, and the
- * pair of similarly named codes in the fixture is meant to be told apart by
- * reading definitions rather than by trusting a ranking.
+ * reorders itself between queries is the thing section 4 rules out.
  */
 export function searchCodes(nodes: CodeNode[], rawQuery: string): CodeSearchResult[] {
   const query = rawQuery.trim().toLowerCase();
@@ -95,9 +106,6 @@ export function searchCodes(nodes: CodeNode[], rawQuery: string): CodeSearchResu
 
     let matchedOn: CodeSearchResult['matchedOn'] | null = null;
     if (has(code.name)) matchedOn = 'name';
-    else if (has(code.shortDefinition) || has(code.fullDefinition)) matchedOn = 'definition';
-    else if (has(code.inclusionCriteria) || has(code.exclusionCriteria)) matchedOn = 'criteria';
-    else if (code.synonyms.some(has)) matchedOn = 'synonym';
     else if (node.parentPath.some(has)) matchedOn = 'parentPath';
 
     if (matchedOn) results.push({ code, parentPath: node.parentPath, matchedOn });

@@ -128,7 +128,7 @@ test('arrow keys move through the menu and Enter captures', async ({ page }) => 
 
   await expect(page.getByRole('menu')).toHaveCount(0);
   expect(squashed(await highlighted(page))).toBe(squashed(dragged));
-  await expect(page.getByRole('region', { name: /select code/i })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: /code assignment/i })).toBeVisible();
 });
 
 test('Escape closes the menu and returns focus, capturing nothing', async ({ page }) => {

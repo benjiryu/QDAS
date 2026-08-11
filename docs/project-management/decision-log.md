@@ -696,3 +696,18 @@ Closes D-039's accepted-risk on post-capture verification.
 **An uncertainty checkbox sits in the footer row beside Save & Close**, labeled "Mark uncertain". A checkbox because uncertainty is state modifying the save, not an action. Toggle announced. At save, `uncertaintyFlag` is written on every assignment in the set. This un-defers D-021 collection, so the data D-023 requires for slice 3 review ordering is collected in v0.2 after all.
 
 N-3's status returns to fully resolved: answered by D-023, collected per D-021, ordered in slice 3.
+
+## D-041 The code rail is visual-only, with a compact programmatic twin on the turn
+
+Date: 2026-08 | Workflow: transcript display | Status: approved
+
+Speaker turns containing coded excerpts show a color-coded list of assigned codes on the right, and a note icon when an excerpt in the turn carries a note. Both are `aria-hidden`. They are glance channels for sighted and magnification users, and injecting them into the reading stream would fragment the continuous prose D-002 protects.
+
+Hiding a channel is only legitimate while an equivalent primary channel exists, so the turn container carries one:
+
+- **The turn's accessible description is a compact status**: "N excerpts, M codes" plus "note" when present. Announced once when the turn takes focus, silent during continuous reading. It is the programmatic twin of the glance, not a recitation of the rail: code names do not appear in it.
+- **Detail stays on request** via `excerpt.open`, which lists the turn's excerpts with codes preloaded. Three tiers: glance, brief, detail, per the progressive disclosure principle.
+- The description derives from stored excerpts, the same derivation as the rail, so the two channels cannot disagree. Note indicators remain derived per D-011; nothing is stored on the turn.
+- Rail pills use the tag tokens with their non-color text labels for sighted users; the rail's absence from the accessibility tree is what makes color-plus-text sufficient there.
+
+Contract basis: every state visible and programmatic, section 2.6, satisfied by the pair rather than by either channel alone.

@@ -72,7 +72,7 @@ function press(chord: Chord) {
 
 const chord = (command: Command) => press(bindings[command]);
 
-const panel = () => screen.getByRole('region', { name: /select code/i });
+const panel = () => screen.getByRole('dialog', { name: /code assignment/i });
 const region = (name: string) => panel().querySelector<HTMLElement>(`[data-region="${name}"]`)!;
 const announced = () => announcer.getHistory().map((entry) => entry.message);
 const excerptState = () =>
@@ -155,7 +155,7 @@ describe('reopening a saved excerpt', () => {
     const { container } = renderWorkspace();
     clickSegment(container, soleExcerpt.startSegmentId);
 
-    const opening = announced().find((message) => /select code/i.test(message))!;
+    const opening = announced().find((message) => /code assignment/i.test(message))!;
     expect(opening).toMatch(
       new RegExp(`${soleCodeIds.length} existing codes? loaded from the saved excerpt`, 'i'),
     );
@@ -196,7 +196,7 @@ describe('the overlap case', () => {
     clickSegment(container, overlapSegmentId);
 
     // No excerpt opened yet: the coder chooses.
-    expect(screen.queryByRole('region', { name: /select code/i })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: /code assignment/i })).toBeNull();
     const choices = screen.getByRole('group', { name: 'Saved excerpts here' });
     const options = within(choices).getAllByRole('button');
     expect(options.length).toBeGreaterThanOrEqual(3); // two excerpts plus the decline
@@ -320,5 +320,113 @@ describe('cancel leaves a reopened excerpt untouched', () => {
     clickSegment(container, soleExcerpt.startSegmentId);
     expect(codesPending()).toHaveLength(soleCodeIds.length);
     expect(codesPending()).not.toContain(added.codeId);
+  });
+});
+
+/**
+ * Deleting a coded excerpt, the "separate explicit action" D-030 named and left
+ * unbuilt. Emptying the codes and saving is still not a route to it.
+ */
+describe('deleting a saved excerpt', () => {
+  const deleteButton = () => within(panel()).queryByRole('button', { name: /delete excerpt/i });
+  const codedAt = (container: HTMLElement, segmentId: string) =>
+    container
+      .querySelector(`[data-segment-id="${segmentId}"]`)!
+      .getAttribute('data-display-state');
+
+  it('is not offered on a fresh capture, where Cancel already discards', () => {
+    const { container } = renderWorkspace();
+    const uncoded = resolved.segments.find(
+      (segment) => codedAt(container, segment.segmentId) === 'inactive',
+    )!;
+
+    // Focus rather than click: the turn fallback captures from focus, and
+    // jsdom's click does not move it.
+    const turn = requireTurnOf(resolved, uncoded.segmentId);
+    act(() => {
+      container.querySelector<HTMLElement>(`[data-turn-id="${turn.turn.turnId}"]`)!.focus();
+    });
+    chord('excerpt.code');
+
+    expect(deleteButton()).toBeNull();
+  });
+
+  it('is offered on a reopened saved excerpt', () => {
+    const { container } = renderWorkspace();
+    clickSegment(container, soleExcerpt.startSegmentId);
+
+    expect(deleteButton()).toBeInTheDocument();
+  });
+
+  it('asks first, announced assertively', () => {
+    // Contract 2.3 reserves the assertive region for save failures and
+    // destructive confirmations, and this is the second of those.
+    const { container } = renderWorkspace();
+    clickSegment(container, soleExcerpt.startSegmentId);
+
+    fireEvent.click(deleteButton()!);
+
+    expect(panel().querySelector('[data-confirm="delete"]')).toBeInTheDocument();
+    const entry = announcer.getHistory().find((item) => /delete this excerpt/i.test(item.message))!;
+    expect(entry.politeness).toBe('assertive');
+    expect(entry.reason).toBe('destructiveConfirmation');
+  });
+
+  it('deletes nothing until the confirmation is accepted', () => {
+    const { container } = renderWorkspace();
+    clickSegment(container, soleExcerpt.startSegmentId);
+
+    fireEvent.click(deleteButton()!);
+    fireEvent.click(within(panel()).getByRole('button', { name: /keep it/i }));
+
+    expect(panel()).toBeInTheDocument();
+    expect(codesPending()).toHaveLength(soleCodeIds.length);
+    expect(codedAt(container, soleExcerpt.startSegmentId)).toMatch(/^coded/);
+  });
+
+  it('supersedes every standing assignment and closes the panel', () => {
+    const { container } = renderWorkspace();
+    clickSegment(container, soleExcerpt.startSegmentId);
+
+    fireEvent.click(deleteButton()!);
+    fireEvent.click(within(panel()).getByRole('button', { name: /delete it/i }));
+
+    expect(screen.queryByRole('dialog', { name: /code assignment/i })).toBeNull();
+    // The sentence stops reading as coded, because nothing stands on it now.
+    expect(codedAt(container, soleExcerpt.startSegmentId)).toBe('inactive');
+    expect(announced().join(' ')).toMatch(/excerpt deleted/i);
+  });
+
+  it('retains the excerpt row rather than erasing the history', () => {
+    // D-030: the project preserves before-and-after history. The fixture's own
+    // records are never mutated, and the assignments are superseded, not gone.
+    const { container } = renderWorkspace();
+    clickSegment(container, soleExcerpt.startSegmentId);
+    fireEvent.click(deleteButton()!);
+    fireEvent.click(within(panel()).getByRole('button', { name: /delete it/i }));
+
+    for (const codeId of soleCodeIds) {
+      expect(
+        fixture.codeAssignments.find(
+          (assignment) =>
+            assignment.excerptId === soleExcerpt.excerptId && assignment.codeId === codeId,
+        )?.status,
+      ).toBe('active');
+    }
+    expect(container.querySelector('[data-saved-excerpts]')).toHaveAttribute(
+      'data-saved-excerpts',
+      '0',
+    );
+  });
+
+  it('leaves nothing for excerpt.open to reopen', () => {
+    const { container } = renderWorkspace();
+    clickSegment(container, soleExcerpt.startSegmentId);
+    fireEvent.click(deleteButton()!);
+    fireEvent.click(within(panel()).getByRole('button', { name: /delete it/i }));
+
+    clickSegment(container, soleExcerpt.startSegmentId);
+
+    expect(screen.queryByRole('dialog', { name: /code assignment/i })).toBeNull();
   });
 });

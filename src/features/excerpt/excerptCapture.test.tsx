@@ -107,7 +107,7 @@ const announced = () => announcer.getHistory().map((entry) => entry.message);
 const lastAnnouncement = () => announcer.getLast()?.message ?? '';
 const excerptState = () =>
   document.querySelector('.excerpt-toolbar__state')?.getAttribute('data-state') ?? '';
-const panelIsOpen = () => screen.queryAllByRole('region', { name: /select code/i }).length > 0;
+const panelIsOpen = () => screen.queryAllByRole('dialog', { name: /code assignment/i }).length > 0;
 
 function savedCounts() {
   const element = document.querySelector('[data-saved-excerpts]')!;
@@ -254,6 +254,10 @@ describe('the two capture commands', () => {
     expect(panelIsOpen()).toBe(true);
     expect(document.activeElement?.tagName).toBe('TEXTAREA');
     expect(announced().join(' ')).toContain('Note field focused');
+    // The note row is collapsed by default, so this command has to open it.
+    expect(
+      document.querySelector('[data-region="note"] button[aria-expanded="true"]'),
+    ).not.toBeNull();
   });
 
   it('captures the same range whichever command was used', () => {
@@ -311,12 +315,14 @@ describe('cancel discards', () => {
     expect(savedCounts().excerpts).toBe(0);
   });
 
-  it('returns focus to the turn the capture started in', () => {
+  it('returns focus to the turn the capture started in', async () => {
     renderWorkspace();
     focusTurn(multiSentenceTurn.turn.turnId);
     chord('excerpt.code');
 
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    // After the dialog has unwound its own focus restore.
+    await act(async () => {});
 
     expect(document.activeElement?.getAttribute('data-turn-id')).toBe(
       multiSentenceTurn.turn.turnId,
@@ -326,18 +332,18 @@ describe('cancel discards', () => {
 
 describe('capture survives the panel', () => {
   it('holds the range unchanged through searching, checking, and saving', () => {
-    const view = renderWorkspace();
+    renderWorkspace();
     const [first, second] = multiSentenceTurn.segments;
 
     drag([first.segmentId, 7], [second.segmentId, 6]);
     chord('excerpt.code');
     const atCapture = highlighted();
 
-    const search = view.container.querySelector<HTMLInputElement>('input[type="search"]')!;
+    const search = document.querySelector<HTMLInputElement>('input[type="search"]')!;
     fireEvent.change(search, { target: { value: fixture.codes[0].name.slice(0, 4) } });
     expect(highlighted()).toBe(atCapture);
 
-    const codebook = view.container.querySelector<HTMLElement>('[data-region="codebook"]')!;
+    const codebook = document.querySelector<HTMLElement>('[data-region="codebook"]')!;
     fireEvent.click(codebook.querySelector(`[data-code-id="${fixture.codes[0].codeId}"]`)!);
     expect(highlighted()).toBe(atCapture);
 
@@ -372,8 +378,8 @@ describe('a saved partial excerpt stays partial', () => {
       )
       .join('');
 
-  function saveWithACode(view: ReturnType<typeof renderWorkspace>) {
-    const codebook = view.container.querySelector<HTMLElement>('[data-region="codebook"]')!;
+  function saveWithACode() {
+    const codebook = document.querySelector<HTMLElement>('[data-region="codebook"]')!;
     fireEvent.click(codebook.querySelector(`[data-code-id="${fixture.codes[0].codeId}"]`)!);
     fireEvent.click(screen.getByRole('button', { name: 'Save & Close' }));
   }
@@ -381,12 +387,12 @@ describe('a saved partial excerpt stays partial', () => {
   it('paints only the characters that were captured, not the sentence', () => {
     // The reported bug: a half-sentence capture became a whole-sentence
     // highlight the moment it was saved.
-    const view = renderWorkspace();
+    renderWorkspace();
     const segment = multiSentenceTurn.segments[0];
 
     drag([segment.segmentId, 5], [segment.segmentId, 18]);
     chord('excerpt.code');
-    saveWithACode(view);
+    saveWithACode();
 
     expect(codedTextIn(segment.segmentId)).toBe(segment.text.slice(5, 18));
     // The sentence is still whole on screen; only part of it is coded.
@@ -394,12 +400,12 @@ describe('a saved partial excerpt stays partial', () => {
   });
 
   it('slices both boundary sentences and keeps the middle whole', () => {
-    const view = renderWorkspace();
+    renderWorkspace();
     const [first, second, third] = multiSentenceTurn.segments;
 
     drag([first.segmentId, 6], [third.segmentId, 4]);
     chord('excerpt.code');
-    saveWithACode(view);
+    saveWithACode();
 
     expect(codedTextIn(first.segmentId, second.segmentId, third.segmentId)).toBe(
       `${first.text.slice(6)}${second.text}${third.text.slice(0, 4)}`,
@@ -409,34 +415,34 @@ describe('a saved partial excerpt stays partial', () => {
   it('still marks the sentence coded, which is what comparison asks', () => {
     // D-036 section 5 keeps review at sentence granularity. The sentence-level
     // state says "coded"; the runs say which characters.
-    const view = renderWorkspace();
+    renderWorkspace();
     const segment = multiSentenceTurn.segments[0];
 
     drag([segment.segmentId, 5], [segment.segmentId, 18]);
     chord('excerpt.code');
-    saveWithACode(view);
+    saveWithACode();
 
     expect(segmentElement(segment.segmentId)).toHaveAttribute('data-display-state', 'coded');
   });
 
   it('leaves a neighbouring sentence untouched', () => {
-    const view = renderWorkspace();
+    renderWorkspace();
     const [first, second] = multiSentenceTurn.segments;
 
     drag([first.segmentId, 5], [first.segmentId, 18]);
     chord('excerpt.code');
-    saveWithACode(view);
+    saveWithACode();
 
     expect(segmentElement(second.segmentId).querySelector('[data-coded-run]')).toBeNull();
     expect(segmentElement(second.segmentId)).toHaveAttribute('data-display-state', 'inactive');
   });
 
   it('paints a whole-turn capture whole, so the fallback is unaffected', () => {
-    const view = renderWorkspace();
+    renderWorkspace();
     focusTurn(multiSentenceTurn.turn.turnId);
 
     chord('excerpt.code');
-    saveWithACode(view);
+    saveWithACode();
 
     const whole = multiSentenceTurn.segments.map((segment) => segment.text).join('');
     expect(codedText()).toBe(whole);

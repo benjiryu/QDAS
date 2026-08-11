@@ -57,8 +57,20 @@ export interface PrototypeFlags {
    * and reinstates D-003. The centeredModal variant needs an excerpt readout
    * and a boundary-recovery control built before it can be compared.
    */
+  /**
+   * @deprecated Dead since the code panel became a centered modal dialog,
+   * reinstating D-026's container over D-027's. There is one presentation now,
+   * so there is nothing left to switch between. Kept, not deleted, because
+   * v0.1 comparisons may still run.
+   */
   codebookPresentation: CodebookPresentation;
   codeListEntry: CodeListEntry;
+  /**
+   * @deprecated Dead since the Select Code card lost its recently used region.
+   * The region duplicated rows already in the codebook, so there is nothing
+   * left for this to show or hide. Kept, not deleted, because v0.1 comparisons
+   * may still run.
+   */
   showRecentCodes: boolean;
   /**
    * Inert in v0.1. Examples are out of scope per D-019, so this governs nothing
@@ -116,7 +128,9 @@ export const defaultFlags: PrototypeFlags = {
  */
 export const flagPresets: Record<string, Partial<PrototypeFlags>> = {
   baseline: {},
+  /** @deprecated Governs nothing: the panel is a centered modal either way. */
   centeredModalCodebook: { codebookPresentation: 'centeredModal' },
+  /** @deprecated Governs nothing since the panel became a dialog. */
   fullPageCodebook: { codebookPresentation: 'fullPage' },
   /** @deprecated Governs nothing since D-038. Retained for v0.1 comparisons. */
   turnLevelNavigation: {

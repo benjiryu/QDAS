@@ -277,7 +277,7 @@ describe('what the items do', () => {
     });
 
     expect(highlighted()).toBe(`${first.text.slice(5)}${second.text.slice(0, 7)}`);
-    expect(screen.getByRole('region', { name: /select code/i })).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: /code assignment/i })).toBeInTheDocument();
     expect(announced().join(' ')).toContain('Coding your selection');
     expect(announced().join(' ')).toContain('Search field focused');
   });

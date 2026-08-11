@@ -338,13 +338,80 @@ export function TranscriptWorkspace({
     ],
   );
 
+  /**
+   * Deleting a reopened excerpt, per D-030's "separate explicit action".
+   *
+   * The same diff a reopened save uses, with nothing pending: everything
+   * standing is superseded and nothing is added. The excerpt row itself stays,
+   * because the project preserves before-and-after history rather than
+   * overwriting it, and an excerpt with no standing assignment already stops
+   * reading as coded through `includeExcerpt` above.
+   */
+  const handleDelete = useCallback(() => {
+    const reopenedId = excerpt.selection.reopenedExcerptId;
+    const range = excerpt.selection.range;
+    if (!reopenedId || !range) return;
+
+    const diff = diffReopenedAssignments(
+      reopenedId,
+      effectiveAssignments,
+      [],
+      {
+        sourceId: resolved.source.sourceId,
+        coderId: userId,
+        codingRoundId,
+        codebookVersionId,
+      },
+      panelCodeById.current,
+      false,
+      new Date().toISOString(),
+    );
+
+    setSupersededIds((current) => {
+      const next = new Set(current);
+      for (const id of diff.supersededAssignmentIds) next.add(id);
+      return next;
+    });
+
+    const target = postCodingReturnTarget(resolved, range, flags.postCodingReturn, displayStates);
+
+    excerpt.markSaved();
+    setPanelOpen(false);
+
+    const turn = requireTurnOf(resolved, target);
+    orientation.focusTurn(turn.turn.turnId);
+
+    const report = positionReport(resolved, turn.turn.turnId);
+    const removed = diff.supersededAssignmentIds.length;
+    announcer.announce(
+      `Excerpt deleted. ${removed} ${removed === 1 ? 'code' : 'codes'} removed. Returned to speaker turn ${
+        report?.turnIndex ?? 0
+      } of ${report?.turnCount ?? 0}.`,
+    );
+
+    panelClear.current?.();
+  }, [
+    announcer,
+    codebookVersionId,
+    codingRoundId,
+    displayStates,
+    effectiveAssignments,
+    excerpt,
+    flags.postCodingReturn,
+    orientation,
+    resolved,
+    userId,
+  ]);
+
   const panel = useCodePanel({
     codes,
     projectId,
     isOpen: panelOpen,
     excerptSummary,
     openFocus: panelFocus,
+    isReopened: excerpt.selection.reopenedExcerptId !== null,
     onSave: handleSave,
+    onDelete: handleDelete,
     onCancel: () => {
       // A reopened excerpt's saved assignments are untouched by cancel. D-030.
       // For a fresh capture, cancel discards it and creates nothing, per

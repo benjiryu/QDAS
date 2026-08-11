@@ -100,7 +100,7 @@ function openPanel() {
   chord('excerpt.code');
 }
 
-const panel = () => screen.getByRole('region', { name: /select code/i });
+const panel = () => screen.getByRole('dialog', { name: /code assignment/i });
 const region = (name: string) => panel().querySelector<HTMLElement>(`[data-region="${name}"]`)!;
 const lastAnnouncement = () => announcer.getLast()?.message ?? '';
 const announced = () => announcer.getHistory().map((entry) => entry.message);
@@ -127,10 +127,16 @@ function checkCode(name: string) {
   fireEvent.click(region('codebook').querySelector(`[data-code-id="${code.codeId}"]`)!);
 }
 
+/** Expands the note disclosure if it is collapsed, and returns the field. */
+function noteField(): HTMLTextAreaElement {
+  const note = region('note');
+  const row = within(note).getByRole('button', { name: /add note|edit note/i });
+  if (row.getAttribute('aria-expanded') !== 'true') fireEvent.click(row);
+  return within(note).getByLabelText(/note about this excerpt/i) as HTMLTextAreaElement;
+}
+
 function writeNote(text: string) {
-  fireEvent.change(within(region('note')).getByLabelText(/note about this excerpt/i), {
-    target: { value: text },
-  });
+  fireEvent.change(noteField(), { target: { value: text } });
 }
 
 /**
@@ -186,7 +192,7 @@ describe('acceptance: cancel creates nothing', () => {
     // excerpt confirmed, because rebuilding a range was expensive; native
     // selection makes reselecting cheap, so D-036 dropped the holding state.
     expect(excerptState()).toBe('idle');
-    expect(screen.queryByRole('region', { name: /select code/i })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: /code assignment/i })).toBeNull();
   });
 
   it('keeps everything when the confirmation is declined', () => {
@@ -199,7 +205,7 @@ describe('acceptance: cancel creates nothing', () => {
     fireEvent.click(screen.getByRole('button', { name: /keep editing/i }));
 
     expect(checkedCodeIds()).toHaveLength(1);
-    expect(within(region('note')).getByLabelText(/note about this excerpt/i)).toHaveValue(
+    expect(noteField()).toHaveValue(
       'Still writing this.',
     );
     expect(panel()).toBeInTheDocument();
@@ -223,7 +229,7 @@ describe('acceptance: cancel creates nothing', () => {
 
     fireEvent.click(within(panel()).getByRole('button', { name: 'Cancel' }));
 
-    expect(screen.queryByRole('region', { name: /select code/i })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: /code assignment/i })).toBeNull();
     expect(excerptState()).toBe('idle');
   });
 
@@ -358,7 +364,7 @@ describe('what save writes, per section 8', () => {
     fireEvent.click(within(panel()).getByRole('button', { name: 'Save & Close' }));
 
     expect(excerptState()).toBe('saved');
-    expect(screen.queryByRole('region', { name: /select code/i })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: /code assignment/i })).toBeNull();
 
     // And a second excerpt can be captured straight from `saved`.
     focusTurn(2);
@@ -383,7 +389,7 @@ describe('acceptance: save failure preserves everything', () => {
     expect(saved(container)).toEqual({ excerpts: 0, assignments: 0, notes: 0 });
     // Everything still here.
     expect(checkedCodeIds()).toHaveLength(2);
-    expect(within(region('note')).getByLabelText(/note about this excerpt/i)).toHaveValue(
+    expect(noteField()).toHaveValue(
       'A note I would hate to retype.',
     );
     expect(excerptState()).toBe('confirmed');
@@ -421,7 +427,7 @@ describe('acceptance: save failure preserves everything', () => {
 
     expect(saved(container)).toEqual({ excerpts: 1, assignments: 2, notes: 1 });
     expect(excerptState()).toBe('saved');
-    expect(screen.queryByRole('region', { name: /select code/i })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: /code assignment/i })).toBeNull();
   });
 
   it('fails one save, not every save', () => {
@@ -457,15 +463,21 @@ describe('acceptance: save failure preserves everything', () => {
 });
 
 describe('save availability, per section 8', () => {
-  it('is unavailable with an empty pending assignment, and says why', () => {
+  it('is unavailable with an empty pending assignment, saying why on attempt', () => {
+    // The reason is spoken, not shown: no help text sits under the button. The
+    // control still explains itself rather than being a dead end, which is what
+    // contract 2.6 asks for.
     renderWorkspace();
     openPanel();
 
     const save = within(panel()).getByRole('button', { name: 'Save & Close' });
     expect(save).toHaveAttribute('aria-disabled', 'true');
+    expect(save).not.toHaveAttribute('aria-describedby');
+    expect(panel().textContent).not.toMatch(/no codes are pending/i);
 
-    const reasonId = save.getAttribute('aria-describedby')!;
-    expect(document.getElementById(reasonId)?.textContent).toMatch(/no codes are pending/i);
+    fireEvent.click(save);
+
+    expect(lastAnnouncement()).toMatch(/no codes are pending/i);
   });
 
   it('does nothing but explain itself when pressed while empty', () => {
@@ -493,7 +505,7 @@ describe('save availability, per section 8', () => {
 describe('the uncertainty checkbox, per D-021 and D-040', () => {
   const uncertainBox = () =>
     within(region('actions')).getByRole('checkbox', {
-      name: /mark uncertain/i,
+      name: /^Flag$/,
     }) as HTMLInputElement;
 
   it('sits in the footer beside Save & Close', () => {
@@ -503,7 +515,7 @@ describe('the uncertainty checkbox, per D-021 and D-040', () => {
     openPanel();
 
     const footer = region('actions');
-    expect(within(footer).getByRole('checkbox', { name: /mark uncertain/i })).toBeInTheDocument();
+    expect(within(footer).getByRole('checkbox', { name: /^Flag$/ })).toBeInTheDocument();
     expect(within(footer).getByRole('button', { name: 'Save & Close' })).toBeInTheDocument();
   });
 
@@ -561,17 +573,108 @@ describe('the pending assignment region, per sections 8 and 9', () => {
     checkCode('Waiting list');
     writeNote('Kept through everything.');
 
-    fireEvent.change(screen.getByRole('searchbox', { name: /search the codebook/i }), {
+    fireEvent.change(screen.getByRole('searchbox', { name: /find codes/i }), {
       target: { value: 'water' },
     });
-    fireEvent.change(screen.getByRole('searchbox', { name: /search the codebook/i }), {
+    fireEvent.change(screen.getByRole('searchbox', { name: /find codes/i }), {
       target: { value: '' },
     });
 
     expect(checkedCodeIds()).toHaveLength(1);
-    expect(within(region('note')).getByLabelText(/note about this excerpt/i)).toHaveValue(
+    expect(noteField()).toHaveValue(
       'Kept through everything.',
     );
   });
 });
 
+
+describe('the four ways out of the dialog', () => {
+  const overlay = () => document.querySelector<HTMLElement>('.code-panel__overlay')!;
+  const isOpen = () => screen.queryByRole('dialog', { name: /code assignment/i }) !== null;
+  const confirmation = () => panel().querySelector('[data-confirm="cancel"]');
+
+  /**
+   * A pointer press landing on the backdrop rather than on the card.
+   *
+   * The whole sequence, because dismiss-on-outside watches for a press and its
+   * release rather than for a synthetic click: a drag that starts inside the
+   * dialog and ends outside it is not a dismissal.
+   */
+  function clickOutside() {
+    act(() => {
+      const target = overlay();
+      fireEvent.pointerDown(target, { button: 0, isPrimary: true, pointerType: 'mouse' });
+      fireEvent.pointerUp(target, { button: 0, isPrimary: true, pointerType: 'mouse' });
+      fireEvent.click(target);
+    });
+  }
+
+  /** Two codes and a note: everything a dismissal could destroy. */
+  function draftUnsavedWork() {
+    checkCode('Waiting list');
+    checkCode('Mutual aid');
+    writeNote('A thought I would hate to lose.');
+  }
+
+  const exits: [string, () => void][] = [
+    ['the close control', () => fireEvent.click(within(panel()).getByRole('button', { name: 'Cancel' }))],
+    ['Escape', () => press({ key: 'Escape' })],
+    ['a click outside', () => clickOutside()],
+  ];
+
+  it('saves and closes on Save & Close', () => {
+    const { container } = renderWorkspace();
+    openPanel();
+    checkCode('Waiting list');
+
+    fireEvent.click(within(panel()).getByRole('button', { name: 'Save & Close' }));
+
+    expect(isOpen()).toBe(false);
+    expect(saved(container)).toMatchObject({ excerpts: 1, assignments: 1 });
+  });
+
+  it.each(exits)('closes on %s when there is nothing to lose', (_name, exit) => {
+    renderWorkspace();
+    openPanel();
+
+    exit();
+
+    expect(isOpen()).toBe(false);
+  });
+
+  it.each(exits)('asks first on %s when there is unsaved work', (_name, exit) => {
+    // No dismissal route may discard pending codes and a draft note silently,
+    // and clicking outside is the one that most easily could.
+    const { container } = renderWorkspace();
+    openPanel();
+    draftUnsavedWork();
+
+    exit();
+
+    expect(isOpen()).toBe(true);
+    expect(confirmation()).toBeInTheDocument();
+    expect(saved(container)).toEqual({ excerpts: 0, assignments: 0, notes: 0 });
+  });
+
+  it.each(exits)('keeps everything when the confirmation is declined after %s', (_name, exit) => {
+    renderWorkspace();
+    openPanel();
+    draftUnsavedWork();
+    exit();
+
+    fireEvent.click(screen.getByRole('button', { name: /keep editing/i }));
+
+    expect(isOpen()).toBe(true);
+    expect(checkedCodeIds()).toHaveLength(2);
+    expect(noteField()).toHaveValue('A thought I would hate to lose.');
+  });
+
+  it('does not dismiss on a click inside the dialog', () => {
+    renderWorkspace();
+    openPanel();
+
+    fireEvent.click(within(panel()).getByRole('heading', { level: 2 }));
+
+    expect(isOpen()).toBe(true);
+  });
+});

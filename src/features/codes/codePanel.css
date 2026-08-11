@@ -1,31 +1,111 @@
 /*
- * Code selection panel.
+ * The Select Code dialog.
  *
- * Specification: docs/patterns/code-selection.md sections 2 and 11, layout per
- * D-033.
+ * Specification: docs/patterns/code-selection.md sections 2 and 11, container
+ * per D-026 as reinstated over D-027.
  *
- * The narrow form is primary and the wide form derives from it, so the logical
- * order never differs between the two. No dimmed backdrop: dimming asserts the
- * content behind is unavailable, and with focus untrapped that is false.
+ * Dimming is decoration and never information. Nothing is conveyed by the
+ * backdrop alone, and with focus genuinely trapped the dim now agrees with the
+ * interaction: the content behind really is unavailable, which is the
+ * disagreement D-027 objected to and modality removes.
  */
 
+.code-panel__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgb(0 0 0 / 45%);
+}
+
+/*
+ * The sizing lives on the wrapper, not on the dialog inside it. Left to size
+ * itself the wrapper takes its content's width, and the dialog then sits at the
+ * left of it rather than in the middle of the viewport.
+ */
+.code-panel__modal {
+  display: flex;
+  width: min(38rem, 100%);
+  max-height: 85vh;
+}
+
 .code-panel {
+  background: var(--surface);
   border: 2px solid var(--border);
   border-radius: 4px;
   padding: 0.75rem;
-  margin-top: 1rem;
-  /* Scrolls internally rather than holding fixed dimensions. The Hi-Fi's 441
-     by 568 cannot fit at 400 percent zoom. */
-  max-height: 80vh;
-  overflow-y: auto;
+  outline: none;
+  /*
+     Resizes and scrolls internally rather than holding fixed dimensions: the
+     Hi-Fi's 441 by 568 cannot fit at 400 percent zoom. Width in rem so it grows
+     with text size instead of pinning a pixel width, and centred on the
+     viewport rather than the document so a magnified user panned into a corner
+     still finds it. D-026.
+  */
+  width: 100%;
+  max-height: 100%;
+  /*
+     The card does not scroll; the middle of it does. The header and the footer
+     stay put, so the excerpt's name and the way out are always where the coder
+     left them.
+  */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-/* Heading and close on one row, as the card has them. */
+.code-panel__scroll {
+  overflow-y: auto;
+  /*
+     Without this a flex item refuses to shrink below its content's height and
+     nothing scrolls at all.
+  */
+  min-height: 0;
+}
+
+/*
+ * Contract 2.5: fixed headers must not consume enough vertical space to
+ * obstruct reading at high zoom. Both ends stay compact and the footer wraps
+ * rather than growing, so at 400 percent the codebook keeps usable height
+ * between them.
+ */
+.code-panel__header,
+.code-panel__actions {
+  flex: none;
+}
+
+@media (forced-colors: active) {
+  /*
+     Backdrops are dropped here, so the border carries the whole signal that
+     this is a layer over the page rather than part of it.
+  */
+  .code-panel {
+    border-color: CanvasText;
+  }
+}
+
+/*
+ * Heading and close on one row, as the card has them.
+ *
+ * The divider belongs to the header rather than to the first region below it.
+ * Drawn by the scrolling content it travelled up and out with the codebook,
+ * leaving the fixed heading floating against the list.
+ */
 .code-panel__header {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Or a second line would sit immediately under the header's own. */
+.code-panel__scroll > .code-panel__region:first-child {
+  border-top: none;
 }
 
 .code-panel__heading {
@@ -145,11 +225,11 @@
 }
 
 /*
- * The visible level label went with D-039: hierarchy shows as indentation and
- * pill colour, and the nested lists still expose depth programmatically. The
- * magnification risk C-3 guarded against moves to session evidence.
+ * The visible level label went with D-039, and the short definition went with
+ * it from the row: hierarchy shows as indentation and pill colour, and the
+ * nested lists still expose depth programmatically. The magnification risk C-3
+ * guarded against moves to session evidence.
  */
-.code-panel__short,
 .code-panel__path {
   color: var(--text-muted);
   font-size: 0.9em;
@@ -187,6 +267,12 @@
   flex-wrap: wrap;
   gap: 0.5rem;
   align-items: center;
+  border-top: 1px solid var(--border);
+}
+
+/* Destructive, and set apart from the control beside it for that reason. */
+.code-panel__delete {
+  margin-left: auto;
 }
 
 .code-panel__actions button {
@@ -202,28 +288,6 @@
 .code-panel__actions button[aria-disabled='true'] {
   border-style: dashed;
   opacity: 0.7;
-}
-
-/*
- * Wide: the same sequence, with the panel alongside the transcript, fixed
- * right, roughly 360 to 400 pixels at 100 percent zoom. Expressed in rem so it
- * grows with text size rather than pinning a pixel width at high zoom, at which
- * point the narrow single-column form takes over again.
- */
-@media (min-width: 64rem) {
-  .code-panel[data-presentation='sidePanel'] {
-    position: sticky;
-    top: 1rem;
-    float: right;
-    width: 24rem;
-    margin-left: 1.5rem;
-    max-height: calc(100vh - 2rem);
-  }
-}
-
-/* The full-page variant behind the flag, for the comparison recorded in B-2. */
-.code-panel[data-presentation='fullPage'] {
-  max-height: none;
 }
 
 /* ---------- Shared utilities ---------- */
