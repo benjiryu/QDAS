@@ -1,0 +1,109 @@
+/**
+ * Design tokens, extracted from the Figma Style guide page (node 25:3)
+ * on 2026-08. Single source for visual language, per the styling rule:
+ * component CSS references tokens, never raw values.
+ *
+ * The Figma file decides visual language; the specifications decide structure
+ * and behavior. A token here never justifies reintroducing structure the
+ * decision log removed.
+ *
+ * Font sizes are deliberately absent at the team's direction. Type scale
+ * decisions are pending; components use relative sizing until then.
+ *
+ * Contrast audit (WCAG 2.1), run programmatically at extraction:
+ *   - Black text on every shade-2 tag fill: PASS, 6.9:1 to 15.4:1
+ *   - All button levels, default and hover: PASS, 5.9:1 to 9.2:1
+ *   - Disabled button #828282 on #e9e9e9 = 3.17:1. Exempt under WCAG, but
+ *     genuinely faint; the disabled reason is exposed programmatically per
+ *     contract 2.6, so information does not depend on reading it
+ *   - Shade-1 borders against white, 3:1 non-text minimum:
+ *     FAIL orange-1 (2.41), yellow-1 (1.69), l-green-1 (2.00), s-green-1 (2.37)
+ *     Tags in these hues keep black text, which passes, so the tag itself is
+ *     perceivable; what degrades is hue identity at a glance. Hue is a
+ *     redundant channel per D-039, so this is annotated rather than blocking.
+ *     If the team wants all thirteen borders reliable, these four need
+ *     darkening in Figma first, then re-extraction.
+ */
+
+:root {
+  /* ---------- Type ---------- */
+  /* Luciole is designed for low-vision readers: luciole-vision.com, free.
+     Requires @font-face declarations and the font files in /public/fonts;
+     the fallback stack applies until they are added. */
+  --font-family: 'Luciole', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  --font-weight-regular: 400;
+  --font-weight-bold: 600;
+
+  /* ---------- Neutrals (Style guide, Neutral row) ---------- */
+  --color-black: #000000;
+  --color-grey-750: #4d4d4d;
+  --color-grey-500: #828282;
+  --color-grey-300: #c0c0c0;
+  --color-grey-100: #e9e9e9;
+  --color-white: #ffffff;
+
+  /* ---------- Main (blue ramp + accent) ---------- */
+  --color-blue-100: #1f4783;  /* Figma: blue-100% */
+  --color-blue-50: #6a8ab9;   /* Figma: blue-50% */
+  --color-blue-10: #dbe6f0;   /* Figma: blue-10% */
+  --color-accent-yellow: #ffea00;
+
+  /* ---------- Semantic ---------- */
+  --color-error: #a10505;
+  --color-success: #268935;
+  --color-warning: #ffc320;
+
+  /* ---------- Code tag hues ----------
+     Thirteen families, three shades. Figma variable names preserved.
+     Shade 1: border / strong. Shade 2: tag fill. Shade 3: tint / row wash.
+     Black text passes on every shade-2 fill. */
+  --red-1: #e33e3e;      --red-2: #f28a8a;      --red-3: #fed9d9;
+  --coral-1: #e36843;    --coral-2: #f4a890;    --coral-3: #ffe2d9;
+  --orange-1: #e3963e;   --orange-2: #edc292;   --orange-3: #fbe5cb;  /* orange-1 border fails 3:1 on white */
+  --yellow-1: #d3cc00;   --yellow-2: #e4e071;   --yellow-3: #f3f1c1;  /* yellow-1 border fails 3:1 on white */
+  --l-green-1: #6dce31;  --l-green-2: #a7f079;  --l-green-3: #cfeebc; /* l-green-1 border fails 3:1 on white */
+  --d-green-1: #1d7e4d;  --d-green-2: #5fc090;  --d-green-3: #c4e8d6;
+  --s-green-1: #38bca1;  --s-green-2: #8ad9c9;  --s-green-3: #daf6f1; /* s-green-1 border fails 3:1 on white */
+  --cerulean-1: #389aca; --cerulean-2: #86bcd8; --cerulean-3: #d6f0fd;
+  --blue-1: #3365d3;     --blue-2: #89aaf0;     --blue-3: #d7e2fa;
+  --purple-1: #6659d9;   --purple-2: #9c93eb;   --purple-3: #d1cdf4;
+  --violet-1: #8735ce;   --violet-2: #b37de2;   --violet-3: #e0c3f9;
+  --pink-1: #df56d6;     --pink-2: #f8aff3;     --pink-3: #fad8f8;
+  --rose-1: #cc267c;     --rose-2: #feabd6;     --rose-3: #fbd9eb;
+
+  /* ---------- Buttons (Style guide, Buttons frame) ---------- */
+  --button-primary-bg: var(--color-blue-100);
+  --button-primary-border: var(--color-black);
+  --button-primary-text: var(--color-white);          /* bold */
+  --button-secondary-bg: var(--color-blue-50);
+  --button-secondary-border: var(--color-blue-100);
+  --button-secondary-text: var(--color-black);
+  --button-tertiary-bg: var(--color-blue-10);
+  --button-tertiary-text: var(--color-blue-100);      /* underlined */
+  --button-disabled-bg: var(--color-grey-100);
+  --button-disabled-border: var(--color-grey-500);
+  --button-disabled-text: var(--color-grey-500);
+  --shadow-hover: 4px 8px 4px rgba(0, 0, 0, 0.5);
+
+  /* ---------- Selection states (Coded data selector, Checkbox) ---------- */
+  --selected-outline: var(--color-blue-100);  /* 2px on selected rows */
+  --row-bg: var(--color-grey-100);
+  --checkbox-border: var(--color-grey-500);
+  --checkbox-checked-bg: var(--color-grey-750);
+
+  /* ---------- Shape ---------- */
+  --radius-small: 4px;    /* checkbox */
+  --radius-medium: 8px;   /* selectors, disclosure containers */
+  --radius-large: 20px;   /* code select rows */
+  --radius-pill: 100px;   /* tags, buttons */
+  --border-thin: 2px;     /* checkbox, selected outline, selector borders */
+  --border-thick: 3px;    /* tag and button borders */
+
+  /* ---------- Space (recurring values in the guide) ---------- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+}
