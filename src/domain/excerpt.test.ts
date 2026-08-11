@@ -24,11 +24,16 @@ import type { Excerpt } from './types';
 // Ten sentences, four turns: t0 = s0..s2, t1 = s3, t2 = s4..s7, t3 = s8..s9.
 const resolved = buildTestSource();
 
-const at = (start: string, end: string, startOffset = 0, endOffset = 0): CapturedRange => ({
+/**
+ * A range, whole by default. `endOffset` defaults to the end sentence's length
+ * rather than to zero: a range ending at character zero covers nothing, and a
+ * helper whose default means "empty" makes every test using it a lie.
+ */
+const at = (start: string, end: string, startOffset = 0, endOffset?: number): CapturedRange => ({
   startSegmentId: start,
   endSegmentId: end,
   startOffset,
-  endOffset,
+  endOffset: endOffset ?? (resolved.segments.find((s) => s.segmentId === end)?.text.length ?? 0),
 });
 
 describe('validity', () => {
@@ -69,6 +74,8 @@ describe('contents and size', () => {
       sentenceCount: 3,
       turnCount: 1,
       spansTurns: false,
+      startsMidSentence: false,
+      endsMidSentence: false,
     });
   });
 
@@ -77,6 +84,8 @@ describe('contents and size', () => {
       sentenceCount: 3,
       turnCount: 3,
       spansTurns: true,
+      startsMidSentence: false,
+      endsMidSentence: false,
     });
   });
 
@@ -86,6 +95,66 @@ describe('contents and size', () => {
       '3 sentences across 3 turns',
     );
     expect(describeExcerptSize(excerptSize(resolved, at('s5', 's5')))).toBe('1 sentence');
+  });
+});
+
+describe('a range that begins or ends mid-sentence', () => {
+  const text = (segmentId: string) =>
+    resolved.segments.find((segment) => segment.segmentId === segmentId)!.text;
+
+  it('notices each boundary independently', () => {
+    expect(excerptSize(resolved, at('s4', 's6', 3))).toMatchObject({
+      startsMidSentence: true,
+      endsMidSentence: false,
+    });
+    expect(excerptSize(resolved, at('s4', 's6', 0, 4))).toMatchObject({
+      startsMidSentence: false,
+      endsMidSentence: true,
+    });
+    expect(excerptSize(resolved, at('s4', 's6', 3, 4))).toMatchObject({
+      startsMidSentence: true,
+      endsMidSentence: true,
+    });
+  });
+
+  it('still counts the sentences it touches, and says the count is partial', () => {
+    // "1 sentence" for six words out of forty would tell a coder they captured
+    // something they did not. The count orients; "part of" makes it honest.
+    expect(describeExcerptSize(excerptSize(resolved, at('s5', 's5', 4, 9)))).toBe(
+      'part of 1 sentence',
+    );
+    expect(describeExcerptSize(excerptSize(resolved, at('s4', 's6', 3)))).toBe(
+      'part of 3 sentences',
+    );
+    expect(describeExcerptSize(excerptSize(resolved, at('s2', 's4', 0, 5)))).toBe(
+      'part of 3 sentences across 3 turns',
+    );
+  });
+
+  it('calls a whole range whole, so the turn fallback is not qualified', () => {
+    expect(describeExcerptSize(excerptSize(resolved, at('s4', 's6')))).toBe('3 sentences');
+  });
+
+  it('reads back only the characters captured', () => {
+    // What "Read the full excerpt" speaks. Reading a boundary sentence whole
+    // would put words into the excerpt the coder never selected.
+    expect(excerptText(resolved, at('s5', 's5', 4, 9))).toBe(text('s5').slice(4, 9));
+  });
+
+  it('slices both boundary sentences and keeps the middle whole', () => {
+    expect(excerptText(resolved, at('s4', 's6', 3, 4))).toBe(
+      `${text('s4').slice(3)} ${text('s5')} ${text('s6').slice(0, 4)}`,
+    );
+  });
+
+  it('reads a whole range unchanged', () => {
+    expect(excerptText(resolved, at('s4', 's5'))).toBe(`${text('s4')} ${text('s5')}`);
+  });
+
+  it('drops a boundary sentence that the offsets leave empty', () => {
+    // An end offset of zero covers no characters of the last sentence, so that
+    // sentence contributes nothing rather than contributing itself whole.
+    expect(excerptText(resolved, at('s4', 's5', 0, 0))).toBe(text('s4'));
   });
 });
 
@@ -112,7 +181,7 @@ describe('reading a range on and off an excerpt record', () => {
     startSegmentId: 's5',
     endSegmentId: 's5',
     startOffset: 0,
-    endOffset: 0,
+    endOffset: 11,
     coderId: 'us-1',
     codingRoundId: 'rd-1',
     createdAt: '2026-08-01T00:00:00.000Z',

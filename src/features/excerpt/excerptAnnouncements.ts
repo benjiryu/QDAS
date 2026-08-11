@@ -35,13 +35,20 @@ export function captured(
 
   if (source === 'selection') {
     const from = speakerLabel ? ` from ${speakerLabel}` : '';
-    return `Coding your selection. ${description}${from}.`;
+    // The description opens a sentence here and sits mid-sentence in the panel
+    // heading, so the capital belongs at this call site rather than in the
+    // phrase itself.
+    return `Coding your selection. ${sentenceCase(description)}${from}.`;
   }
 
   // Leads with what did not happen. A user who believes they made a selection
   // has to hear that the application did not see one before anything else.
   const speaker = speakerLabel ?? 'Unknown speaker';
   return `No selection detected. Coding the current turn. ${speaker}, ${description}.`;
+}
+
+function sentenceCase(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 export function discarded(reopened: boolean): string {

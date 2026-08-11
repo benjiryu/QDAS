@@ -757,6 +757,34 @@ Done when: Tab walks the turns, the three orientation controls answer for the
 turn you are on, clicking leaves no lingering highlight, and a captured
 excerpt's highlight is the only app-drawn selection visual anywhere.
 
+### Task 21. Simplify the code panel to the Select Code card
+
+```
+Implement D-039. Read it fully; it lists what is removed, what is changed, and
+what is deliberately retained.
+
+Remove: the verbose heading (visible heading becomes "Select Code", still the
+region's accessible name), the excerpt summary and read-excerpt control, the
+visual level labels (nested list structure and indentation stay), the pending
+assignment region (checkboxes are the pending state; count announcements
+stay; Save & Close disabled at zero checked with reason), and the uncertainty
+control (uncertaintyFlag stays in the model, unwritten).
+
+Change: Create code becomes a collapsed disclosure row; expanding focuses the
+name field, collapse and Escape return focus to the row. The save button label
+is "Save & Close".
+
+Retain: the search field per D-005, the note field, recent codes behind its
+flag, canonical order, and the D-030 reopen behavior with pre-checked boxes.
+
+Update tests: remove pending-region and uncertainty tests, add disclosure
+focus tests, keep the zero-checked save rule and reopen tests.
+```
+
+Done when: the panel reads like the Figma card, checking boxes is the only
+pending state, and a screen reader hears the same check and count announcements
+as before.
+
 ## Failure modes to watch for
 
 **The agent builds something simulated.** Point it at `prototype-scope.md`. File import, authentication, and IRR are not gaps to fill.

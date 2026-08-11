@@ -43,6 +43,16 @@ async function highlighted(page: Page): Promise<string> {
     .evaluateAll((nodes) => nodes.map((node) => node.textContent ?? '').join(''));
 }
 
+/** Coded characters within named sentences, once an excerpt has been saved. */
+async function codedTextIn(page: Page, segmentIds: string[]): Promise<string> {
+  const selector = segmentIds
+    .map((id) => `[data-segment-id="${id}"] [data-coded-run]`)
+    .join(', ');
+  return page
+    .locator(selector)
+    .evaluateAll((nodes) => nodes.map((node) => node.textContent ?? '').join(''));
+}
+
 async function polite(page: Page): Promise<string> {
   return page.getByTestId('live-region-polite').innerText();
 }
@@ -175,4 +185,42 @@ test('add note opens the panel in the note field', async ({ page }) => {
 
   await expect(page.getByRole('region', { name: /code selection/i })).toBeVisible();
   await expect(page.getByLabel(/note about this excerpt/i)).toBeFocused();
+});
+
+test('a saved mid-sentence excerpt is coded exactly, not rounded to the sentence', async ({
+  page,
+}) => {
+  const turn = page.locator('[data-turn-id]').first();
+  const segmentIds = await turn
+    .locator('[data-segment-id]')
+    .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-segment-id')!));
+
+  const dragged = await sweepAcrossTwoSentences(page);
+  await press(page, 'excerpt.code');
+  expect(squashed(await highlighted(page))).toBe(squashed(dragged));
+
+  // Code it and save, which is where the range used to round up.
+  await page
+    .locator('[data-region="codebook"] input[type="checkbox"]')
+    .first()
+    .check();
+  await page.getByRole('button', { name: /^Save$/ }).click();
+  await expect(page.getByRole('region', { name: /code selection/i })).toHaveCount(0);
+
+  // What is painted after the save is what was dragged.
+  expect(squashed(await codedTextIn(page, segmentIds.slice(0, 2)))).toBe(squashed(dragged));
+
+  // And the sentences are still whole on screen, only partly coded.
+  const firstSentence = await page
+    .locator(`[data-segment-id="${segmentIds[0]}"]`)
+    .textContent();
+  expect(squashed(await codedTextIn(page, [segmentIds[0]])).length).toBeLessThan(
+    squashed(firstSentence ?? '').length,
+  );
+
+  // The sentence still reports itself coded, which is what comparison asks.
+  await expect(page.locator(`[data-segment-id="${segmentIds[0]}"]`)).toHaveAttribute(
+    'data-display-state',
+    'coded',
+  );
 });

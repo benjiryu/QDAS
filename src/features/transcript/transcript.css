@@ -76,13 +76,20 @@
  * across lines and do not change the line height, so the prose does not reflow
  * when a sentence becomes coded.
  */
-.transcript-segment[data-display-state='coded'] {
+/*
+ * Painted on the run, not the sentence. Since D-036 an excerpt covers exact
+ * characters, so a sentence can be coded in part, and drawing the whole
+ * sentence would claim the coder had coded words they never selected. The
+ * sentence keeps `data-display-state` for the sentence-granularity comparison
+ * R-1 does; this is what the eye sees.
+ */
+.transcript-segment__run[data-coded-run='coded'] {
   background: var(--coded-bg);
   text-decoration: underline solid var(--coded-line) 3px;
   text-underline-offset: 0.25em;
 }
 
-.transcript-segment[data-display-state='coded-multiple'] {
+.transcript-segment__run[data-coded-run='coded-multiple'] {
   background: var(--coded-multiple-bg);
   text-decoration: underline double var(--coded-line) 5px;
   text-underline-offset: 0.3em;
@@ -104,8 +111,8 @@
 
 @media (forced-colors: active) {
   /* Backgrounds are discarded here; the underline is the whole signal. */
-  .transcript-segment[data-display-state='coded'],
-  .transcript-segment[data-display-state='coded-multiple'] {
+  .transcript-segment__run[data-coded-run='coded'],
+  .transcript-segment__run[data-coded-run='coded-multiple'] {
     text-decoration-color: currentColor;
   }
 }

@@ -27,6 +27,24 @@ export type CodedDisplayState = Extract<
   'inactive' | 'coded' | 'coded-multiple'
 >;
 
+/**
+ * A stretch of characters within one sentence carrying the same coding.
+ *
+ * Since D-036 an excerpt covers exact characters, so a sentence can be coded in
+ * part. The segment-level fields below answer "is this sentence coded at all",
+ * which is the sentence granularity R-1 compares at; these answer "which
+ * characters", which is what gets painted.
+ */
+export interface CodedSpan {
+  /** Characters into the sentence's text. */
+  start: number;
+  /** Exclusive. */
+  end: number;
+  state: Exclude<CodedDisplayState, 'inactive'>;
+  excerptIds: Id[];
+  codeIds: Id[];
+}
+
 export interface SegmentCoding {
   state: CodedDisplayState;
   /**
@@ -40,6 +58,13 @@ export interface SegmentCoding {
   codeIds: Id[];
   /** Assignments, which exceeds `codeIds.length` when two excerpts share a code. */
   assignmentCount: number;
+  /**
+   * The coded stretches within this sentence, in order and non-overlapping.
+   *
+   * Empty when the sentence is `inactive`. One span covering the whole sentence
+   * when every covering excerpt covers it whole, which is the common case.
+   */
+  spans: CodedSpan[];
 }
 
 export interface DeriveInput {
@@ -78,7 +103,90 @@ export interface SegmentDisplayStates {
  * segment would appear to code the whole transcript.
  */
 function emptyCoding(): SegmentCoding {
-  return { state: 'inactive', excerptIds: [], codeIds: [], assignmentCount: 0 };
+  return { state: 'inactive', excerptIds: [], codeIds: [], assignmentCount: 0, spans: [] };
+}
+
+/** Which characters of a segment an excerpt covers, clamped to the text. */
+function coveredInterval(
+  excerpt: Excerpt,
+  segmentId: Id,
+  textLength: number,
+): { start: number; end: number } | null {
+  const isStart = excerpt.startSegmentId === segmentId;
+  const isEnd = excerpt.endSegmentId === segmentId;
+
+  const start = isStart ? Math.max(0, Math.min(excerpt.startOffset, textLength)) : 0;
+  const end = isEnd ? Math.max(0, Math.min(excerpt.endOffset, textLength)) : textLength;
+
+  // A range stored inside out, or one whose offsets have gone stale against a
+  // resegmented source, covers nothing rather than covering everything.
+  return end > start ? { start, end } : null;
+}
+
+interface Interval {
+  start: number;
+  end: number;
+  excerptId: Id;
+  codeIds: Id[];
+}
+
+/**
+ * Intervals to spans: one span per stretch of characters covered by the same
+ * set of excerpts.
+ *
+ * Boundaries are swept rather than intersected pairwise, so overlapping,
+ * nested, and disjoint ranges all fall out of the same pass. Adjacent stretches
+ * covered by the same excerpts are merged, so a sentence coded whole by two
+ * excerpts is one span and not three.
+ */
+function spansFrom(intervals: Interval[]): CodedSpan[] {
+  if (intervals.length === 0) return [];
+
+  const boundaries = [...new Set(intervals.flatMap(({ start, end }) => [start, end]))].sort(
+    (a, b) => a - b,
+  );
+
+  const spans: CodedSpan[] = [];
+
+  for (let index = 0; index < boundaries.length - 1; index += 1) {
+    const start = boundaries[index];
+    const end = boundaries[index + 1];
+    // Intervals arrive in canonical excerpt order, so the covering list is too.
+    const covering = intervals.filter(
+      (interval) => interval.start <= start && interval.end >= end,
+    );
+    if (covering.length === 0) continue;
+
+    const excerptIds = covering.map((interval) => interval.excerptId);
+    const previous = spans[spans.length - 1];
+
+    if (
+      previous &&
+      previous.end === start &&
+      previous.excerptIds.length === excerptIds.length &&
+      previous.excerptIds.every((id, position) => id === excerptIds[position])
+    ) {
+      previous.end = end;
+      continue;
+    }
+
+    const codeIds: Id[] = [];
+    for (const interval of covering) {
+      for (const codeId of interval.codeIds) if (!codeIds.includes(codeId)) codeIds.push(codeId);
+    }
+
+    spans.push({
+      start,
+      end,
+      // Two or more excerpts over these characters, matching how the
+      // segment-level state counts excerpts rather than codes.
+      state: covering.length > 1 ? 'coded-multiple' : 'coded',
+      excerptIds,
+      codeIds,
+    });
+  }
+
+  return spans;
 }
 
 /**
@@ -137,12 +245,16 @@ export function deriveSegmentDisplayStates(
       a.excerpt.excerptId.localeCompare(b.excerpt.excerptId),
   );
 
+  /** Collected in canonical excerpt order, then swept into spans below. */
+  const intervalsBySegment = new Map<Id, Interval[]>();
+
   for (const { excerpt, start, end } of resolvable) {
     const assignments = assignmentsByExcerpt.get(excerpt.excerptId) ?? [];
+    const codeIds = assignments.map((assignment) => assignment.codeId);
 
     for (let position = start; position <= end; position += 1) {
-      const segmentId = resolved.segments[position].segmentId;
-      const coding = bySegmentId.get(segmentId);
+      const segment = resolved.segments[position];
+      const coding = bySegmentId.get(segment.segmentId);
       if (!coding) continue;
 
       coding.excerptIds.push(excerpt.excerptId);
@@ -154,8 +266,25 @@ export function deriveSegmentDisplayStates(
       // Two or more excerpts, not two or more codes. One excerpt carrying three
       // codes is `coded`; the state distinguishes overlapping ranges, because
       // that is what the visual and the spoken detail have to separate.
+      //
+      // This stays a fact about the whole sentence even where the excerpts
+      // cover different parts of it: D-036 section 5 keeps comparison at
+      // sentence granularity, and the spans below carry the exact truth.
       coding.state = coding.excerptIds.length > 1 ? 'coded-multiple' : 'coded';
+
+      const interval = coveredInterval(excerpt, segment.segmentId, segment.text.length);
+      if (!interval) continue;
+
+      const existing = intervalsBySegment.get(segment.segmentId);
+      const entry = { ...interval, excerptId: excerpt.excerptId, codeIds };
+      if (existing) existing.push(entry);
+      else intervalsBySegment.set(segment.segmentId, [entry]);
     }
+  }
+
+  for (const [segmentId, intervals] of intervalsBySegment) {
+    const coding = bySegmentId.get(segmentId);
+    if (coding) coding.spans = spansFrom(intervals);
   }
 
   return { bySegmentId, unresolvedExcerptIds };

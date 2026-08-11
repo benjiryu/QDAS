@@ -40,6 +40,8 @@ const identity = {
 };
 
 const NOW = '2026-08-10T12:00:00.000Z';
+const textOf = (segmentId: Id) =>
+  resolved.segments.find((segment) => segment.segmentId === segmentId)!.text;
 const range = { startSegmentId: 's4', endSegmentId: 's6', startOffset: 3, endOffset: 7 };
 
 function build(overrides: Partial<Parameters<typeof buildCodingRecords>[1]> = {}) {
@@ -148,7 +150,8 @@ describe('where a save returns', () => {
           startSegmentId: 's7',
           endSegmentId: 's8',
           startOffset: 0,
-          endOffset: 0,
+          // Whole segments. Zero would cover no characters of s8 at all.
+          endOffset: textOf('s8').length,
           coderId: 'us-1',
           codingRoundId: 'rd-1',
           createdAt: NOW,
@@ -183,7 +186,7 @@ describe('saved excerpts a focused turn intersects, per D-038', () => {
     startSegmentId,
     endSegmentId,
     startOffset: 0,
-    endOffset: 0,
+    endOffset: textOf(endSegmentId).length,
     coderId: 'us-1',
     codingRoundId: 'rd-1',
     createdAt: NOW,

@@ -146,8 +146,10 @@ test('speaker and timestamp collapse into the leading text at narrow width', asy
 });
 
 test('coded state carries a shape channel, not colour alone', async ({ page }) => {
-  const coded = page.locator('[data-display-state="coded"]').first();
-  const codedMultiple = page.locator('[data-display-state="coded-multiple"]').first();
+  // Read from the run rather than the sentence: since D-036 an excerpt covers
+  // exact characters, so the paint is on the stretch that is actually coded.
+  const coded = page.locator('[data-coded-run="coded"]').first();
+  const codedMultiple = page.locator('[data-coded-run="coded-multiple"]').first();
 
   await expect(coded).toBeVisible();
   await expect(codedMultiple).toBeVisible();
@@ -161,8 +163,8 @@ test('coded state carries a shape channel, not colour alone', async ({ page }) =
       };
     });
 
-  const one = await decorationOf('[data-display-state="coded"]');
-  const many = await decorationOf('[data-display-state="coded-multiple"]');
+  const one = await decorationOf('[data-coded-run="coded"]');
+  const many = await decorationOf('[data-coded-run="coded-multiple"]');
   const none = await decorationOf('[data-display-state="inactive"]');
 
   // Underlined at all, so the state survives greyscale.

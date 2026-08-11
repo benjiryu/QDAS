@@ -347,3 +347,134 @@ describe('capture survives the panel', () => {
     expect(excerptState()).toBe('saved');
   });
 });
+
+describe('a saved partial excerpt stays partial', () => {
+  /**
+   * Coded characters within one turn, in document order.
+   *
+   * Scoped to the turn, because the fixture arrives with the second coder's
+   * excerpts already saved elsewhere in the transcript.
+   */
+  const codedText = (turnId = multiSentenceTurn.turn.turnId) =>
+    Array.from(
+      document.querySelectorAll(`[data-turn-id="${turnId}"] [data-coded-run]`),
+    )
+      .map((element) => element.textContent ?? '')
+      .join('');
+
+  /** Coded characters within named sentences only. */
+  const codedTextIn = (...segmentIds: string[]) =>
+    segmentIds
+      .map((segmentId) =>
+        Array.from(segmentElement(segmentId).querySelectorAll('[data-coded-run]'))
+          .map((element) => element.textContent ?? '')
+          .join(''),
+      )
+      .join('');
+
+  function saveWithACode(view: ReturnType<typeof renderWorkspace>) {
+    const codebook = view.container.querySelector<HTMLElement>('[data-region="codebook"]')!;
+    fireEvent.click(codebook.querySelector(`[data-code-id="${fixture.codes[0].codeId}"]`)!);
+    fireEvent.click(screen.getByRole('button', { name: /^Save$/ }));
+  }
+
+  it('paints only the characters that were captured, not the sentence', () => {
+    // The reported bug: a half-sentence capture became a whole-sentence
+    // highlight the moment it was saved.
+    const view = renderWorkspace();
+    const segment = multiSentenceTurn.segments[0];
+
+    drag([segment.segmentId, 5], [segment.segmentId, 18]);
+    chord('excerpt.code');
+    saveWithACode(view);
+
+    expect(codedTextIn(segment.segmentId)).toBe(segment.text.slice(5, 18));
+    // The sentence is still whole on screen; only part of it is coded.
+    expect(segmentElement(segment.segmentId).textContent).toBe(segment.text);
+  });
+
+  it('slices both boundary sentences and keeps the middle whole', () => {
+    const view = renderWorkspace();
+    const [first, second, third] = multiSentenceTurn.segments;
+
+    drag([first.segmentId, 6], [third.segmentId, 4]);
+    chord('excerpt.code');
+    saveWithACode(view);
+
+    expect(codedTextIn(first.segmentId, second.segmentId, third.segmentId)).toBe(
+      `${first.text.slice(6)}${second.text}${third.text.slice(0, 4)}`,
+    );
+  });
+
+  it('still marks the sentence coded, which is what comparison asks', () => {
+    // D-036 section 5 keeps review at sentence granularity. The sentence-level
+    // state says "coded"; the runs say which characters.
+    const view = renderWorkspace();
+    const segment = multiSentenceTurn.segments[0];
+
+    drag([segment.segmentId, 5], [segment.segmentId, 18]);
+    chord('excerpt.code');
+    saveWithACode(view);
+
+    expect(segmentElement(segment.segmentId)).toHaveAttribute('data-display-state', 'coded');
+  });
+
+  it('leaves a neighbouring sentence untouched', () => {
+    const view = renderWorkspace();
+    const [first, second] = multiSentenceTurn.segments;
+
+    drag([first.segmentId, 5], [first.segmentId, 18]);
+    chord('excerpt.code');
+    saveWithACode(view);
+
+    expect(segmentElement(second.segmentId).querySelector('[data-coded-run]')).toBeNull();
+    expect(segmentElement(second.segmentId)).toHaveAttribute('data-display-state', 'inactive');
+  });
+
+  it('paints a whole-turn capture whole, so the fallback is unaffected', () => {
+    const view = renderWorkspace();
+    focusTurn(multiSentenceTurn.turn.turnId);
+
+    chord('excerpt.code');
+    saveWithACode(view);
+
+    const whole = multiSentenceTurn.segments.map((segment) => segment.text).join('');
+    expect(codedText()).toBe(whole);
+  });
+});
+
+describe('what the excerpt reads back as', () => {
+  it('reads only the captured characters, not the whole sentence', () => {
+    const view = renderWorkspace();
+    const segment = multiSentenceTurn.segments[0];
+
+    drag([segment.segmentId, 5], [segment.segmentId, 18]);
+    chord('excerpt.code');
+
+    fireEvent.click(view.getByRole('button', { name: /read the full excerpt/i }));
+
+    const readBack = announced()[announced().length - 1];
+    expect(readBack).toContain(segment.text.slice(5, 18));
+    expect(readBack).not.toContain(segment.text);
+  });
+
+  it('describes a partial capture as partial', () => {
+    renderWorkspace();
+    const segment = multiSentenceTurn.segments[0];
+
+    drag([segment.segmentId, 5], [segment.segmentId, 18]);
+    chord('excerpt.code');
+
+    expect(announced().join(' ')).toContain('Part of 1 sentence');
+  });
+
+  it('describes a whole capture without qualification', () => {
+    renderWorkspace();
+    focusTurn(multiSentenceTurn.turn.turnId);
+
+    chord('excerpt.code');
+
+    const capture = announced().find((message) => message.includes('sentence'))!;
+    expect(capture).not.toMatch(/part of/i);
+  });
+});

@@ -658,3 +658,24 @@ Focus is now the only position the application knows. Screen readers generally s
 - D-002's sentence layer survives only as addressing for storage offsets, position percentage, and R-1 comparison. No interactive behavior touches sentences anymore.
 - `SourcePosition.activeSegmentId` now records the focused turn's first segment, for position restoration only.
 - The strip now holds: Code selection, Add note, speaker, timestamp, where am I. Five controls.
+
+## D-039 The code panel is simplified to the Select Code card
+
+Date: 2026-08 | Workflow: code assignment | Status: approved. Continues the v0.2 downscaling; supersedes C-3's level indicator and defers D-021's uncertainty control
+
+The panel matches the Figma Select Code card: heading "Select Code" with a close control, search field (retained per D-005, not shown in the card but not removed by this decision), the codebook as checkbox rows with color pills, a collapsed Create code disclosure, the note field, and Save & Close.
+
+### Removed
+
+- **The verbose heading.** The visible heading is "Select Code". It remains the panel's accessible region name.
+- **The excerpt summary and read-excerpt control.** The transcript highlight is the sighted verification; the capture announcement is the screen reader verification. Consequence accepted and stated: after capture, there is no on-demand non-visual readback of the captured range. If sessions show screen reader participants losing track of what they captured, that reopens this, not D-036.
+- **Visual level labels.** Hierarchy shows as indentation and pill color only. Programmatic hierarchy is unchanged: nested lists still expose level to screen readers. This supersedes C-3's "indentation plus a text level indicator"; the magnification risk C-3 guarded against, indentation depth being hard to perceive at high zoom, moves to session evidence.
+- **The pending assignment region.** The checkboxes are the pending state, visible and programmatic. Check and uncheck announcements with counts remain. Save writes the checked set; Save & Close stays unavailable at zero checked, with its reason exposed. D-030 reopening pre-checks the saved codes, and its loaded-codes announcement is unchanged.
+- **The uncertainty control.** `uncertaintyFlag` stays in the model, unwritten in v0.2. This defers D-021 and the data D-023 needs for review priority; slice 3 either restores the control or takes uncertainty from notes. Recorded as a deferral, not a reversal, because N-3 was answered by the qualitative lead and a scope change does not unanswer it.
+
+### Changed
+
+- **Create code is a progressive disclosure.** A single Create code row with a plus affordance; expanding reveals the name and definition fields and moves focus to the name field; collapsing or Escape returns focus to the row. Created codes remain provisional per the existing rules.
+- **Save & Close** is the button label, per the card.
+
+The region order, still fixed and never reordering: heading and close, search, results when a query is active, recent codes collapsed when enabled, codebook, Create code disclosure, note, Save & Close. Cancel is the close control and Escape, with the existing confirm-on-unsaved-changes rule.

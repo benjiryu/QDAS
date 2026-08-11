@@ -85,7 +85,7 @@ Not answered here. What settles it is a decision about whether the coding surfac
 
 **C-2. RESOLVED, D-022.** Examples are not visible during independent coding. Methodological, not scope: an example is a prior coder's interpretation, and reading it makes an independent judgment less independent. Examples remain out of v0.1 for scope reasons; the flag stays `false` for a reason that does not expire.
 
-**C-3. RESOLVED.** Hierarchy at high zoom is indentation plus a text level indicator.
+**C-3. SUPERSEDED by D-039.** Level labels are removed; hierarchy shows as indentation and pill color, with nested lists carrying level programmatically. The high-zoom legibility risk the indicator guarded against moves to session evidence.
 
 **C-4. RESOLVED.** No AI suggestions in v0.1.
 
@@ -93,7 +93,7 @@ Not answered here. What settles it is a decision about whether the coding surfac
 
 **N-1. RESOLVED, D-011.** Coding notes attach to excerpts. File-wide notes attach to the source.
 
-**N-3. RESOLVED, D-023.** Uncertainty raises an item's review priority. The flag is written in v0.1 per D-021; the ordering behavior lands in slice 3.
+**N-3. RESOLVED, D-023; collection deferred by D-039.** Uncertainty still raises review priority when slice 3 arrives, but v0.2 removes the control, so no uncertainty data is collected until it returns or notes stand in.
 
 **N-2. RESOLVED, D-020.** A note in v0.1 is free text with no type. Note types and their visibility rules are specified in the notes page specification, written later.
 

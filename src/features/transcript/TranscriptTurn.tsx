@@ -1,8 +1,10 @@
 import { Fragment } from 'react';
-import { displayStateOf } from '../../domain';
+import { codingOf } from '../../domain';
 import type { Id, ResolvedTurn, SegmentDisplayStates } from '../../domain';
 import type { TimestampVerbosity } from '../../config/flags';
 import { formatTimestamp } from './formatTimestamp';
+import { segmentRuns } from './segmentRuns';
+import type { CaptureExtent } from './segmentRuns';
 
 /**
  * One speaker turn: a focusable list item holding continuous prose.
@@ -44,32 +46,53 @@ interface TranscriptTurnProps {
 type ExcerptMarker = 'start' | 'end' | 'only' | 'in-range';
 
 /**
- * Splits a sentence into the part before the capture, the captured part, and
- * the part after.
+ * Which characters of this sentence the capture in progress covers.
  *
  * Section 6: a captured range may begin or end mid-sentence, and the highlight
- * shows exactly what will be coded. Whole-sentence highlighting would show the
- * coder something different from what is about to be stored, which is the
- * failure D-036 removed sentence snapping to avoid.
+ * shows exactly what will be coded. Only the two boundary sentences are cut;
+ * everything between them is covered whole.
  */
-function splitAtOffsets(
+function captureExtent(
   text: string,
   marker: ExcerptMarker,
   startOffset: number | null,
   endOffset: number | null,
-): [string, string, string] {
+): CaptureExtent {
   const start = marker === 'start' || marker === 'only' ? clamp(startOffset ?? 0, text) : 0;
-  const end = marker === 'end' || marker === 'only' ? clamp(endOffset ?? text.length, text) : text.length;
+  const end =
+    marker === 'end' || marker === 'only' ? clamp(endOffset ?? text.length, text) : text.length;
 
-  // A range whose offsets cross within one sentence cannot be shown, so the
-  // sentence is highlighted whole rather than rendered inside out.
-  if (end < start) return ['', text, ''];
-
-  return [text.slice(0, start), text.slice(start, end), text.slice(end)];
+  // A range stored inside out cannot be drawn as one, so the sentence is
+  // covered whole rather than rendered backwards.
+  return end < start ? { start: 0, end: text.length } : { start, end };
 }
 
 function clamp(offset: number, text: string): number {
   return Math.max(0, Math.min(offset, text.length));
+}
+
+/**
+ * Which end of the captured range this run holds, if either.
+ *
+ * Only where the range itself begins or ends: a run at the start of an
+ * in-between sentence is not a boundary, it is the middle of the excerpt.
+ */
+function captureEdge(
+  marker: ExcerptMarker | undefined,
+  runIndex: number,
+  firstCaptured: number,
+  lastCaptured: number,
+): 'start' | 'end' | 'both' | undefined {
+  if (!marker) return undefined;
+  const startsHere =
+    (marker === 'start' || marker === 'only') && runIndex === firstCaptured && firstCaptured >= 0;
+  const endsHere =
+    (marker === 'end' || marker === 'only') && runIndex === lastCaptured && lastCaptured >= 0;
+
+  if (startsHere && endsHere) return 'both';
+  if (startsHere) return 'start';
+  if (endsHere) return 'end';
+  return undefined;
 }
 
 /**
@@ -173,34 +196,54 @@ export function TranscriptTurn({
             excerptStartSegmentId,
             excerptEndSegmentId,
           );
-          const [before, inside, after] = marker
-            ? splitAtOffsets(segment.text, marker, excerptStartOffset, excerptEndOffset)
-            : ['', '', ''];
+          const coding = codingOf(displayStates, segment.segmentId);
+          const runs = segmentRuns(
+            segment.text,
+            coding.spans,
+            marker
+              ? captureExtent(segment.text, marker, excerptStartOffset, excerptEndOffset)
+              : null,
+          );
+          const plain = runs.length === 1 && runs[0].coded === null && !runs[0].captured;
+          // Which run carries the boundary bar. The captured runs are
+          // contiguous, so these are the two ends of that stretch.
+          const firstCaptured = runs.findIndex((run) => run.captured);
+          const lastCaptured = runs.map((run) => run.captured).lastIndexOf(true);
 
           return (
           <Fragment key={segment.segmentId}>
             <span
               className="transcript-segment"
               data-segment-id={segment.segmentId}
-              data-display-state={displayStateOf(displayStates, segment.segmentId)}
+              /* The sentence's own state: whether it is coded at all, which is
+                 the granularity R-1 compares at. What is painted is the runs
+                 inside, which may cover only part of it. D-036 section 5. */
+              data-display-state={coding.state}
               data-excerpt={marker}
               data-excerpt-state={
                 segmentsInRange?.has(segment.segmentId) ? excerptState : undefined
               }
             >
-              {/* Split only where there is a capture: an uncaptured sentence
-                  stays one text node, which is what everything else reads. */}
-              {marker ? (
-                <>
-                  {before}
-                  <span className="transcript-segment__captured" data-captured>
-                    {inside}
-                  </span>
-                  {after}
-                </>
-              ) : (
-                segment.text
-              )}
+              {/* A sentence with nothing on it stays one text node, which is
+                  what most of a transcript is and what capture reads fastest. */}
+              {plain
+                ? segment.text
+                : runs.map((run, runIndex) => (
+                    <span
+                      key={runIndex}
+                      className="transcript-segment__run"
+                      data-coded-run={run.coded ?? undefined}
+                      data-captured={run.captured ? '' : undefined}
+                      data-capture-edge={captureEdge(
+                        marker,
+                        runIndex,
+                        firstCaptured,
+                        lastCaptured,
+                      )}
+                    >
+                      {run.text}
+                    </span>
+                  ))}
             </span>
             {/* The space belongs between the sentences, not inside one, so a
                 coded sentence's underline stops at its own last character. */}

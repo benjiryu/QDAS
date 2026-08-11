@@ -86,7 +86,7 @@
  * contain them. Section 6: a range may begin or end mid-sentence, and what is
  * highlighted is exactly what will be coded.
  */
-.transcript-segment__captured {
+.transcript-segment__run[data-captured] {
   background: var(--excerpt-bg);
   box-shadow: 0 -2px 0 0 var(--excerpt-edge) inset, 0 2px 0 0 var(--excerpt-edge) inset;
 }
@@ -94,15 +94,19 @@
 /*
  * The boundary markers. A thick bar at the first captured character and at the
  * last, so either end identifies itself without the other being on screen.
+ *
+ * The two ends are marked on the run itself rather than selected for with
+ * `:first-child`, because a boundary sentence's first run is the uncaptured
+ * part in front of the range, not the range.
  */
-.transcript-segment[data-excerpt='start'] .transcript-segment__captured,
-.transcript-segment[data-excerpt='only'] .transcript-segment__captured {
+.transcript-segment__run[data-capture-edge='start'],
+.transcript-segment__run[data-capture-edge='both'] {
   border-left: 5px solid var(--excerpt-edge);
   padding-left: 3px;
 }
 
-.transcript-segment[data-excerpt='end'] .transcript-segment__captured,
-.transcript-segment[data-excerpt='only'] .transcript-segment__captured {
+.transcript-segment__run[data-capture-edge='end'],
+.transcript-segment__run[data-capture-edge='both'] {
   border-right: 5px solid var(--excerpt-edge);
   padding-right: 3px;
 }
@@ -111,18 +115,18 @@
  * Confirmed is a heavier band, so a captured range is distinct from the coded
  * indicator a saved excerpt leaves behind. Section 7.
  */
-.transcript-turn [data-excerpt-state='confirmed'] .transcript-segment__captured {
+.transcript-turn [data-excerpt-state='confirmed'] .transcript-segment__run[data-captured] {
   background: var(--excerpt-confirmed-bg);
 }
 
 @media (forced-colors: active) {
   /* Backgrounds are dropped here, so the boundary bars carry the whole signal. */
-  .transcript-segment[data-excerpt='start'] .transcript-segment__captured,
-  .transcript-segment[data-excerpt='only'] .transcript-segment__captured {
+  .transcript-segment__run[data-capture-edge='start'],
+  .transcript-segment__run[data-capture-edge='both'] {
     border-left-color: currentColor;
   }
-  .transcript-segment[data-excerpt='end'] .transcript-segment__captured,
-  .transcript-segment[data-excerpt='only'] .transcript-segment__captured {
+  .transcript-segment__run[data-capture-edge='end'],
+  .transcript-segment__run[data-capture-edge='both'] {
     border-right-color: currentColor;
   }
 }

@@ -16,19 +16,25 @@ import type { CodeAssignment, Excerpt } from './types';
 
 const built = buildTestSource(); // s0..s9 across turns of 3, 1, 4, 2
 
+/** Empty for a segment that is not in the source, which one test builds on purpose. */
+const textOf = (segmentId: string) =>
+  built.segments.find((segment) => segment.segmentId === segmentId)?.text ?? '';
+
+/** Whole segments unless offsets are given, which is what a saved excerpt is. */
 function excerptOver(
   excerptId: string,
   startSegmentId: string,
   endSegmentId: string,
   createdAt = '2026-07-01T00:00:00.000Z',
+  offsets?: { startOffset?: number; endOffset?: number },
 ): Excerpt {
   return {
     excerptId,
     sourceId: TEST_SOURCE_ID,
     startSegmentId,
     endSegmentId,
-    startOffset: 0,
-    endOffset: 0,
+    startOffset: offsets?.startOffset ?? 0,
+    endOffset: offsets?.endOffset ?? textOf(endSegmentId).length,
     coderId: 'us-1',
     codingRoundId: 'rd-1',
     createdAt,
@@ -340,5 +346,142 @@ describe('against the overlapping pairs in the seed fixture', () => {
 
     expect(segmentsWithState(states, 'coded-multiple').length).toBeGreaterThan(0);
     expect(segmentsWithState(oneCoder, 'coded-multiple')).toEqual([]);
+  });
+});
+
+/**
+ * Character spans, per D-036.
+ *
+ * An excerpt covers exact characters, so a sentence can be coded in part. The
+ * segment-level state stays a fact about the whole sentence, which is the
+ * granularity R-1 compares at; these are what gets painted.
+ */
+describe('which characters are coded', () => {
+  const spansAt = (states: ReturnType<typeof deriveSegmentDisplayStates>, segmentId: string) =>
+    codingOf(states, segmentId).spans;
+
+  it('covers a whole sentence in one span when the excerpt covers it whole', () => {
+    const states = deriveSegmentDisplayStates(built, {
+      excerpts: [excerptOver('ex-1', 's4', 's5')],
+      codeAssignments: [assignment('ex-1', 'cd-a')],
+    });
+
+    expect(spansAt(states, 's4')).toEqual([
+      { start: 0, end: textOf('s4').length, state: 'coded', excerptIds: ['ex-1'], codeIds: ['cd-a'] },
+    ]);
+  });
+
+  it('starts where the excerpt starts, not where the sentence does', () => {
+    const states = deriveSegmentDisplayStates(built, {
+      excerpts: [excerptOver('ex-1', 's4', 's5', undefined, { startOffset: 4 })],
+      codeAssignments: [assignment('ex-1', 'cd-a')],
+    });
+
+    expect(spansAt(states, 's4')).toEqual([
+      { start: 4, end: textOf('s4').length, state: 'coded', excerptIds: ['ex-1'], codeIds: ['cd-a'] },
+    ]);
+    // The sentence in between is covered whole; only boundaries are cut.
+    expect(spansAt(states, 's5')[0]).toMatchObject({ start: 0, end: textOf('s5').length });
+  });
+
+  it('ends where the excerpt ends', () => {
+    const states = deriveSegmentDisplayStates(built, {
+      excerpts: [excerptOver('ex-1', 's4', 's5', undefined, { endOffset: 6 })],
+      codeAssignments: [assignment('ex-1', 'cd-a')],
+    });
+
+    expect(spansAt(states, 's5')).toEqual([
+      { start: 0, end: 6, state: 'coded', excerptIds: ['ex-1'], codeIds: ['cd-a'] },
+    ]);
+  });
+
+  it('cuts both ends of a range inside one sentence', () => {
+    const states = deriveSegmentDisplayStates(built, {
+      excerpts: [excerptOver('ex-1', 's4', 's4', undefined, { startOffset: 3, endOffset: 8 })],
+      codeAssignments: [assignment('ex-1', 'cd-a')],
+    });
+
+    expect(spansAt(states, 's4')).toEqual([
+      { start: 3, end: 8, state: 'coded', excerptIds: ['ex-1'], codeIds: ['cd-a'] },
+    ]);
+  });
+
+  it('marks only the shared stretch coded-multiple where two excerpts overlap', () => {
+    const states = deriveSegmentDisplayStates(built, {
+      excerpts: [
+        excerptOver('ex-1', 's4', 's4', '2026-07-01T00:00:00.000Z', { startOffset: 0, endOffset: 8 }),
+        excerptOver('ex-2', 's4', 's4', '2026-07-02T00:00:00.000Z', { startOffset: 4, endOffset: 11 }),
+      ],
+      codeAssignments: [assignment('ex-1', 'cd-a'), assignment('ex-2', 'cd-b')],
+    });
+
+    expect(spansAt(states, 's4')).toEqual([
+      { start: 0, end: 4, state: 'coded', excerptIds: ['ex-1'], codeIds: ['cd-a'] },
+      { start: 4, end: 8, state: 'coded-multiple', excerptIds: ['ex-1', 'ex-2'], codeIds: ['cd-a', 'cd-b'] },
+      { start: 8, end: 11, state: 'coded', excerptIds: ['ex-2'], codeIds: ['cd-b'] },
+    ]);
+  });
+
+  it('leaves an uncovered gap between two disjoint excerpts uncoded', () => {
+    const states = deriveSegmentDisplayStates(built, {
+      excerpts: [
+        excerptOver('ex-1', 's4', 's4', '2026-07-01T00:00:00.000Z', { startOffset: 0, endOffset: 3 }),
+        excerptOver('ex-2', 's4', 's4', '2026-07-02T00:00:00.000Z', { startOffset: 7, endOffset: 11 }),
+      ],
+      codeAssignments: [assignment('ex-1', 'cd-a'), assignment('ex-2', 'cd-b')],
+    });
+
+    const spans = spansAt(states, 's4');
+    expect(spans.map(({ start, end }) => [start, end])).toEqual([
+      [0, 3],
+      [7, 11],
+    ]);
+    // Neither is coded-multiple: no character is covered twice.
+    expect(spans.every((span) => span.state === 'coded')).toBe(true);
+  });
+
+  it('does not fragment a sentence two excerpts both cover whole', () => {
+    const states = deriveSegmentDisplayStates(built, {
+      excerpts: [excerptOver('ex-1', 's4', 's5'), excerptOver('ex-2', 's3', 's6')],
+      codeAssignments: [assignment('ex-1', 'cd-a'), assignment('ex-2', 'cd-b')],
+    });
+
+    expect(spansAt(states, 's4')).toHaveLength(1);
+    expect(spansAt(states, 's4')[0]).toMatchObject({ state: 'coded-multiple' });
+  });
+
+  it('covers nothing for a range stored inside out', () => {
+    const states = deriveSegmentDisplayStates(built, {
+      excerpts: [excerptOver('ex-1', 's4', 's4', undefined, { startOffset: 9, endOffset: 2 })],
+      codeAssignments: [assignment('ex-1', 'cd-a')],
+    });
+
+    expect(spansAt(states, 's4')).toEqual([]);
+  });
+
+  it('leaves an uncoded sentence with no spans at all', () => {
+    const states = deriveSegmentDisplayStates(built, {
+      excerpts: [excerptOver('ex-1', 's4', 's4')],
+      codeAssignments: [assignment('ex-1', 'cd-a')],
+    });
+
+    expect(spansAt(states, 's7')).toEqual([]);
+  });
+
+  it('leaves the sentence-level state alone, since that is what R-1 compares', () => {
+    // Two excerpts covering different halves still make the sentence
+    // coded-multiple: that is the existing sentence-granularity fact, and
+    // D-036 keeps comparison there while storage and paint go finer.
+    const states = deriveSegmentDisplayStates(built, {
+      excerpts: [
+        excerptOver('ex-1', 's4', 's4', '2026-07-01T00:00:00.000Z', { startOffset: 0, endOffset: 3 }),
+        excerptOver('ex-2', 's4', 's4', '2026-07-02T00:00:00.000Z', { startOffset: 7, endOffset: 11 }),
+      ],
+      codeAssignments: [assignment('ex-1', 'cd-a'), assignment('ex-2', 'cd-b')],
+    });
+
+    expect(displayStateOf(states, 's4')).toBe('coded-multiple');
+    expect(codingOf(states, 's4').excerptIds).toEqual(['ex-1', 'ex-2']);
+    expect(codingOf(states, 's4').codeIds).toEqual(['cd-a', 'cd-b']);
   });
 });

@@ -118,26 +118,60 @@ export function excerptSegments(
   return segmentsBetween(resolved, range.startSegmentId, range.endSegmentId);
 }
 
-/** Full excerpt text, for read-on-request. Section 5. */
-export function excerptText(resolved: ResolvedSource, range: ExcerptRange): string {
-  return excerptSegments(resolved, range)
-    .map((segment) => segment.text)
+/**
+ * The excerpt's own text, for read-on-request. Section 5.
+ *
+ * Sliced at the offsets, so what is read back is what was captured. Reading a
+ * boundary sentence whole would put words into the excerpt that the coder did
+ * not select, which is the same failure D-036 removed sentence snapping to
+ * avoid, arriving by way of the ear instead of the eye.
+ */
+export function excerptText(resolved: ResolvedSource, range: CapturedRange): string {
+  const segments = excerptSegments(resolved, range);
+  if (segments.length === 0) return '';
+
+  const last = segments.length - 1;
+  return segments
+    .map((segment, index) => {
+      const start = index === 0 ? clampOffset(range.startOffset, segment.text) : 0;
+      const end = index === last ? clampOffset(range.endOffset, segment.text) : segment.text.length;
+      return end > start ? segment.text.slice(start, end) : '';
+    })
+    .filter((text) => text !== '')
     .join(' ');
+}
+
+function clampOffset(offset: number, text: string): number {
+  return Math.max(0, Math.min(offset, text.length));
 }
 
 /* ---------- Size ---------- */
 
 export interface ExcerptSize {
+  /** Sentences the range touches, whole or in part. */
   sentenceCount: number;
   turnCount: number;
   /** True when the range crosses a turn boundary. */
   spansTurns: boolean;
+  /** True when the range begins after the first character of its first sentence. */
+  startsMidSentence: boolean;
+  /** True when it ends before the last character of its last sentence. */
+  endsMidSentence: boolean;
 }
 
-export function excerptSize(resolved: ResolvedSource, range: ExcerptRange): ExcerptSize {
+export function excerptSize(resolved: ResolvedSource, range: CapturedRange): ExcerptSize {
   const segments = excerptSegments(resolved, range);
   const turnCount = turnsSpanned(resolved, segments).length;
-  return { sentenceCount: segments.length, turnCount, spansTurns: turnCount > 1 };
+  const first = segments[0];
+  const last = segments[segments.length - 1];
+
+  return {
+    sentenceCount: segments.length,
+    turnCount,
+    spansTurns: turnCount > 1,
+    startsMidSentence: first !== undefined && clampOffset(range.startOffset, first.text) > 0,
+    endsMidSentence: last !== undefined && clampOffset(range.endOffset, last.text) < last.text.length,
+  };
 }
 
 /**
@@ -148,12 +182,20 @@ export function excerptSize(resolved: ResolvedSource, range: ExcerptRange): Exce
  * Turns rather than speakers, since one speaker can hold several consecutive
  * turns and the turn count is what the data model stores.
  *
+ * A range that starts or ends mid-sentence says so, because "1 sentence" for
+ * six words out of forty tells a coder they captured something they did not.
+ * The count still names the sentences the range touches, since that is what
+ * orients a listener; "part of" is what makes the count honest.
+ *
  * Wording is provisional. Section 5 fixes the information content and leaves
  * the phrasing open, and the phrasing is itself a candidate for testing.
  */
 export function describeExcerptSize(size: ExcerptSize): string {
   const sentences = `${size.sentenceCount} ${size.sentenceCount === 1 ? 'sentence' : 'sentences'}`;
-  if (!size.spansTurns) return sentences;
-  return `${sentences} across ${size.turnCount} turns`;
+  const partial = size.startsMidSentence || size.endsMidSentence;
+  const counted = partial ? `part of ${sentences}` : sentences;
+
+  if (!size.spansTurns) return counted;
+  return `${counted} across ${size.turnCount} turns`;
 }
 
