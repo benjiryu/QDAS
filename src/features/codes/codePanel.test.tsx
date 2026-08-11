@@ -94,7 +94,7 @@ function openPanel() {
 }
 
 function panel(): HTMLElement {
-  return screen.getByRole('region', { name: /code selection/i });
+  return screen.getByRole('region', { name: /select code/i });
 }
 
 function region(name: string): HTMLElement {
@@ -129,6 +129,19 @@ function checkboxById(scope: HTMLElement, codeId: string): HTMLInputElement {
 
 function lastAnnouncement(): string {
   return announcer.getLast()?.message ?? '';
+}
+
+/**
+ * The pending assignment, which since D-039 is the set of checked boxes.
+ *
+ * Deduplicated: one code can have a row in the codebook, in the search results,
+ * and in recently used at the same time.
+ */
+function checkedCodeIds(): string[] {
+  const ids = Array.from(panel().querySelectorAll<HTMLInputElement>('[data-code-id]'))
+    .filter((box) => box.checked)
+    .map((box) => box.dataset.codeId!);
+  return [...new Set(ids)];
 }
 
 describe('acceptance: search does not reorder the codebook', () => {
@@ -167,7 +180,7 @@ describe('acceptance: stable code order', () => {
     // Cancel discards the capture, so reopening means capturing again. D-036
     // removed the adjustment route this test used to take.
     fireEvent.click(within(panel()).getByRole('button', { name: 'Cancel' }));
-    expect(screen.queryByRole('region', { name: /code selection/i })).toBeNull();
+    expect(screen.queryByRole('region', { name: /select code/i })).toBeNull();
 
     chord('excerpt.code');
 
@@ -203,9 +216,7 @@ describe('acceptance: parent does not cascade', () => {
     const parent = fixture.codes.find((code) => code.name === 'Barriers to participation')!;
     fireEvent.click(checkboxById(codebook, parent.codeId));
 
-    const pending = within(region('pending')).getAllByRole('listitem');
-    expect(pending).toHaveLength(1);
-    expect(pending[0].textContent).toContain(parent.name);
+    expect(checkedCodeIds()).toEqual([parent.codeId]);
 
     // Every descendant is still unchecked, including grandchildren.
     const descendants = fixture.codes.filter(
@@ -236,7 +247,7 @@ describe('acceptance: query survives selection', () => {
     fireEvent.click(within(results()).getAllByRole('checkbox')[1]);
 
     expect(screen.getByRole('searchbox', { name: /search the codebook/i })).toHaveValue('water');
-    expect(within(region('pending')).getAllByRole('listitem')).toHaveLength(2);
+    expect(checkedCodeIds()).toHaveLength(2);
 
     const stillChecked = within(results()).getAllByRole('checkbox') as HTMLInputElement[];
     expect(stillChecked[0].checked).toBe(true);
@@ -265,7 +276,7 @@ describe('the container, per section 2 and D-027', () => {
 
   it('is present in the DOM only while open', () => {
     renderWorkspace();
-    expect(screen.queryByRole('region', { name: /code selection/i })).toBeNull();
+    expect(screen.queryByRole('region', { name: /select code/i })).toBeNull();
 
     openPanel();
     expect(panel()).toBeInTheDocument();
@@ -288,13 +299,65 @@ describe('the container, per section 2 and D-027', () => {
     );
   });
 
-  it('names the excerpt by size and start speaker in its heading', () => {
+  it('is headed with the card name, and nothing else, per D-039', () => {
     renderWorkspace();
     openPanel();
 
     const heading = within(panel()).getByRole('heading', { level: 2 });
-    expect(heading.textContent).toMatch(/sentence/i);
-    expect(heading.textContent).toMatch(/starting with/i);
+    expect(heading).toHaveTextContent('Select Code');
+    // The verbose heading is gone; so is the excerpt summary region it named.
+    expect(heading.textContent).not.toMatch(/sentence/i);
+  });
+
+  it('carries the captured excerpt as hidden text, per D-040', () => {
+    // Not aria-describedby, which would recite it on every focus entry, and
+    // not a live region, since nothing changes. Read on demand, in full.
+    const { container } = renderWorkspace();
+    openPanel();
+
+    const hidden = panel().querySelector('[data-selected-excerpt]')!;
+    expect(hidden.textContent).toMatch(/^Selected excerpt: /);
+    expect(hidden).not.toHaveAttribute('aria-hidden');
+    expect(panel()).not.toHaveAttribute('aria-describedby');
+    expect(hidden.closest('[aria-live]')).toBeNull();
+
+    // The full captured text, untruncated: whatever the transcript shows as
+    // captured is what is offered for re-reading.
+    const captured = Array.from(container.querySelectorAll('[data-captured]'))
+      .map((element) => element.textContent ?? '')
+      .join('');
+    expect(hidden.textContent).toContain(captured.slice(0, 60));
+    expect(hidden.textContent).not.toMatch(/…|\.\.\./);
+  });
+
+  it('offers no excerpt summary and no read-back control, per D-039', () => {
+    renderWorkspace();
+    openPanel();
+
+    expect(within(panel()).queryByRole('button', { name: /read the full excerpt/i })).toBeNull();
+    expect(panel().querySelector('[data-region="excerpt"]')).toBeNull();
+  });
+
+  it('shows no visible level label, keeping hierarchy in the nesting, per D-039', () => {
+    renderWorkspace();
+    openPanel();
+
+    expect(panel().querySelector('.code-panel__level')).toBeNull();
+    expect(within(region('codebook')).queryByText(/^level \d/i)).toBeNull();
+    // Programmatic hierarchy is untouched: nested lists still carry it.
+    expect(region('codebook').querySelectorAll('ul[aria-label]').length).toBeGreaterThan(0);
+  });
+
+  it('offers no pending assignment region, since the boxes are the state', () => {
+    renderWorkspace();
+    openPanel();
+    const waitingList = fixture.codes.find((code) => code.name === 'Waiting list')!;
+    fireEvent.click(checkboxById(region('codebook'), waitingList.codeId));
+
+    expect(panel().querySelector('[data-region="pending"]')).toBeNull();
+    expect(checkedCodeIds()).toHaveLength(1);
+    // The count is still announced, which is what the region used to show.
+    expect(lastAnnouncement()).toContain('1 pending');
   });
 
   it('opens with focus in the search field and announces itself', () => {
@@ -303,7 +366,7 @@ describe('the container, per section 2 and D-027', () => {
 
     expect(screen.getByRole('searchbox', { name: /search the codebook/i })).toHaveFocus();
     expect(
-      announcer.getHistory().some((entry) => /code selection/i.test(entry.message)),
+      announcer.getHistory().some((entry) => /select code/i.test(entry.message)),
     ).toBe(true);
   });
 });
@@ -318,7 +381,7 @@ describe('commands, per section 2.1', () => {
     });
     press({ key: 'Escape' });
 
-    expect(screen.queryByRole('region', { name: /code selection/i })).toBeNull();
+    expect(screen.queryByRole('region', { name: /select code/i })).toBeNull();
     expect(
       announcer.getHistory().some((entry) => /cancelled/i.test(entry.message)),
     ).toBe(true);
@@ -379,14 +442,14 @@ describe('regions, per section 3', () => {
     const order = Array.from(panel().querySelectorAll('[data-region]')).map((element) =>
       element.getAttribute('data-region'),
     );
+    // The order D-039 fixes: heading and close, search, results, recent,
+    // codebook, Create code, note, Save & Close.
     expect(order).toEqual([
       'search-results',
       'recent',
       'codebook',
       'create',
-      'pending',
       'note',
-      'uncertainty',
       'actions',
     ]);
   });

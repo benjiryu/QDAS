@@ -4,7 +4,7 @@
 - Version: 0.3
 - Last updated: 2026-08-05
 
-Progress: v0.1 complete and tagged. Phase 4 defines v0.2. Tasks 18, 19, and 20 have landed, which completes phase 4.
+Progress: v0.1 complete and tagged. Phase 4 defines v0.2. Tasks 18 through 21 have landed.
 
 Update this line when a task lands. An agent reading a stale progress line will rebuild finished work.
 
@@ -765,10 +765,15 @@ what is deliberately retained.
 
 Remove: the verbose heading (visible heading becomes "Select Code", still the
 region's accessible name), the excerpt summary and read-excerpt control, the
-visual level labels (nested list structure and indentation stay), the pending
-assignment region (checkboxes are the pending state; count announcements
-stay; Save & Close disabled at zero checked with reason), and the uncertainty
-control (uncertaintyFlag stays in the model, unwritten).
+visual level labels (nested list structure and indentation stay), and the
+pending assignment region (checkboxes are the pending state; count
+announcements stay; Save & Close disabled at zero checked with reason).
+
+Add, per D-040: the captured excerpt as visually hidden static text after the
+heading, "Selected excerpt: [full text]" — not aria-describedby, not a live
+region, not truncated. And a "Mark uncertain" checkbox in the footer beside
+Save & Close, announced on toggle, writing uncertaintyFlag on every assignment
+at save.
 
 Change: Create code becomes a collapsed disclosure row; expanding focuses the
 name field, collapse and Escape return focus to the row. The save button label
@@ -777,8 +782,9 @@ is "Save & Close".
 Retain: the search field per D-005, the note field, recent codes behind its
 flag, canonical order, and the D-030 reopen behavior with pre-checked boxes.
 
-Update tests: remove pending-region and uncertainty tests, add disclosure
-focus tests, keep the zero-checked save rule and reopen tests.
+Update tests: remove pending-region tests, add disclosure focus tests, add
+the hidden excerpt text presence test, keep uncertainty writing at save, the
+zero-checked save rule, and reopen tests.
 ```
 
 Done when: the panel reads like the Figma card, checking boxes is the only

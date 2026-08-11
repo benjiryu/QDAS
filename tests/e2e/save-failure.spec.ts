@@ -40,10 +40,21 @@ async function assertive(page: Page): Promise<string> {
   return page.getByTestId('live-region-assertive').innerText();
 }
 
-function pendingNames(page: Page) {
-  return page
-    .locator('[data-region="pending"] li')
-    .evaluateAll((items) => items.map((item) => item.textContent ?? ''));
+/**
+ * The pending assignment, which since D-039 is the set of checked boxes.
+ *
+ * Deduplicated: one code can have a row in the codebook, in the search results,
+ * and in recently used at the same time.
+ */
+async function pendingCodeIds(page: Page): Promise<string[]> {
+  const ids = await page
+    .locator('.code-panel [data-code-id]')
+    .evaluateAll((boxes) =>
+      boxes
+        .filter((box) => (box as HTMLInputElement).checked)
+        .map((box) => box.getAttribute('data-code-id') ?? ''),
+    );
+  return [...new Set(ids)];
 }
 
 test.beforeEach(async ({ page }) => {
@@ -62,7 +73,7 @@ test('a failed save loses nothing, and the retry succeeds', async ({ page }) => 
   // capture rule 1.1 step 2 resolves and the whole turn is captured.
   await page.locator('[data-turn-id]').nth(1).click();
   await press(page, 'excerpt.code');
-  await expect(page.getByRole('region', { name: /code selection/i })).toBeVisible();
+  await expect(page.getByRole('region', { name: /select code/i })).toBeVisible();
 
   // Two codes and a note.
   const codebook = page.locator('[data-region="codebook"]');
@@ -70,19 +81,22 @@ test('a failed save loses nothing, and the retry succeeds', async ({ page }) => 
   await codebook.getByRole('checkbox', { name: /Mutual aid/ }).check();
   await page.getByLabel(/note about this excerpt/i).fill(NOTE);
 
-  expect(await pendingNames(page)).toHaveLength(2);
+  expect(await pendingCodeIds(page)).toHaveLength(2);
 
   // Force the failure: the preset armed the next save.
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('button', { name: 'Save & Close' }).click();
 
   // All three survive.
   await expect(page.locator('[data-save-error]')).toBeVisible();
-  expect(await pendingNames(page)).toHaveLength(2);
-  expect((await pendingNames(page)).join(' ')).toContain('Waiting list');
-  expect((await pendingNames(page)).join(' ')).toContain('Mutual aid');
+  expect(await pendingCodeIds(page)).toHaveLength(2);
+  for (const name of ['Waiting list', 'Mutual aid']) {
+    await expect(
+      page.locator('[data-region="codebook"]').getByRole('checkbox', { name: new RegExp(name) }),
+    ).toBeChecked();
+  }
   await expect(page.getByLabel(/note about this excerpt/i)).toHaveValue(NOTE);
   await expect(page.locator('.excerpt-toolbar__state')).toHaveAttribute('data-state', 'confirmed');
-  await expect(page.getByRole('region', { name: /code selection/i })).toBeVisible();
+  await expect(page.getByRole('region', { name: /select code/i })).toBeVisible();
 
   // Nothing was written.
   await expect(page.locator('[data-saved-excerpts]')).toHaveAttribute('data-saved-excerpts', '0');
@@ -107,7 +121,7 @@ test('a failed save loses nothing, and the retry succeeds', async ({ page }) => 
   // Retry succeeds.
   await page.getByRole('button', { name: 'Retry save' }).click();
 
-  await expect(page.getByRole('region', { name: /code selection/i })).toHaveCount(0);
+  await expect(page.getByRole('region', { name: /select code/i })).toHaveCount(0);
   await expect(page.locator('[data-saved-excerpts]')).toHaveAttribute('data-saved-excerpts', '1');
   await expect(page.locator('[data-saved-assignments]')).toHaveAttribute(
     'data-saved-assignments',
@@ -131,7 +145,7 @@ test('without the preset, the first save simply succeeds', async ({ page }) => {
     .getByRole('checkbox', { name: /Waiting list/ })
     .check();
 
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('button', { name: 'Save & Close' }).click();
 
   await expect(page.locator('[data-save-error]')).toHaveCount(0);
   await expect(page.locator('[data-saved-excerpts]')).toHaveAttribute('data-saved-excerpts', '1');

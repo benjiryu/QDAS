@@ -679,3 +679,20 @@ The panel matches the Figma Select Code card: heading "Select Code" with a close
 - **Save & Close** is the button label, per the card.
 
 The region order, still fixed and never reordering: heading and close, search, results when a query is active, recent codes collapsed when enabled, codebook, Create code disclosure, note, Save & Close. Cancel is the close control and Escape, with the existing confirm-on-unsaved-changes rule.
+
+## D-040 Non-visual excerpt readback and a footer uncertainty checkbox
+
+Date: 2026-08 | Workflow: code assignment | Status: approved. Amends D-039, restoring two affordances in forms that fit the simplified card
+
+**The captured excerpt is rendered as visually hidden text** inside the panel, immediately after the heading: "Selected excerpt: [full text]". Screen reader users re-check what they captured with their own reading commands, on demand and repeatably; nothing shows on screen. This replaces the removed summary-and-button with a mechanism that is better aligned with the interaction principles: reading belongs to the assistive technology, so re-checking needs the text to exist, not a command to exist.
+
+Implementation constraints, both load-bearing:
+
+- Plain visually hidden static text. Not `aria-describedby` on the panel, which would auto-announce the full excerpt on every focus entry, and not a live region, since nothing changes.
+- Full text, not truncated. The reader controls pace and can stop; a truncated readback cannot answer the question it exists for.
+
+Closes D-039's accepted-risk on post-capture verification.
+
+**An uncertainty checkbox sits in the footer row beside Save & Close**, labeled "Mark uncertain". A checkbox because uncertainty is state modifying the save, not an action. Toggle announced. At save, `uncertaintyFlag` is written on every assignment in the set. This un-defers D-021 collection, so the data D-023 requires for slice 3 review ordering is collected in v0.2 after all.
+
+N-3's status returns to fully resolved: answered by D-023, collected per D-021, ordered in slice 3.

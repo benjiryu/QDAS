@@ -2,22 +2,31 @@ import { useId, useRef, useState } from 'react';
 import type { CodePanelApi } from './useCodePanel';
 
 /**
- * Region 8: creating a provisional code.
+ * Creating a provisional code.
  *
- * Specification: docs/patterns/code-selection.md section 7.
+ * Specification: docs/patterns/code-selection.md section 7, decision D-039.
  *
  * Name and short definition are required, full definition is optional. The code
- * enters the pending assignment immediately and appears under Proposed codes,
- * never in the canonical codebook: that structure does not change until a
- * qualitative lead approves it.
+ * is checked immediately and appears under Proposed codes, never in the
+ * canonical codebook: that structure does not change until a qualitative lead
+ * approves it.
+ *
+ * The name field's ref belongs to the disclosure that wraps this, which is what
+ * moves focus into it on expanding.
  */
-export function CreateCodeForm({ panel }: { panel: CodePanelApi }) {
+interface CreateCodeFormProps {
+  panel: CodePanelApi;
+  nameRef: React.RefObject<HTMLInputElement | null>;
+  /** Called once a code exists, so the disclosure can collapse and return focus. */
+  onCreated: () => void;
+}
+
+export function CreateCodeForm({ panel, nameRef, onCreated }: CreateCodeFormProps) {
   const nameId = useId();
   const shortId = useId();
   const fullId = useId();
   const errorId = useId();
 
-  const nameRef = useRef<HTMLInputElement | null>(null);
   const shortRef = useRef<HTMLInputElement | null>(null);
 
   const [name, setName] = useState('');
@@ -49,6 +58,7 @@ export function CreateCodeForm({ panel }: { panel: CodePanelApi }) {
     setShortDefinition('');
     setFullDefinition('');
     setError(null);
+    onCreated();
   }
 
   return (

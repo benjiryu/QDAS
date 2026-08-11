@@ -83,7 +83,7 @@ function openPanel() {
   chord('excerpt.code');
 }
 
-const panel = () => screen.getByRole('region', { name: /code selection/i });
+const panel = () => screen.getByRole('region', { name: /select code/i });
 const region = (name: string) => panel().querySelector<HTMLElement>(`[data-region="${name}"]`)!;
 
 function codebookOrder(): string[] {
@@ -100,7 +100,21 @@ function search(query: string) {
 
 const lastAnnouncement = () => announcer.getLast()?.message ?? '';
 
+/** Expands the Create code disclosure, per D-039. */
+function openCreate() {
+  fireEvent.click(within(region('create')).getByRole('button', { name: /create code/i }));
+}
+
+/** How many codes are checked, which is the pending assignment now. */
+function checkedCodeIds(): string[] {
+  const ids = Array.from(panel().querySelectorAll<HTMLInputElement>('[data-code-id]'))
+    .filter((box) => box.checked)
+    .map((box) => box.dataset.codeId!);
+  return [...new Set(ids)];
+}
+
 function createCode(name: string, shortDefinition: string, fullDefinition = '') {
+  openCreate();
   const create = region('create');
   fireEvent.change(within(create).getByLabelText('Code name'), { target: { value: name } });
   fireEvent.change(within(create).getByLabelText('Short definition'), {
@@ -149,6 +163,71 @@ describe('acceptance: provisional codes do not enter the canonical list', () => 
   });
 });
 
+describe('the Create code disclosure, per D-039', () => {
+  const row = () => within(region('create')).getByRole('button', { name: /create code/i });
+
+  it('starts collapsed, as one row', () => {
+    // Creating a code is the rare act; five fields of permanent clutter above
+    // the note field is what D-039 collapsed.
+    renderWorkspace();
+    openPanel();
+
+    expect(row()).toHaveAttribute('aria-expanded', 'false');
+    expect(within(region('create')).queryByLabelText('Code name')).toBeNull();
+  });
+
+  it('focuses the name field on expanding', async () => {
+    renderWorkspace();
+    openPanel();
+
+    openCreate();
+    await act(async () => {});
+
+    expect(within(region('create')).getByLabelText('Code name')).toHaveFocus();
+    expect(row()).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('returns focus to the row on collapsing', async () => {
+    renderWorkspace();
+    openPanel();
+    openCreate();
+    await act(async () => {});
+
+    fireEvent.click(row());
+    await act(async () => {});
+
+    expect(row()).toHaveFocus();
+    expect(within(region('create')).queryByLabelText('Code name')).toBeNull();
+  });
+
+  it('collapses on Escape, returning focus to the row', async () => {
+    renderWorkspace();
+    openPanel();
+    openCreate();
+    await act(async () => {});
+
+    fireEvent.keyDown(within(region('create')).getByLabelText('Code name'), { key: 'Escape' });
+    await act(async () => {});
+
+    expect(row()).toHaveAttribute('aria-expanded', 'false');
+    expect(row()).toHaveFocus();
+  });
+
+  it('leaves the panel open when Escape collapses the form', async () => {
+    // One key, one effect: Escape inside the form collapses it and stops,
+    // rather than also cancelling the panel underneath.
+    renderWorkspace();
+    openPanel();
+    openCreate();
+    await act(async () => {});
+
+    fireEvent.keyDown(within(region('create')).getByLabelText('Code name'), { key: 'Escape' });
+    await act(async () => {});
+
+    expect(panel()).toBeInTheDocument();
+  });
+});
+
 describe('creating a provisional code, per section 7', () => {
   it('enters the pending assignment immediately and announces that it did', () => {
     renderWorkspace();
@@ -156,26 +235,31 @@ describe('creating a provisional code, per section 7', () => {
 
     createCode('Winter planning', 'Deciding in the off season what to grow.');
 
-    const pending = within(region('pending')).getAllByRole('listitem');
-    expect(pending).toHaveLength(1);
-    expect(pending[0].textContent).toContain('Winter planning');
+    // Checked is the pending state, per D-039: there is no second region
+    // restating it.
+    expect(checkedCodeIds()).toHaveLength(1);
+    expect(within(region('proposed')).getByRole('checkbox')).toBeChecked();
     expect(lastAnnouncement()).toMatch(/provisional/i);
     expect(lastAnnouncement()).toMatch(/1 pending/);
   });
 
-  it('moves focus to the pending assignment region, per section 9', () => {
+  it('collapses the disclosure and returns focus to its row, per D-039', async () => {
     renderWorkspace();
     openPanel();
     createCode('Seed swaps', 'Exchanging seed between members.');
+    // The return runs on a microtask, after the form has gone.
+    await act(async () => {});
 
-    const heading = within(region('pending')).getByRole('heading', { level: 3 });
-    expect(heading).toHaveFocus();
+    const row = within(region('create')).getByRole('button', { name: /create code/i });
+    expect(row).toHaveFocus();
+    expect(row).toHaveAttribute('aria-expanded', 'false');
   });
 
   it('requires a name and a short definition, losing nothing on a refusal', () => {
     renderWorkspace();
     openPanel();
 
+    openCreate();
     const create = region('create');
     fireEvent.change(within(create).getByLabelText('Short definition'), {
       target: { value: 'A definition with no name.' },
@@ -208,6 +292,8 @@ describe('creating a provisional code, per section 7', () => {
     openPanel();
     createCode('Gate code sharing', 'Passing the entry code to non-members.');
 
+    // Reopened, since creating collapses the disclosure.
+    openCreate();
     const create = region('create');
     expect(within(create).getByLabelText('Code name')).toHaveValue('');
     expect(within(create).getByLabelText('Short definition')).toHaveValue('');
@@ -237,7 +323,7 @@ describe('creating a provisional code, per section 7', () => {
     expect(box.checked).toBe(true);
 
     fireEvent.click(box);
-    expect(within(region('pending')).queryAllByRole('listitem')).toHaveLength(0);
+    expect(checkedCodeIds()).toHaveLength(0);
     // The proposal itself survives being unchecked.
     expect(within(region('proposed')).getByText('Mulch delivery')).toBeInTheDocument();
   });
@@ -257,9 +343,7 @@ describe('creating a provisional code, per section 7', () => {
       'codebook',
       'proposed',
       'create',
-      'pending',
       'note',
-      'uncertainty',
       'actions',
     ]);
   });

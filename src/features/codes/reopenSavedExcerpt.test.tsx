@@ -72,7 +72,7 @@ function press(chord: Chord) {
 
 const chord = (command: Command) => press(bindings[command]);
 
-const panel = () => screen.getByRole('region', { name: /code selection/i });
+const panel = () => screen.getByRole('region', { name: /select code/i });
 const region = (name: string) => panel().querySelector<HTMLElement>(`[data-region="${name}"]`)!;
 const announced = () => announcer.getHistory().map((entry) => entry.message);
 const excerptState = () =>
@@ -119,10 +119,22 @@ function clickSegment(container: HTMLElement, segmentId: string) {
   fireEvent.click(container.querySelector(`[data-segment-id="${segmentId}"]`)!);
 }
 
+/**
+ * The pending assignment, which since D-039 is the set of checked boxes.
+ *
+ * Deduplicated, because one code can have a row in the codebook, in the search
+ * results, and in recently used at the same time.
+ */
 function codesPending(): string[] {
-  return within(region('pending'))
-    .getAllByRole('listitem')
-    .map((item) => item.textContent ?? '');
+  const ids = Array.from(panel().querySelectorAll<HTMLInputElement>('[data-code-id]'))
+    .filter((box) => box.checked)
+    .map((box) => box.dataset.codeId!);
+  return [...new Set(ids)];
+}
+
+/** Unchecking is how a code leaves the assignment now. */
+function uncheck(codeId: string) {
+  fireEvent.click(region('codebook').querySelector(`[data-code-id="${codeId}"]`)!);
 }
 
 describe('reopening a saved excerpt', () => {
@@ -133,9 +145,9 @@ describe('reopening a saved excerpt', () => {
 
     expect(excerptState()).toBe('confirmed');
     expect(codesPending()).toHaveLength(soleCodeIds.length);
+    // Pre-checked in the codebook, which is the whole pending state now.
     for (const codeId of soleCodeIds) {
-      const name = fixture.codes.find((code) => code.codeId === codeId)!.name;
-      expect(within(region('pending')).getByText(name)).toBeInTheDocument();
+      expect(region('codebook').querySelector(`[data-code-id="${codeId}"]`)).toBeChecked();
     }
   });
 
@@ -143,7 +155,7 @@ describe('reopening a saved excerpt', () => {
     const { container } = renderWorkspace();
     clickSegment(container, soleExcerpt.startSegmentId);
 
-    const opening = announced().find((message) => /code selection/i.test(message))!;
+    const opening = announced().find((message) => /select code/i.test(message))!;
     expect(opening).toMatch(
       new RegExp(`${soleCodeIds.length} existing codes? loaded from the saved excerpt`, 'i'),
     );
@@ -184,7 +196,7 @@ describe('the overlap case', () => {
     clickSegment(container, overlapSegmentId);
 
     // No excerpt opened yet: the coder chooses.
-    expect(screen.queryByRole('region', { name: /code selection/i })).toBeNull();
+    expect(screen.queryByRole('region', { name: /select code/i })).toBeNull();
     const choices = screen.getByRole('group', { name: 'Saved excerpts here' });
     const options = within(choices).getAllByRole('button');
     expect(options.length).toBeGreaterThanOrEqual(3); // two excerpts plus the decline
@@ -242,15 +254,13 @@ describe('saving a reopened excerpt writes the difference', () => {
     );
     expect(codesPending()).toHaveLength(soleCodeIds.length + 1);
 
-    fireEvent.click(within(panel()).getByRole('button', { name: 'Save' }));
+    fireEvent.click(within(panel()).getByRole('button', { name: 'Save & Close' }));
 
     // Reopening the same excerpt shows both the originals and the addition.
     clickSegment(container, soleExcerpt.startSegmentId);
-    const names = codesPending().join(' ');
-    expect(names).toContain(added.name);
-    for (const codeId of soleCodeIds) {
-      expect(names).toContain(fixture.codes.find((code) => code.codeId === codeId)!.name);
-    }
+    const checked = codesPending();
+    expect(checked).toContain(added.codeId);
+    for (const codeId of soleCodeIds) expect(checked).toContain(codeId);
   });
 
   it('supersedes a removed code rather than deleting the row', () => {
@@ -258,11 +268,8 @@ describe('saving a reopened excerpt writes the difference', () => {
     clickSegment(container, soleExcerpt.startSegmentId);
 
     const removedId = soleCodeIds[0];
-    const removedName = fixture.codes.find((code) => code.codeId === removedId)!.name;
-    fireEvent.click(
-      within(region('pending')).getByRole('button', { name: new RegExp(`Remove ${removedName}`) }),
-    );
-    fireEvent.click(within(panel()).getByRole('button', { name: 'Save' }));
+    uncheck(removedId);
+    fireEvent.click(within(panel()).getByRole('button', { name: 'Save & Close' }));
 
     const message = announced().find((text) => /removed/i.test(text) && /saved/i.test(text))!;
     expect(message).toMatch(/1 removed/);
@@ -271,7 +278,7 @@ describe('saving a reopened excerpt writes the difference', () => {
     // does not come back when the excerpt is reopened, and the fixture's own
     // record was never mutated.
     clickSegment(container, soleExcerpt.startSegmentId);
-    expect(codesPending().join(' ')).not.toContain(removedName);
+    expect(codesPending()).not.toContain(removedId);
     expect(
       fixture.codeAssignments.find((assignment) => assignment.codeId === removedId)?.status,
     ).toBe('active');
@@ -281,15 +288,10 @@ describe('saving a reopened excerpt writes the difference', () => {
     const { container } = renderWorkspace();
     clickSegment(container, soleExcerpt.startSegmentId);
 
-    for (const codeId of soleCodeIds) {
-      const name = fixture.codes.find((code) => code.codeId === codeId)!.name;
-      fireEvent.click(
-        within(region('pending')).getByRole('button', { name: new RegExp(`Remove ${name}`) }),
-      );
-    }
+    for (const codeId of soleCodeIds) uncheck(codeId);
 
     // Emptying the list is not a delete route: save stays unavailable.
-    const save = within(panel()).getByRole('button', { name: 'Save' });
+    const save = within(panel()).getByRole('button', { name: 'Save & Close' });
     expect(save).toHaveAttribute('aria-disabled', 'true');
     fireEvent.click(save);
     expect(panel()).toBeInTheDocument();
@@ -317,6 +319,6 @@ describe('cancel leaves a reopened excerpt untouched', () => {
     // Reopening shows exactly what was saved before.
     clickSegment(container, soleExcerpt.startSegmentId);
     expect(codesPending()).toHaveLength(soleCodeIds.length);
-    expect(codesPending().join(' ')).not.toContain(added.name);
+    expect(codesPending()).not.toContain(added.codeId);
   });
 });

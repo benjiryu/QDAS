@@ -20,8 +20,69 @@
   overflow-y: auto;
 }
 
+/* Heading and close on one row, as the card has them. */
+.code-panel__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
 .code-panel__heading {
   margin-top: 0;
+}
+
+.code-panel__close {
+  font: inherit;
+  font-size: 1.25rem;
+  line-height: 1;
+  padding: 0.2rem 0.5rem;
+  background: transparent;
+  color: inherit;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.code-panel__close:hover {
+  border-color: var(--border);
+}
+
+/*
+ * The close control reads as "Cancel" and shows as a cross. The label is
+ * visible to assistive technology and not on screen, so the accessible name
+ * says what the control does rather than naming a glyph.
+ */
+.code-panel__close-label,
+.code-panel__hidden-excerpt {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Create code, collapsed to one row. D-039. */
+.code-panel__create-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font: inherit;
+  padding: 0.4rem 0.6rem;
+  background: var(--surface);
+  color: inherit;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.code-panel__create-plus {
+  font-size: 1.1em;
+  line-height: 1;
 }
 
 .code-panel__region {
@@ -83,9 +144,13 @@
   font-weight: 600;
 }
 
+/*
+ * The visible level label went with D-039: hierarchy shows as indentation and
+ * pill colour, and the nested lists still expose depth programmatically. The
+ * magnification risk C-3 guarded against moves to session evidence.
+ */
 .code-panel__short,
-.code-panel__path,
-.code-panel__level {
+.code-panel__path {
   color: var(--text-muted);
   font-size: 0.9em;
 }

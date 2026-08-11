@@ -93,7 +93,7 @@ Not answered here. What settles it is a decision about whether the coding surfac
 
 **N-1. RESOLVED, D-011.** Coding notes attach to excerpts. File-wide notes attach to the source.
 
-**N-3. RESOLVED, D-023; collection deferred by D-039.** Uncertainty still raises review priority when slice 3 arrives, but v0.2 removes the control, so no uncertainty data is collected until it returns or notes stand in.
+**N-3. RESOLVED, D-023.** Uncertainty raises review priority in slice 3. Collection was briefly deferred by D-039 and restored by D-040 as a footer checkbox.
 
 **N-2. RESOLVED, D-020.** A note in v0.1 is free text with no type. Note types and their visibility rules are specified in the notes page specification, written later.
 

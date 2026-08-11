@@ -204,10 +204,6 @@ export function TranscriptWorkspace({
     return describeExcerptSize(excerptSize(resolved, excerpt.selection.range));
   }, [excerpt.selection.range, resolved]);
 
-  const excerptSpeaker = excerpt.startSegmentId
-    ? (requireTurnOf(resolved, excerpt.startSegmentId).speaker?.label ?? null)
-    : null;
-
   /**
    * Writes the records, then returns the reader where `postCodingReturn` says.
    *
@@ -414,18 +410,12 @@ export function TranscriptWorkspace({
       <CodePanel
         panel={panel}
         flags={flags}
-        excerptSummary={excerptSummary}
-        excerptSpeaker={excerptSpeaker}
-        onReadExcerpt={() => {
-          // The strip's read-back command went with D-036, but code-selection
-          // section 3 still specifies this control inside the panel, so it
-          // announces the excerpt directly rather than through a command.
-          const range = excerpt.selection.range;
-          if (!range) return;
-          announcer.announce(
-            `${describeExcerptSize(excerptSize(resolved, range))}. ${excerptText(resolved, range)}`,
-          );
-        }}
+        /* The captured text itself: D-040 renders it visually hidden inside
+           the panel so a screen reader user can re-read what they captured
+           with their own commands. */
+        excerptText={
+          excerpt.selection.range ? excerptText(resolved, excerpt.selection.range) : null
+        }
       />
     </>
   );

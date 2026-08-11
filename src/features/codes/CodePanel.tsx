@@ -1,15 +1,26 @@
 import { useId } from 'react';
 import type { PrototypeFlags } from '../../config/flags';
-import type { Code, Id } from '../../domain';
-import { CreateCodeForm } from './CreateCodeForm';
+import type { Code } from '../../domain';
+import { CreateCodeDisclosure } from './CreateCodeDisclosure';
 import type { CodeNode } from './codeTree';
 import type { CodePanelApi } from './useCodePanel';
 import './codePanel.css';
 
 /**
- * The code selection panel.
+ * The Select Code card.
  *
- * Specification: docs/patterns/code-selection.md sections 2 to 7.
+ * Specification: docs/patterns/code-selection.md sections 2 to 7, as revised by
+ * decisions D-039 and D-040.
+ *
+ * D-039 cut this down to the card: the verbose heading, the excerpt summary and
+ * its read-back control, the visual level labels, and the pending assignment
+ * region are all gone. The checkboxes are the pending state now — they were
+ * always the thing the coder was actually looking at, and the region beneath
+ * them restated it in a second place that could disagree.
+ *
+ * D-040 puts back the two affordances that removal cost, in forms that fit the
+ * card: the captured excerpt as visually hidden text a screen reader user reads
+ * on demand with their own commands, and an uncertainty checkbox in the footer.
  *
  * No definition control and no definition display, per D-035. The short
  * definition on each row is the only definition text here; the rest is read at
@@ -20,10 +31,9 @@ import './codePanel.css';
  * property D-026 gave up and the reason it was reversed.
  *
  * The panel is a labelled region so a screen reader user browsing the document
- * finds it without tabbing. Its twelve sub-regions are heading-labelled rather
- * than landmarks: section 3 fixes their order, and eleven more landmarks inside
- * one panel would crowd the landmark list the accessibility contract keeps
- * short. Headings give the same browse-mode navigation.
+ * finds it without tabbing. Its sub-regions are heading-labelled rather than
+ * landmarks: D-039 fixes their order, and more landmarks inside one panel would
+ * crowd the landmark list the accessibility contract keeps short.
  *
  * Layout follows D-033. The narrow form is primary: a full-width region below
  * the transcript. The wide form is the same sequence with the panel alongside,
@@ -34,19 +44,11 @@ import './codePanel.css';
 interface CodePanelProps {
   panel: CodePanelApi;
   flags: PrototypeFlags;
-  /** Region 1 and 2: the excerpt this panel is coding. */
-  excerptSummary: string | null;
-  excerptSpeaker: string | null;
-  onReadExcerpt: () => void;
+  /** The captured text itself, for the hidden readback. D-040. */
+  excerptText: string | null;
 }
 
-export function CodePanel({
-  panel,
-  flags,
-  excerptSummary,
-  excerptSpeaker,
-  onReadExcerpt,
-}: CodePanelProps) {
+export function CodePanel({ panel, flags, excerptText }: CodePanelProps) {
   const headingId = useId();
   const searchId = useId();
   const noteId = useId();
@@ -58,7 +60,6 @@ export function CodePanel({
   // that object as a ref access during render.
   const {
     setSearchElement,
-    setPendingElement,
     query,
     setQuery,
     clearQuery,
@@ -80,32 +81,48 @@ export function CodePanel({
 
   if (!panel.isOpen) return null;
 
-  const heading = excerptSummary
-    ? `Code selection: ${excerptSummary}${excerptSpeaker ? `, starting with ${excerptSpeaker}` : ''}`
-    : 'Code selection';
-
   return (
     <section
       className="code-panel"
       aria-labelledby={headingId}
       data-presentation={flags.codebookPresentation}
     >
-      {/* 1. Panel heading, naming the excerpt by size and start speaker. */}
-      <h2 id={headingId} className="code-panel__heading">
-        {heading}
-      </h2>
-
-      {/* 2. Excerpt summary, with a control to re-read the full excerpt. A
-          summary rather than the text, because the transcript is reachable. */}
-      <div className="code-panel__region">
-        <h3>Excerpt</h3>
-        <p>{excerptSummary ?? 'No excerpt.'}</p>
-        <button type="button" onClick={onReadExcerpt}>
-          Read the full excerpt
+      {/* 1. Heading and close. */}
+      <div className="code-panel__header">
+        <h2 id={headingId} className="code-panel__heading">
+          Select Code
+        </h2>
+        {/*
+          The card's close control. Named "Cancel" rather than "Close" because
+          that is what D-039 says it is and what it does: it discards the
+          pending codes and the draft note, asking first when there are any.
+        */}
+        <button
+          type="button"
+          className="code-panel__close"
+          data-command="codes.cancel"
+          onClick={panel.requestCancel}
+        >
+          <span aria-hidden="true">×</span>
+          <span className="code-panel__close-label">Cancel</span>
         </button>
       </div>
 
-      {/* 3. Search field. First control in the panel, per section 1. */}
+      {/*
+        The captured excerpt, per D-040. Visually hidden static text, read on
+        demand with the reader's own commands and repeatable as often as they
+        like.
+
+        Deliberately not `aria-describedby` on the panel, which would recite the
+        whole excerpt every time focus entered, and deliberately not a live
+        region, since nothing here changes. Full text, never truncated: a
+        truncated readback cannot answer the question it exists for.
+      */}
+      <p className="code-panel__hidden-excerpt" data-selected-excerpt>
+        Selected excerpt: {excerptText ?? 'none.'}
+      </p>
+
+      {/* 2. Search field. First control in the panel, per D-005. */}
       <div className="code-panel__region">
         <h3>Search codes</h3>
         <label htmlFor={searchId}>Search the codebook</label>
@@ -122,7 +139,7 @@ export function CodePanel({
         </button>
       </div>
 
-      {/* 4. Search results. Present only with an active query: an always-present
+      {/* 3. Search results. Present only with an active query: an always-present
           empty region is one more thing to browse past. */}
       {query.trim() !== '' ? (
         <div className="code-panel__region" data-region="search-results">
@@ -148,7 +165,7 @@ export function CodePanel({
         </div>
       ) : null}
 
-      {/* 5. Recently used codes, collapsed by default. */}
+      {/* 4. Recently used codes, collapsed by default. */}
       {flags.showRecentCodes ? (
         <div className="code-panel__region" data-region="recent">
           <details>
@@ -170,15 +187,19 @@ export function CodePanel({
         </div>
       ) : null}
 
-      {/* 6. Codebook, in canonical order, present and unchanged whatever the
-          search is doing. */}
+      {/* 5. Codebook, in canonical order, present and unchanged whatever the
+          search is doing. The checked boxes here are the pending assignment:
+          D-039 removed the region that used to restate them. */}
       <div className="code-panel__region" data-region="codebook">
         <h3>Codebook</h3>
         <CodeList nodes={tree} panel={panel} />
       </div>
 
-      {/* 7. Proposed codes. Present only when the project permits provisional
-          codes and some exist; creating them is a later task. */}
+      {/* 6. Proposed codes. D-039's region order does not name this one, and
+          does not list it as removed either; it has to stay, because a created
+          code must be visible and checkable somewhere and the acceptance
+          criterion in section 7 keeps it out of the canonical codebook. Raised
+          in the task report. */}
       {flags.allowProvisionalCodes && proposedCodes.length > 0 ? (
         <div className="code-panel__region" data-region="proposed">
           <h3>Proposed codes</h3>
@@ -195,42 +216,11 @@ export function CodePanel({
         </div>
       ) : null}
 
-      {/* 8. Create a code. Offered only where the project permits provisional
-          codes: a form that cannot produce one is a dead control. */}
-      {flags.allowProvisionalCodes ? (
-        <div className="code-panel__region" data-region="create">
-          <h3>Create a code</h3>
-          <CreateCodeForm panel={panel} />
-        </div>
-      ) : null}
+      {/* 7. Create code, collapsed. Offered only where the project permits
+          provisional codes: a form that cannot produce one is a dead control. */}
+      {flags.allowProvisionalCodes ? <CreateCodeDisclosure panel={panel} /> : null}
 
-      {/* 9. Pending assignment. */}
-      <div className="code-panel__region" data-region="pending">
-        <h3 ref={setPendingElement} tabIndex={-1}>
-          Pending assignment
-        </h3>
-        <p>
-          {pendingCodeIds.length} {pendingCodeIds.length === 1 ? 'code' : 'codes'} pending
-        </p>
-        {pendingCodeIds.length > 0 ? (
-          <ul className="code-panel__list">
-            {pendingCodeIds.map((codeId) => (
-              <li key={codeId} className="code-panel__pending-row">
-                <span>{nameOf(panel, codeId)}</span>{' '}
-                <button
-                  type="button"
-                  data-remove-pending={codeId}
-                  onClick={() => panel.removePending(codeId)}
-                >
-                  Remove {nameOf(panel, codeId)}
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : null}
-      </div>
-
-      {/* 10. Note. One per excerpt, plain text, no type: types belong to the
+      {/* 8. Note. One per excerpt, plain text, no type: types belong to the
           notes page specification, per D-020. D-032 keeps it here rather than
           on the top bar. */}
       <div className="code-panel__region" data-region="note">
@@ -246,22 +236,7 @@ export function CodePanel({
         />
       </div>
 
-      {/* 11. Uncertainty, per D-021. Recorded on every assignment this save
-          writes, and it changes no ordering in v0.1. */}
-      <div className="code-panel__region" data-region="uncertainty">
-        <h3>Uncertainty</h3>
-        <span className="code-panel__code">
-          <input
-            id={uncertainId}
-            type="checkbox"
-            checked={uncertain}
-            onChange={(event) => setUncertain(event.target.checked)}
-          />
-          <label htmlFor={uncertainId}>Mark this assignment uncertain</label>
-        </span>
-      </div>
-
-      {/* 12. Save and Cancel. */}
+      {/* 9. The footer: uncertainty and Save & Close. */}
       <div className="code-panel__region code-panel__actions" data-region="actions">
         {cancelPending ? (
           // Cancel asks before destroying pending codes and a draft note.
@@ -301,6 +276,18 @@ export function CodePanel({
               </div>
             ) : null}
 
+            {/* D-040: a checkbox rather than a button, because uncertainty is
+                state that modifies the save and not an action of its own. */}
+            <span className="code-panel__code code-panel__uncertain">
+              <input
+                id={uncertainId}
+                type="checkbox"
+                checked={uncertain}
+                onChange={(event) => setUncertain(event.target.checked)}
+              />
+              <label htmlFor={uncertainId}>Mark uncertain</label>
+            </span>
+
             <button
               type="button"
               aria-disabled={canSave ? undefined : true}
@@ -308,10 +295,7 @@ export function CodePanel({
               onClick={panel.save}
               data-command="codes.save"
             >
-              Save
-            </button>
-            <button type="button" onClick={panel.requestCancel} data-command="codes.cancel">
-              Cancel
+              Save &amp; Close
             </button>
             {/* A disabled control with no explanation is a dead end for a
                 screen reader user. Contract 2.6. */}
@@ -325,11 +309,6 @@ export function CodePanel({
       </div>
     </section>
   );
-}
-
-function nameOf(panel: CodePanelApi, codeId: Id): string {
-  // Resolves proposed codes as well as canonical ones.
-  return panel.codeById.get(codeId)?.name ?? codeId;
 }
 
 /**
@@ -377,7 +356,7 @@ function CodeCheckbox({
   const inputId = useId();
 
   return (
-    <span className="code-panel__code">
+    <span className="code-panel__code" data-depth={depth}>
       <input
         id={inputId}
         type="checkbox"
@@ -388,19 +367,13 @@ function CodeCheckbox({
       <label htmlFor={inputId}>
         <span className="code-panel__code-name">{code.name}</span>
         {/* Colour is a redundant channel only, never carrying meaning that is
-            not also in text. Section 4. */}
+            not also in text. Section 4. D-039 removed the visible level label;
+            the nested lists still expose depth programmatically. */}
         <span
           className="code-panel__swatch"
           data-color-token={code.colorToken}
           aria-hidden="true"
         />
-        {depth > 0 ? (
-          // Section 11: a text level indicator as well as indentation, since
-          // indent depth is easy to lose when only part of the panel is visible.
-          <span className="code-panel__level" aria-hidden="true">
-            level {depth + 1}
-          </span>
-        ) : null}
         <span className="code-panel__short">{code.shortDefinition}</span>
       </label>
     </span>

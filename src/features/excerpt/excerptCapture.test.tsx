@@ -107,7 +107,7 @@ const announced = () => announcer.getHistory().map((entry) => entry.message);
 const lastAnnouncement = () => announcer.getLast()?.message ?? '';
 const excerptState = () =>
   document.querySelector('.excerpt-toolbar__state')?.getAttribute('data-state') ?? '';
-const panelIsOpen = () => screen.queryAllByRole('region', { name: /code selection/i }).length > 0;
+const panelIsOpen = () => screen.queryAllByRole('region', { name: /select code/i }).length > 0;
 
 function savedCounts() {
   const element = document.querySelector('[data-saved-excerpts]')!;
@@ -341,7 +341,7 @@ describe('capture survives the panel', () => {
     fireEvent.click(codebook.querySelector(`[data-code-id="${fixture.codes[0].codeId}"]`)!);
     expect(highlighted()).toBe(atCapture);
 
-    fireEvent.click(screen.getByRole('button', { name: /^Save$/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save & Close' }));
 
     expect(savedCounts()).toEqual({ excerpts: 1, assignments: 1 });
     expect(excerptState()).toBe('saved');
@@ -375,7 +375,7 @@ describe('a saved partial excerpt stays partial', () => {
   function saveWithACode(view: ReturnType<typeof renderWorkspace>) {
     const codebook = view.container.querySelector<HTMLElement>('[data-region="codebook"]')!;
     fireEvent.click(codebook.querySelector(`[data-code-id="${fixture.codes[0].codeId}"]`)!);
-    fireEvent.click(screen.getByRole('button', { name: /^Save$/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save & Close' }));
   }
 
   it('paints only the characters that were captured, not the sentence', () => {
@@ -444,16 +444,16 @@ describe('a saved partial excerpt stays partial', () => {
 });
 
 describe('what the excerpt reads back as', () => {
-  it('reads only the captured characters, not the whole sentence', () => {
-    const view = renderWorkspace();
+  it('offers only the captured characters for re-reading, not the whole sentence', () => {
+    // D-039 removed the read-back control; D-040 replaced it with visually
+    // hidden text the reader reaches with their own commands.
+    renderWorkspace();
     const segment = multiSentenceTurn.segments[0];
 
     drag([segment.segmentId, 5], [segment.segmentId, 18]);
     chord('excerpt.code');
 
-    fireEvent.click(view.getByRole('button', { name: /read the full excerpt/i }));
-
-    const readBack = announced()[announced().length - 1];
+    const readBack = document.querySelector('[data-selected-excerpt]')!.textContent ?? '';
     expect(readBack).toContain(segment.text.slice(5, 18));
     expect(readBack).not.toContain(segment.text);
   });

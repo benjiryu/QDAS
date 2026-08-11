@@ -80,12 +80,8 @@ export interface CodePanelApi {
   cancelPending: boolean;
   requestCancel: () => void;
   keepEditing: () => void;
-  /** Removes a pending code and moves focus per section 9. */
-  removePending: (codeId: Id) => void;
   /** Called by the workspace once records exist. Nothing clears before then. */
   clearAfterSave: () => void;
-  /** Focus lands on the pending region after a code is created, per section 9. */
-  setPendingElement: (node: HTMLElement | null) => void;
   cancel: () => void;
   focusSearch: () => void;
   /** Callback ref for the note field, which `excerpt.note` opens focused on. */
@@ -148,11 +144,6 @@ export function useCodePanel({
     noteRef.current = node;
   }, []);
 
-  const pendingRef = useRef<HTMLElement | null>(null);
-  const setPendingElement = useCallback((node: HTMLElement | null) => {
-    pendingRef.current = node;
-  }, []);
-
   const [query, setQueryState] = useState('');
   const [pendingCodeIds, setPendingCodeIds] = useState<Id[]>([]);
 
@@ -212,13 +203,16 @@ export function useCodePanel({
     const field = openFocus === 'note' ? noteRef.current : searchRef.current;
     field?.focus?.();
 
-    // Section 10: panel name, excerpt size, start speaker, and for a reopened
-    // excerpt that existing codes are loaded and how many, so they are not
-    // mistaken for codes the coder just applied. The count is read from a ref
-    // written by `loadPending` just before the panel opened.
+    // Section 10: panel name, excerpt size, and for a reopened excerpt that
+    // existing codes are loaded and how many, so they are not mistaken for
+    // codes the coder just applied. The count is read from a ref written by
+    // `loadPending` just before the panel opened.
+    //
+    // Named as the card is named, per D-039, so what is heard on opening and
+    // what is heard when browsing to the region are the same words.
     const loaded = loadedCountRef.current;
     announcer.announce(
-      `Code selection. ${excerptSummary ?? 'No excerpt.'}${
+      `Select Code. ${excerptSummary ?? 'No excerpt.'}${
         loaded > 0
           ? ` ${loaded} existing ${loaded === 1 ? 'code' : 'codes'} loaded from the saved excerpt.`
           : ''
@@ -356,8 +350,8 @@ export function useCodePanel({
         `${code.name} created as provisional and added to pending. ${next.length} pending.`,
       );
 
-      // Section 9: focus lands on the pending assignment region.
-      pendingRef.current?.focus?.();
+      // Focus is the disclosure's business: it collapses and returns focus to
+      // its row, per D-039. The pending region this used to jump to is gone.
       return code;
     },
     [announcer, applyPending, projectId],
@@ -474,27 +468,6 @@ export function useCodePanel({
     announcer.announce('Still editing. Nothing was discarded.');
   }, [announcer]);
 
-  const removePending = useCallback(
-    (codeId: Id) => {
-      const index = pendingListRef.current.indexOf(codeId);
-      const remainingIds = pendingListRef.current.filter((id) => id !== codeId);
-      toggle(codeId, false);
-
-      // Section 9: focus the next pending code, or the region heading once the
-      // list is empty, rather than leaving focus on a control that is gone.
-      queueMicrotask(() => {
-        const remaining = remainingIds;
-        const nextId = remaining[index] ?? remaining[remaining.length - 1];
-        const next = nextId
-          ? document.querySelector<HTMLElement>(`[data-remove-pending="${nextId}"]`)
-          : null;
-        (next ?? pendingRef.current)?.focus?.();
-      });
-    },
-    [toggle],
-  );
-
-
   /* ---------- Chords ---------- */
 
   const bindings = useMemo(() => bindingsFor(detectPlatform()), []);
@@ -584,8 +557,6 @@ export function useCodePanel({
     cancelPending,
     requestCancel,
     keepEditing,
-    removePending,
-    setPendingElement,
     cancel: cancelNow,
     focusSearch,
     setNoteElement,

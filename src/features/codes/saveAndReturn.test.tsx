@@ -100,7 +100,7 @@ function openPanel() {
   chord('excerpt.code');
 }
 
-const panel = () => screen.getByRole('region', { name: /code selection/i });
+const panel = () => screen.getByRole('region', { name: /select code/i });
 const region = (name: string) => panel().querySelector<HTMLElement>(`[data-region="${name}"]`)!;
 const lastAnnouncement = () => announcer.getLast()?.message ?? '';
 const announced = () => announcer.getHistory().map((entry) => entry.message);
@@ -133,6 +133,19 @@ function writeNote(text: string) {
   });
 }
 
+/**
+ * The pending assignment, which since D-039 is the set of checked boxes.
+ *
+ * Deduplicated: one code can have a row in the codebook, in the search results,
+ * and in recently used at the same time.
+ */
+function checkedCodeIds(): string[] {
+  const ids = Array.from(panel().querySelectorAll<HTMLInputElement>('[data-code-id]'))
+    .filter((box) => box.checked)
+    .map((box) => box.dataset.codeId!);
+  return [...new Set(ids)];
+}
+
 const excerptState = () =>
   document.querySelector('.excerpt-toolbar__state')?.getAttribute('data-state') ?? '';
 
@@ -145,8 +158,7 @@ describe('acceptance: multiple codes in one pass', () => {
     checkCode('Water access rules');
     checkCode('Mutual aid');
 
-    const pending = within(region('pending')).getAllByRole('listitem');
-    expect(pending).toHaveLength(3);
+    expect(checkedCodeIds()).toHaveLength(3);
     expect(panel()).toBeInTheDocument();
     expect(lastAnnouncement()).toContain('3 pending');
   });
@@ -174,7 +186,7 @@ describe('acceptance: cancel creates nothing', () => {
     // excerpt confirmed, because rebuilding a range was expensive; native
     // selection makes reselecting cheap, so D-036 dropped the holding state.
     expect(excerptState()).toBe('idle');
-    expect(screen.queryByRole('region', { name: /code selection/i })).toBeNull();
+    expect(screen.queryByRole('region', { name: /select code/i })).toBeNull();
   });
 
   it('keeps everything when the confirmation is declined', () => {
@@ -186,7 +198,7 @@ describe('acceptance: cancel creates nothing', () => {
     fireEvent.click(within(panel()).getByRole('button', { name: 'Cancel' }));
     fireEvent.click(screen.getByRole('button', { name: /keep editing/i }));
 
-    expect(within(region('pending')).getAllByRole('listitem')).toHaveLength(1);
+    expect(checkedCodeIds()).toHaveLength(1);
     expect(within(region('note')).getByLabelText(/note about this excerpt/i)).toHaveValue(
       'Still writing this.',
     );
@@ -211,7 +223,7 @@ describe('acceptance: cancel creates nothing', () => {
 
     fireEvent.click(within(panel()).getByRole('button', { name: 'Cancel' }));
 
-    expect(screen.queryByRole('region', { name: /code selection/i })).toBeNull();
+    expect(screen.queryByRole('region', { name: /select code/i })).toBeNull();
     expect(excerptState()).toBe('idle');
   });
 
@@ -234,7 +246,7 @@ describe('acceptance: return location is announced', () => {
     checkCode('Waiting list');
     checkCode('Mutual aid');
 
-    fireEvent.click(within(panel()).getByRole('button', { name: 'Save' }));
+    fireEvent.click(within(panel()).getByRole('button', { name: 'Save & Close' }));
 
     const message = announced().find((text) => /codes applied/i.test(text))!;
     expect(message).toContain('2 codes applied');
@@ -247,7 +259,7 @@ describe('acceptance: return location is announced', () => {
     openPanel();
     checkCode('Waiting list');
 
-    fireEvent.click(within(panel()).getByRole('button', { name: 'Save' }));
+    fireEvent.click(within(panel()).getByRole('button', { name: 'Save & Close' }));
 
     // Default postCodingReturn is the excerpt's start segment.
     const start = resolved.segments[1];
@@ -269,7 +281,7 @@ describe('acceptance: return location is announced', () => {
     openPanel();
     checkCode('Waiting list');
 
-    fireEvent.click(within(panel()).getByRole('button', { name: 'Save' }));
+    fireEvent.click(within(panel()).getByRole('button', { name: 'Save & Close' }));
 
     const end = requireTurnOf(resolved, resolved.segments[2].segmentId);
     expect(document.activeElement).toBe(
@@ -293,8 +305,8 @@ describe('acceptance: not colour-only', () => {
     fireEvent.click(box);
     expect(box.checked).toBe(true);
 
-    // Pending membership is stated in words as well.
-    expect(within(region('pending')).getByText('Waiting list')).toBeInTheDocument();
+    // The name is beside the box, so the row identifies itself without colour.
+    expect(within(region('codebook')).getByText('Waiting list')).toBeInTheDocument();
     // The only colour channel is hidden from assistive technology.
     expect(region('codebook').querySelector('.code-panel__swatch')).toHaveAttribute(
       'aria-hidden',
@@ -310,7 +322,7 @@ describe('what save writes, per section 8', () => {
     checkCode('Waiting list');
     checkCode('Mutual aid');
 
-    fireEvent.click(within(panel()).getByRole('button', { name: 'Save' }));
+    fireEvent.click(within(panel()).getByRole('button', { name: 'Save & Close' }));
 
     expect(saved(container)).toEqual({ excerpts: 1, assignments: 2, notes: 0 });
   });
@@ -321,7 +333,7 @@ describe('what save writes, per section 8', () => {
     checkCode('Waiting list');
     writeNote('Worth returning to in review.');
 
-    fireEvent.click(within(panel()).getByRole('button', { name: 'Save' }));
+    fireEvent.click(within(panel()).getByRole('button', { name: 'Save & Close' }));
 
     expect(saved(container).notes).toBe(1);
   });
@@ -331,7 +343,7 @@ describe('what save writes, per section 8', () => {
     openPanel();
     checkCode('Waiting list');
 
-    fireEvent.click(within(panel()).getByRole('button', { name: 'Save' }));
+    fireEvent.click(within(panel()).getByRole('button', { name: 'Save & Close' }));
 
     for (const segment of [resolved.segments[1], resolved.segments[2]]) {
       const rendered = container.querySelector(`[data-segment-id="${segment.segmentId}"]`);
@@ -343,10 +355,10 @@ describe('what save writes, per section 8', () => {
     renderWorkspace();
     openPanel();
     checkCode('Waiting list');
-    fireEvent.click(within(panel()).getByRole('button', { name: 'Save' }));
+    fireEvent.click(within(panel()).getByRole('button', { name: 'Save & Close' }));
 
     expect(excerptState()).toBe('saved');
-    expect(screen.queryByRole('region', { name: /code selection/i })).toBeNull();
+    expect(screen.queryByRole('region', { name: /select code/i })).toBeNull();
 
     // And a second excerpt can be captured straight from `saved`.
     focusTurn(2);
@@ -365,12 +377,12 @@ describe('acceptance: save failure preserves everything', () => {
     checkCode('Mutual aid');
     writeNote('A note I would hate to retype.');
 
-    fireEvent.click(within(panel()).getByRole('button', { name: 'Save' }));
+    fireEvent.click(within(panel()).getByRole('button', { name: 'Save & Close' }));
 
     // Nothing written.
     expect(saved(container)).toEqual({ excerpts: 0, assignments: 0, notes: 0 });
     // Everything still here.
-    expect(within(region('pending')).getAllByRole('listitem')).toHaveLength(2);
+    expect(checkedCodeIds()).toHaveLength(2);
     expect(within(region('note')).getByLabelText(/note about this excerpt/i)).toHaveValue(
       'A note I would hate to retype.',
     );
@@ -386,7 +398,7 @@ describe('acceptance: save failure preserves everything', () => {
     checkCode('Waiting list');
     writeNote('Kept.');
 
-    fireEvent.click(within(panel()).getByRole('button', { name: 'Save' }));
+    fireEvent.click(within(panel()).getByRole('button', { name: 'Save & Close' }));
 
     const failure = announcer.getHistory().find((entry) => /could not be written/i.test(entry.message))!;
     // Contract 2.3 reserves the assertive region for exactly this.
@@ -404,12 +416,12 @@ describe('acceptance: save failure preserves everything', () => {
     checkCode('Mutual aid');
     writeNote('Survived the failure.');
 
-    fireEvent.click(within(panel()).getByRole('button', { name: 'Save' }));
+    fireEvent.click(within(panel()).getByRole('button', { name: 'Save & Close' }));
     fireEvent.click(within(panel()).getByRole('button', { name: /retry save/i }));
 
     expect(saved(container)).toEqual({ excerpts: 1, assignments: 2, notes: 1 });
     expect(excerptState()).toBe('saved');
-    expect(screen.queryByRole('region', { name: /code selection/i })).toBeNull();
+    expect(screen.queryByRole('region', { name: /select code/i })).toBeNull();
   });
 
   it('fails one save, not every save', () => {
@@ -418,7 +430,7 @@ describe('acceptance: save failure preserves everything', () => {
     const { container } = renderWorkspace(armed);
     openPanel();
     checkCode('Waiting list');
-    fireEvent.click(within(panel()).getByRole('button', { name: 'Save' }));
+    fireEvent.click(within(panel()).getByRole('button', { name: 'Save & Close' }));
     fireEvent.click(within(panel()).getByRole('button', { name: /retry save/i }));
     expect(saved(container).excerpts).toBe(1);
 
@@ -426,7 +438,7 @@ describe('acceptance: save failure preserves everything', () => {
     focusTurn(2);
     chord('excerpt.code');
     checkCode('Mutual aid');
-    fireEvent.click(within(panel()).getByRole('button', { name: 'Save' }));
+    fireEvent.click(within(panel()).getByRole('button', { name: 'Save & Close' }));
 
     expect(saved(container).excerpts).toBe(2);
     expect(screen.queryByRole('button', { name: /retry save/i })).toBeNull();
@@ -437,7 +449,7 @@ describe('acceptance: save failure preserves everything', () => {
     openPanel();
     checkCode('Waiting list');
 
-    fireEvent.click(within(panel()).getByRole('button', { name: 'Save' }));
+    fireEvent.click(within(panel()).getByRole('button', { name: 'Save & Close' }));
 
     expect(saved(container).excerpts).toBe(1);
     expect(screen.queryByRole('button', { name: /retry save/i })).toBeNull();
@@ -449,7 +461,7 @@ describe('save availability, per section 8', () => {
     renderWorkspace();
     openPanel();
 
-    const save = within(panel()).getByRole('button', { name: 'Save' });
+    const save = within(panel()).getByRole('button', { name: 'Save & Close' });
     expect(save).toHaveAttribute('aria-disabled', 'true');
 
     const reasonId = save.getAttribute('aria-describedby')!;
@@ -460,7 +472,7 @@ describe('save availability, per section 8', () => {
     const { container } = renderWorkspace();
     openPanel();
 
-    fireEvent.click(within(panel()).getByRole('button', { name: 'Save' }));
+    fireEvent.click(within(panel()).getByRole('button', { name: 'Save & Close' }));
 
     expect(saved(container)).toEqual({ excerpts: 0, assignments: 0, notes: 0 });
     expect(lastAnnouncement()).toMatch(/no codes are pending/i);
@@ -472,20 +484,34 @@ describe('save availability, per section 8', () => {
     openPanel();
     checkCode('Waiting list');
 
-    expect(within(panel()).getByRole('button', { name: 'Save' })).not.toHaveAttribute(
+    expect(within(panel()).getByRole('button', { name: 'Save & Close' })).not.toHaveAttribute(
       'aria-disabled',
     );
   });
 });
 
-describe('the uncertainty control, per D-021', () => {
+describe('the uncertainty checkbox, per D-021 and D-040', () => {
+  const uncertainBox = () =>
+    within(region('actions')).getByRole('checkbox', {
+      name: /mark uncertain/i,
+    }) as HTMLInputElement;
+
+  it('sits in the footer beside Save & Close', () => {
+    // A checkbox rather than a button, because uncertainty is state that
+    // modifies the save and not an action of its own. D-040.
+    renderWorkspace();
+    openPanel();
+
+    const footer = region('actions');
+    expect(within(footer).getByRole('checkbox', { name: /mark uncertain/i })).toBeInTheDocument();
+    expect(within(footer).getByRole('button', { name: 'Save & Close' })).toBeInTheDocument();
+  });
+
   it('announces its change like any other pending change', () => {
     renderWorkspace();
     openPanel();
 
-    fireEvent.click(
-      within(region('uncertainty')).getByRole('checkbox', { name: /mark this assignment uncertain/i }),
-    );
+    fireEvent.click(uncertainBox());
 
     expect(lastAnnouncement()).toMatch(/marked uncertain/i);
   });
@@ -494,12 +520,25 @@ describe('the uncertainty control, per D-021', () => {
     renderWorkspace();
     openPanel();
 
-    const control = within(region('uncertainty')).getByRole('checkbox', {
-      name: /mark this assignment uncertain/i,
-    }) as HTMLInputElement;
+    const control = uncertainBox();
     expect(control.checked).toBe(false);
     fireEvent.click(control);
     expect(control.checked).toBe(true);
+  });
+
+  it('writes the flag on every assignment the save produces', () => {
+    // D-040 un-defers collection: the data D-023 needs for slice 3 review
+    // ordering is gathered in v0.2 after all.
+    const { container } = renderWorkspace();
+    openPanel();
+    checkCode('Waiting list');
+    checkCode('Mutual aid');
+    fireEvent.click(uncertainBox());
+
+    fireEvent.click(within(panel()).getByRole('button', { name: 'Save & Close' }));
+
+    expect(saved(container).assignments).toBe(2);
+    expect(announced().join(' ')).toMatch(/marked uncertain/i);
   });
 });
 
@@ -515,36 +554,6 @@ describe('the pending assignment region, per sections 8 and 9', () => {
     expect(lastAnnouncement()).toMatch(/2 pending/);
   });
 
-  it('moves focus to the next pending code when one is removed', async () => {
-    renderWorkspace();
-    openPanel();
-    checkCode('Waiting list');
-    checkCode('Mutual aid');
-
-    const rows = within(region('pending')).getAllByRole('button', { name: /^Remove / });
-    fireEvent.click(rows[0]);
-
-    await act(async () => {
-      await Promise.resolve();
-    });
-
-    const remaining = within(region('pending')).getAllByRole('button', { name: /^Remove / });
-    expect(remaining).toHaveLength(1);
-    expect(remaining[0]).toHaveFocus();
-  });
-
-  it('moves focus to the region heading when the last one is removed', async () => {
-    renderWorkspace();
-    openPanel();
-    checkCode('Waiting list');
-
-    fireEvent.click(within(region('pending')).getByRole('button', { name: /^Remove / }));
-    await act(async () => {
-      await Promise.resolve();
-    });
-
-    expect(within(region('pending')).getByRole('heading', { level: 3 })).toHaveFocus();
-  });
 
   it('survives searching and browsing, per section 12', () => {
     renderWorkspace();
@@ -559,7 +568,7 @@ describe('the pending assignment region, per sections 8 and 9', () => {
       target: { value: '' },
     });
 
-    expect(within(region('pending')).getAllByRole('listitem')).toHaveLength(1);
+    expect(checkedCodeIds()).toHaveLength(1);
     expect(within(region('note')).getByLabelText(/note about this excerpt/i)).toHaveValue(
       'Kept through everything.',
     );
