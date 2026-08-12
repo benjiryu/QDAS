@@ -791,3 +791,28 @@ The Codebook page renders one card per top-level code family, in canonical order
 **Overarching Themes stays out**, per D-017 and A-5, reconfirmed. The team is removing it from the Figma sidebar, which retires the last standing design-spec contradiction on navigation.
 
 Card borders use the family's shade-1 token; the four low-contrast hues annotated in tokens.css apply to card outlines as they do to pills. The frame's surrounding chrome — Code, Write Note, Import file, Progress 10%, the audio player — is superseded by D-032, D-012, D-009, and A-4 and is not carried into the specification.
+
+## D-048 The companion codebook: definitions beside the panel
+
+Date: 2026-08 | Workflow: code assignment, codebook | Status: approved. Supersedes D-027; the modal panel is retained and the definition journey moves inside it
+
+The panel's codebook region heading becomes a button, **Open Codebook**. Activating it opens the Codebook page content in a semi-collapsed companion view beside the panel: panel shifts left, companion on the right, both visible. The coder reads definitions without leaving the coding surface.
+
+### Why this settles the modality question
+
+The panel as built traps focus, which broke the D-044 journey to the Codebook destination. Rather than reverting modality a third time, this decision removes the journey's necessity: the codebook comes to the coder. The costs that forced D-027's reversal of D-026 are now genuinely paid or mooted: boundary commands no longer exist to cross the trap (D-036), the captured excerpt is readable via D-040's hidden text, and definitions are readable via this companion. The D-003 to D-026 to D-027 history stays in the log; this entry closes it with the costs accounted for rather than rediscovered.
+
+### Behavior
+
+- The companion renders the Codebook page content per D-047: family cards, nested headings, read-only color values, search included. One component, two surfaces; they cannot drift apart.
+- Read-only reference. Codes are checked in the panel, never from the companion; it adds no capability.
+- The companion is inside the panel's focus scope, so a modal panel and an open companion are one composite surface for keyboard and screen reader users.
+- Focus on open: the companion's search field. Focus on close: the Open Codebook button. Escape layers: first Escape closes the companion, the next closes the panel per D-042.
+- Companion open or closed state persists while the panel is open; reopening the panel later starts closed.
+- **Narrow width and high zoom, per D-033: the companion renders below the panel in reading order**, same sequence, no horizontal panning. Side-by-side is the wide layout only. The single-panel completion rule holds: the companion is never required to finish coding.
+
+### Consequences recorded
+
+- The sidebar remains unreachable mid-capture. Acceptable now: the definition journey no longer needs it, and reaching Coded data or Notes mid-capture is close-then-navigate, with D-042 semantics making close commit or discard depending on checked state.
+- D-044's persistence guarantee is unchanged for the navigations that still occur, and its test stands.
+- Fixing a wrong range after checking codes requires unchecking all, then closing, to reach the discard path. Subtle; flagged for session observation.

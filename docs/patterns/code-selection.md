@@ -79,6 +79,10 @@ Save is unavailable with an empty pending assignment. Its unavailable state carr
 
 Chords follow the platform-conditional mapping in transcript-segment.md section 4.2.
 
+### 2.2 The companion codebook, D-048
+
+The codebook region's heading is the **Open Codebook** button. It opens the Codebook page content in a companion view beside the panel, panel shifted left, both visible at wide widths; below the panel in reading order at narrow width and high zoom, per D-033. The companion is the Codebook page component per D-047, read-only, search included, inside the panel's focus scope. Focus moves to the companion search on open and returns to the button on close. Escape closes the companion first, the panel second. Checking codes remains the panel's job; the companion adds no capability.
+
 ## 3. Regions, in fixed order
 
 1. Panel heading, naming the excerpt by size and start speaker

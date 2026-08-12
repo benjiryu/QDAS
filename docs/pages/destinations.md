@@ -25,7 +25,7 @@
 
 ## 1. Codebook page
 
-The destination D-035 pointed definition lookup at. Its job: let a coder read any code in full without touching coding state.
+The destination D-035 pointed definition lookup at. Its job: let a coder read any code in full without touching coding state. Per D-048 the same content also renders as the panel's companion view; this page and the companion are one component, so they cannot drift.
 
 **Regions, fixed order:** heading and count, search field, search results (only while a query is active), the codebook.
 

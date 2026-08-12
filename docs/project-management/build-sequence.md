@@ -934,6 +934,30 @@ Acceptance criteria as written, including the D-044 round trip and the
 heading-level and static-color criteria.
 ```
 
+### Task 28a. Companion codebook
+
+```
+Implement D-048 and code-selection.md section 2.2, the companion codebook.
+
+- The panel's codebook region heading becomes the Open Codebook button
+- Activating it renders the Codebook page component per D-047 beside the panel
+  at wide widths, panel shifted left; below the panel in reading order at
+  narrow width and 400 percent zoom. Reuse the Task 28 component; do not fork it
+- Companion is read-only and inside the panel's focus scope. Focus to companion
+  search on open, back to the button on close. Escape closes companion first,
+  panel second, preserving D-042 close semantics
+- Companion state persists while the panel is open; a reopened panel starts
+  with it closed
+
+Tests: focus round trip button to search to button; layered Escape; the
+codebook content beside the panel matches the destination page for the same
+fixture; at 320 width the companion sits below the panel with no horizontal
+scrolling; checking codes is impossible from the companion.
+```
+
+Done when: mid-capture, a coder can read any definition and return to the
+checkbox they were on without losing anything, and Escape behaves in layers.
+
 ### Task 29. Coded data page
 
 ```
