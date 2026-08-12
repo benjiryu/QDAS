@@ -934,6 +934,30 @@ Acceptance criteria as written, including the D-044 round trip and the
 heading-level and static-color criteria.
 ```
 
+### Task 28r. Codebook page revision to D-047
+
+Task 28 landed before D-047 rewrote its specification, so the built component
+implements the superseded structure. This revision brings it to the current
+docs/pages/destinations.md section 1 before the companion reuses it.
+
+```
+Revise the Codebook page component to docs/pages/destinations.md section 1 as
+amended by D-047. The visual reference is Figma frame 247:357, content region
+only.
+
+- One card per top-level family, canonical order, family shade-1 border token
+- Code names as nested headings, h2 for family, h3 children, h4 grandchildren,
+  each followed by its definition paragraph per D-046
+- The family color as a read-only labeled value, "Color: [name]" with swatch,
+  static text, never a control
+- Search, fragment ids, provisional section, and the D-044 behavior unchanged
+- Update tests to the amended acceptance criteria, including heading levels
+  and the static color value
+```
+
+Done when: a screen reader's heading list reads as the codebook's hierarchy,
+and nothing on the page is operable except search and links.
+
 ### Task 28a. Companion codebook
 
 ```
