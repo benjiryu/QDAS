@@ -219,6 +219,59 @@ test('the create form asks for a name and nothing else', async ({ page }) => {
   expect(results.violations).toEqual([]);
 });
 
+/**
+ * The companion codebook, per D-048.
+ *
+ * In a browser for the half jsdom cannot answer: whether the companion actually
+ * sits beside the panel when there is room and beneath it when there is not.
+ */
+const openCompanion = async (page: import('@playwright/test').Page) => {
+  await page.getByRole('button', { name: /open codebook/i }).click();
+  await expect(page.locator('[data-companion-codebook]')).toBeVisible();
+};
+
+test('the companion sits beside the panel at wide width', async ({ page }) => {
+  await page.setViewportSize({ width: 1400, height: 900 });
+  await openCompanion(page);
+
+  const geometry = await page.evaluate(() => {
+    const card = document.querySelector('.code-panel')!.getBoundingClientRect();
+    const companion = document.querySelector('[data-companion-codebook]')!.getBoundingClientRect();
+    return { cardRight: card.right, companionLeft: companion.left, sameRow: companion.top < card.bottom };
+  });
+
+  expect(geometry.companionLeft).toBeGreaterThanOrEqual(geometry.cardRight);
+  expect(geometry.sameRow).toBe(true);
+});
+
+test('the companion stacks below the panel at 320px, with no sideways scroll', async ({ page }) => {
+  // D-033: the narrow layout is the designed one and the wide derives from it.
+  // DOM order is card then companion either way, so only the direction changes.
+  await page.setViewportSize({ width: 320, height: 800 });
+  await openCompanion(page);
+
+  const geometry = await page.evaluate(() => {
+    const card = document.querySelector('.code-panel')!.getBoundingClientRect();
+    const companion = document.querySelector('[data-companion-codebook]')!.getBoundingClientRect();
+    return {
+      below: companion.top >= card.bottom - 1,
+      overflows:
+        document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+    };
+  });
+
+  expect(geometry.below).toBe(true);
+  expect(geometry.overflows).toBe(false);
+});
+
+test('the dialog with the companion open has no accessibility violations', async ({ page }) => {
+  await page.setViewportSize({ width: 1400, height: 900 });
+  await openCompanion(page);
+
+  const results = await new AxeBuilder({ page }).include('[role="dialog"]').analyze();
+  expect(results.violations).toEqual([]);
+});
+
 test('the open dialog has no accessibility violations', async ({ page }) => {
   const results = await new AxeBuilder({ page }).include('[role="dialog"]').analyze();
   expect(results.violations).toEqual([]);

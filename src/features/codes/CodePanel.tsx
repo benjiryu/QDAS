@@ -2,6 +2,7 @@ import { useId } from 'react';
 import { Dialog, Modal, ModalOverlay } from 'react-aria-components';
 import type { PrototypeFlags } from '../../config/flags';
 import type { Code } from '../../domain';
+import { CodebookContent } from '../codebook/CodebookContent';
 import { CreateCodeDisclosure } from './CreateCodeDisclosure';
 import { NoteDisclosure } from './NoteDisclosure';
 import type { CodeNode } from './codeTree';
@@ -65,6 +66,7 @@ export function CodePanel({ panel, flags, excerptText }: CodePanelProps) {
   const headingId = useId();
   const searchId = useId();
   const uncertainId = useId();
+  const companionId = useId();
 
   // Destructured, so the search input's callback ref is a plain local. Reading
   // it off the panel object in JSX makes the ref rule treat every other read of
@@ -85,6 +87,15 @@ export function CodePanel({ panel, flags, excerptText }: CodePanelProps) {
     deletePending,
     saveError,
     setErrorElement,
+    // The companion's two callback refs, destructured for the same reason as
+    // the search one above: read off `panel` in JSX, the ref rule treats every
+    // other read of that object as a ref access during render.
+    setCompanionButton,
+    setCompanionSearch,
+    companionOpen,
+    openCompanion,
+    closeCompanion,
+    projectId,
   } = panel;
 
   return (
@@ -109,8 +120,18 @@ export function CodePanel({ panel, flags, excerptText }: CodePanelProps) {
       */
       isKeyboardDismissDisabled
     >
-      <Modal className="code-panel__modal">
-        <Dialog className="code-panel" aria-labelledby={headingId}>
+      {/*
+        The surface holds the card and, when it is open, the companion beside
+        it. Both live inside the dialog, which is what puts the companion in the
+        panel's focus scope: D-048 makes the two one composite surface for a
+        keyboard and screen reader user, not two things to move between.
+      */}
+      <Modal
+        className="code-panel__modal"
+        data-companion={companionOpen ? '' : undefined}
+      >
+        <Dialog className="code-panel__surface" aria-labelledby={headingId}>
+          <div className="code-panel">
       {/* 1. Heading and close. */}
       <div className="code-panel__header">
         <h2 id={headingId} className="code-panel__heading">
@@ -203,7 +224,31 @@ export function CodePanel({ panel, flags, excerptText }: CodePanelProps) {
           search is doing. The checked boxes here are the pending assignment:
           D-039 removed the region that used to restate them. */}
       <div className="code-panel__region" data-region="codebook">
-        <h3>Codebook</h3>
+        {/*
+          The region's heading is the button now, per D-048. That is a real
+          cost: a screen reader user browsing by heading loses the stop this
+          region had, and finds it among the buttons instead. Raised in the
+          task report.
+
+          `aria-controls` only while the companion exists, rather than pointing
+          at an id that is not in the document.
+        */}
+        <button
+          type="button"
+          ref={setCompanionButton}
+          className="code-panel__companion-toggle"
+          aria-expanded={companionOpen}
+          aria-controls={companionOpen ? companionId : undefined}
+          onClick={() => (companionOpen ? closeCompanion() : openCompanion())}
+        >
+          {/* An affordance, because this replaced a heading and would otherwise
+              look exactly like the one it replaced. Drawn from the glyphs
+              Luciole actually carries. */}
+          <span className="code-panel__companion-caret" aria-hidden="true">
+            ›
+          </span>
+          Open Codebook
+        </button>
         <CodeList nodes={tree} panel={panel} />
       </div>
 
@@ -335,6 +380,25 @@ export function CodePanel({ panel, flags, excerptText }: CodePanelProps) {
           </>
         )}
       </div>
+          </div>
+
+          {/*
+            The companion, per D-048. The same component the destination page
+            renders — one component, two surfaces, so they cannot drift apart.
+
+            Families at `h3`: the dialog's own title is the `h2`, so the page's
+            base level cannot be used here. Read-only, and it adds no
+            capability; codes are checked in the panel and nowhere else.
+          */}
+          {companionOpen ? (
+            <div className="code-panel__companion" id={companionId} data-companion-codebook>
+              <CodebookContent
+                projectId={projectId}
+                headingLevel={3}
+                searchRef={setCompanionSearch}
+              />
+            </div>
+          ) : null}
         </Dialog>
       </Modal>
     </ModalOverlay>

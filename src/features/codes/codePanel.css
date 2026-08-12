@@ -32,12 +32,118 @@
   max-height: 85vh;
 }
 
+/*
+ * Wider only while the companion is open, per D-048: the panel shifts left and
+ * the companion takes the room that appears beside it. Keyed off an attribute
+ * rather than a second component, so there is one dialog in the document
+ * whatever is open inside it.
+ */
+.code-panel__modal[data-companion] {
+  width: min(76rem, 100%);
+}
+
+/*
+ * The composite surface: the card, and the companion beside it.
+ *
+ * Column by default and row only when there is room, which is D-033's rule —
+ * the narrow layout is the one that is designed, and the wide one derives from
+ * it. DOM order is card then companion either way, so what changes at the
+ * breakpoint is the direction and never the order.
+ */
+.code-panel__surface {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  min-height: 0;
+  max-height: 100%;
+  outline: none;
+}
+
+/*
+ * `flex: 1 1 auto`, not `1 1 0`.
+ *
+ * Stacked, the flex main axis is the height, and a zero basis collapses both of
+ * these to nothing. `auto` starts each at its content height and lets them
+ * shrink to share what the surface has, so the card keeps its fixed header and
+ * footer with a scrolling middle at every width rather than only when the two
+ * sit side by side.
+ */
+.code-panel,
+.code-panel__companion {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+}
+
+@media (min-width: 64rem) {
+  .code-panel__surface {
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  /* Side by side the main axis is the width, and an even split is wanted. */
+  .code-panel,
+  .code-panel__companion {
+    flex: 1 1 0;
+  }
+}
+
+/*
+ * The companion scrolls on its own, so a fifty-code codebook cannot push the
+ * panel's footer off the surface. `min-height: 0` above for the usual reason:
+ * without it a flex item refuses to shrink below its content and nothing
+ * scrolls.
+ */
+.code-panel__companion {
+  overflow-y: auto;
+  padding: 0.75rem;
+  background: var(--surface);
+  border: var(--border-thin) solid var(--border);
+  border-radius: var(--radius-small);
+}
+
+/*
+ * The region's heading became this, per D-048. Styled as the create row is, so
+ * the panel reads as one kind of surface rather than two, and so it does not
+ * look like the heading it replaced.
+ */
+.code-panel__companion-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font: inherit;
+  padding: 0.4rem 0.9rem;
+  margin-bottom: 0.35rem;
+  border-radius: var(--radius-medium);
+  border: var(--border-thick) solid var(--button-secondary-border);
+  background: var(--button-secondary-bg);
+  color: var(--button-secondary-text);
+  cursor: pointer;
+}
+
+/* Points along when closed, down when the companion is open. */
+.code-panel__companion-caret {
+  font-size: 1.1em;
+  line-height: 1;
+  transition: transform 120ms ease-out;
+}
+
+.code-panel__companion-toggle[aria-expanded='true'] .code-panel__companion-caret {
+  transform: rotate(90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .code-panel__companion-caret {
+    transition: none;
+  }
+}
+
 .code-panel {
   background: var(--surface);
   border: var(--border-thin) solid var(--border);
   border-radius: var(--radius-small);
   padding: 0.75rem;
-  outline: none;
   /*
      Resizes and scrolls internally rather than holding fixed dimensions: the
      Hi-Fi's 441 by 568 cannot fit at 400 percent zoom. Width in rem so it grows
@@ -45,7 +151,11 @@
      viewport rather than the document so a magnified user panned into a corner
      still finds it. D-026.
   */
-  width: 100%;
+  /*
+     No `width: 100%`: as a flex item stretching in its surface, that plus the
+     padding and border made the card wider than the box holding it. The
+     stretch is what sizes it now.
+  */
   max-height: 100%;
   /*
      The card does not scroll; the middle of it does. The header and the footer

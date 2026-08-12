@@ -47,6 +47,8 @@ export interface NewCodeDraft {
 
 export interface CodePanelApi {
   isOpen: boolean;
+  /** The project whose codebook the companion renders. D-048. */
+  projectId: Id;
   /** Which field the panel opened on, so the note row can open with it. */
   openFocus: 'search' | 'note';
   query: string;
@@ -97,6 +99,19 @@ export interface CodePanelApi {
    * otherwise closes on an empty assignment, creating nothing.
    */
   close: () => void;
+  /**
+   * The companion codebook, per D-048.
+   *
+   * Panel state rather than the workspace's, which is what lets Escape layer
+   * here without any new wiring: the handler that owns Escape already lives in
+   * this hook.
+   */
+  companionOpen: boolean;
+  openCompanion: () => void;
+  closeCompanion: () => void;
+  /** Callback refs, so the focus round trip has both ends to land on. */
+  setCompanionButton: (node: HTMLButtonElement | null) => void;
+  setCompanionSearch: (node: HTMLInputElement | null) => void;
   /** Called by the workspace once records exist. Nothing clears before then. */
   clearAfterSave: () => void;
   focusSearch: () => void;
@@ -222,6 +237,16 @@ export function useCodePanel({
   const [noteText, setNoteText] = useState(initialDraft.noteText);
   const [uncertain, setUncertainState] = useState(initialDraft.uncertain);
   const [deletePending, setDeletePending] = useState(false);
+  /** D-048. Starts closed on every mount, and on every reopen; see below. */
+  const [companionOpen, setCompanionOpen] = useState(false);
+  const companionButtonRef = useRef<HTMLButtonElement | null>(null);
+  const setCompanionButton = useCallback((node: HTMLButtonElement | null) => {
+    companionButtonRef.current = node;
+  }, []);
+  const companionSearchRef = useRef<HTMLInputElement | null>(null);
+  const setCompanionSearch = useCallback((node: HTMLInputElement | null) => {
+    companionSearchRef.current = node;
+  }, []);
   /** How many codes the panel opened with, for the opening announcement. */
   const loadedCountRef = useRef(0);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -313,6 +338,33 @@ export function useCodePanel({
     // transcript while the panel is open, which is why this command exists.
     searchRef.current?.focus?.();
   }, []);
+
+  /* ---------- The companion codebook, D-048 ---------- */
+
+  /**
+   * Opens it and hands focus to its search field.
+   *
+   * Deferred, because the field does not exist until the render this state
+   * change causes. The same `queueMicrotask` the context menu and the restored
+   * panel use for the same reason.
+   */
+  const openCompanion = useCallback(() => {
+    setCompanionOpen(true);
+    queueMicrotask(() => companionSearchRef.current?.focus?.());
+    announcer.announce('Codebook opened beside the panel. Search field focused.');
+  }, [announcer]);
+
+  /**
+   * Closes it and returns focus to the button that opened it.
+   *
+   * Contract 2.4: a temporary view returns focus where it came from. Escape and
+   * the button itself both come through here, so there is one return.
+   */
+  const closeCompanion = useCallback(() => {
+    setCompanionOpen(false);
+    queueMicrotask(() => companionButtonRef.current?.focus?.());
+    announcer.announce('Codebook closed.');
+  }, [announcer]);
 
   /* ---------- Pending assignment ---------- */
 
@@ -469,6 +521,10 @@ export function useCodePanel({
   const clearAfterSave = useCallback(() => {
     loadedCountRef.current = 0;
     setSaveError(null);
+    // D-048: a reopened panel starts with the companion closed. Reset on the
+    // close routes rather than on open, because resetting on open would be a
+    // state write from inside an effect.
+    setCompanionOpen(false);
     applyPending([]);
     setNoteText('');
     setUncertainState(false);
@@ -489,6 +545,7 @@ export function useCodePanel({
   const discardAndClose = useCallback(() => {
     loadedCountRef.current = 0;
     setSaveError(null);
+    setCompanionOpen(false);
     applyPending([]);
     setNoteText('');
     setUncertainState(false);
@@ -565,6 +622,19 @@ export function useCodePanel({
       if (matched === 'codes.close') {
         if (resolveEscape(true) !== 'codes.close') return;
         event.preventDefault();
+
+        /*
+          Layered, per D-048: the first Escape closes the companion, the next
+          closes the panel. Checked here rather than on the companion itself
+          because this listener is on `document` — the layering has to hold
+          wherever focus sits in the composite surface, not only inside the
+          companion.
+        */
+        if (companionOpen) {
+          closeCompanion();
+          return;
+        }
+
         // The same exit as the close control and as clicking outside, so all
         // three keep the work. D-042.
         close();
@@ -583,7 +653,7 @@ export function useCodePanel({
 
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [bindings, close, focusSearch, isOpen]);
+  }, [bindings, close, closeCompanion, companionOpen, focusSearch, isOpen]);
 
   /* ---------- Closing ---------- */
 
@@ -597,6 +667,7 @@ export function useCodePanel({
 
   return {
     isOpen,
+    projectId,
     openFocus,
     query,
     setQuery,
@@ -625,6 +696,11 @@ export function useCodePanel({
     confirmDelete,
     keepExcerpt,
     close,
+    companionOpen,
+    openCompanion,
+    closeCompanion,
+    setCompanionButton,
+    setCompanionSearch,
     focusSearch,
     setNoteElement,
     setSearchElement,

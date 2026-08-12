@@ -759,7 +759,9 @@ describe('the fixed header and footer', () => {
     // nothing scrolls at all.
     expect(scrollRegion()).toHaveStyle({ minHeight: '0px' });
     // The card itself must not scroll, or the ends would travel with it.
-    expect(panel()).toHaveStyle({ overflow: 'hidden' });
+    // `panel()` is the dialog, which since D-048 is the surface holding the
+    // card and the companion; the card is the thing that must not scroll.
+    expect(panel().querySelector('.code-panel')).toHaveStyle({ overflow: 'hidden' });
   });
 
   it('keeps the heading and Save & Close outside the scrolling middle', () => {
