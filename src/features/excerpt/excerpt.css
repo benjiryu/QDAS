@@ -132,12 +132,22 @@
 }
 
 /*
- * The dark green family, which is where these values already sat: the edge was
- * within a shade of --d-green-1. Task 23 owns the captured-excerpt treatment
- * and may revise them.
+ * Violet, which no code family uses.
+ *
+ * These sat in dark green until coded runs began drawing their family's wash.
+ * The indigo family renders dark green, so an in-progress range and a coded one
+ * would have washed the same colour, and section 7 asks that the pending range
+ * be distinct from a coded one. Only the boundary bars would have separated
+ * them.
+ *
+ * Violet rather than the yellow the coded treatment vacated: an edge bar has to
+ * stay visible on its own wash, and yellow-1 on yellow-3 is 1.46:1. Violet-1 on
+ * violet-3 is 3.89:1, which clears the 3:1 a non-text indicator needs and
+ * matches what dark green managed. Black on violet-2 for the confirmed state is
+ * 6.95:1, up from 4.12:1.
  */
 :root {
-  --excerpt-bg: var(--d-green-3);
-  --excerpt-confirmed-bg: var(--d-green-2);
-  --excerpt-edge: var(--d-green-1);
+  --excerpt-bg: var(--violet-3);
+  --excerpt-confirmed-bg: var(--violet-2);
+  --excerpt-edge: var(--violet-1);
 }

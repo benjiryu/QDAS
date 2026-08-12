@@ -51,6 +51,31 @@ interface TranscriptTurnProps {
 type ExcerptMarker = 'start' | 'end' | 'only' | 'in-range';
 
 /**
+ * The code family a run belongs to, or null where it belongs to more than one.
+ *
+ * A run carries every code covering those characters, across however many
+ * excerpts overlap there. One family means there is a hue to show; two or more
+ * means there is not, and the stylesheet washes it grey rather than picking a
+ * winner.
+ *
+ * `colorToken` is already the family's, not the individual code's — every code
+ * in the fixture carries its family root's token — so this is a lookup rather
+ * than a walk up the tree.
+ */
+function familyTokenOf(codeIds: readonly Id[], codeById: Map<Id, Code> | undefined): string | null {
+  if (!codeById) return null;
+
+  let token: string | null = null;
+  for (const codeId of codeIds) {
+    const code = codeById.get(codeId);
+    if (!code) continue;
+    if (token === null) token = code.colorToken;
+    else if (token !== code.colorToken) return null;
+  }
+  return token;
+}
+
+/**
  * Which characters of this sentence the capture in progress covers.
  *
  * Section 6: a captured range may begin or end mid-sentence, and the highlight
@@ -247,6 +272,11 @@ export function TranscriptTurn({
                       key={runIndex}
                       className="transcript-segment__run"
                       data-coded-run={run.coded ?? undefined}
+                      /* The family's hue, or absent where the run spans more
+                         than one and the stylesheet falls back to grey. The
+                         same attribute the rail's pills carry, so a passage
+                         and its pill cannot show different colours. */
+                      data-color-token={familyTokenOf(run.codeIds, codeById) ?? undefined}
                       data-captured={run.captured ? '' : undefined}
                       data-capture-edge={captureEdge(
                         marker,

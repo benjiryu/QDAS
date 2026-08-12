@@ -139,6 +139,11 @@ h1:focus {
  * A consequence worth knowing: the fixture's token names no longer describe
  * their hue. `code-color-amber` renders cerulean. They are opaque identifiers.
  *
+ * Three shades per family: shade-1 for a border or an underline, shade-2 for a
+ * tag fill, shade-3 for a wash behind body text. The transcript's coded
+ * highlight takes the wash, so a reader scanning a coded passage sees which
+ * family it belongs to rather than only that it is coded at all.
+ *
  * Each family carries two selectors. In the transcript the attribute sits on
  * the pill itself, so it inherits; in the code panel it sits on a span that is
  * a *sibling* of the pill, where a custom property cannot reach it. `:has()`
@@ -150,35 +155,43 @@ h1:focus {
 .code-panel__code:has([data-color-token='code-color-moss']) {
   --code-strong: var(--red-1);
   --code-fill: var(--red-2);
+  --code-wash: var(--red-3);
 }
 [data-color-token='code-color-clay'],
 .code-panel__code:has([data-color-token='code-color-clay']) {
   --code-strong: var(--coral-1);
   --code-fill: var(--coral-2);
+  --code-wash: var(--coral-3);
 }
 [data-color-token='code-color-indigo'],
 .code-panel__code:has([data-color-token='code-color-indigo']) {
   --code-strong: var(--d-green-1);
   --code-fill: var(--d-green-2);
+  --code-wash: var(--d-green-3);
 }
 [data-color-token='code-color-amber'],
 .code-panel__code:has([data-color-token='code-color-amber']) {
   --code-strong: var(--cerulean-1);
   --code-fill: var(--cerulean-2);
+  --code-wash: var(--cerulean-3);
 }
 [data-color-token='code-color-slate'],
 .code-panel__code:has([data-color-token='code-color-slate']) {
   --code-strong: var(--blue-1);
   --code-fill: var(--blue-2);
+  --code-wash: var(--blue-3);
 }
 [data-color-token='code-color-rust'],
 .code-panel__code:has([data-color-token='code-color-rust']) {
   --code-strong: var(--purple-1);
   --code-fill: var(--purple-2);
+  --code-wash: var(--purple-3);
 }
 /* A proposed code is marked in words, never by colour alone. */
 [data-color-token='code-color-provisional'],
 .code-panel__code:has([data-color-token='code-color-provisional']) {
   --code-strong: var(--text-muted);
   --code-fill: var(--row-bg);
+  /* Grey, because a proposed code has no family to take a hue from yet. */
+  --code-wash: var(--row-bg);
 }

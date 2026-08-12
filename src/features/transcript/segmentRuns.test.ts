@@ -23,7 +23,9 @@ const shape = (runs: ReturnType<typeof segmentRuns>) =>
 
 describe('a sentence with nothing on it', () => {
   it('is one plain run, so the caller can render a bare text node', () => {
-    expect(segmentRuns(TEXT, [], null)).toEqual([{ text: TEXT, coded: null, captured: false }]);
+    expect(segmentRuns(TEXT, [], null)).toEqual([
+      { text: TEXT, coded: null, codeIds: [], captured: false },
+    ]);
   });
 
   it('is no runs at all when the sentence is empty', () => {
@@ -66,7 +68,7 @@ describe('the range being captured', () => {
 
   it('is ignored when it covers nothing', () => {
     expect(segmentRuns(TEXT, [], { start: 5, end: 5 })).toEqual([
-      { text: TEXT, coded: null, captured: false },
+      { text: TEXT, coded: null, codeIds: [], captured: false },
     ]);
   });
 
@@ -104,6 +106,33 @@ describe('fragmentation', () => {
       ['gate was', 'coded', false],
       [' open all summer.', null, false],
     ]);
+  });
+
+  it('keeps stretches apart when their codes differ, so families cannot bleed', () => {
+    // The reason `codeIds` is part of "look the same". Two excerpts meeting at
+    // one point, coded from different families: merged, the run would wear one
+    // family's colour over characters belonging to the other's.
+    const left = { ...span(4, 8), codeIds: ['cd-a'] };
+    const right = { ...span(8, 12), codeIds: ['cd-b'] };
+
+    const runs = segmentRuns(TEXT, [left, right], null);
+    const coded = runs.filter((run) => run.coded);
+
+    expect(coded).toHaveLength(2);
+    expect(coded.map((run) => run.text)).toEqual(['gate', ' was']);
+    expect(coded.map((run) => [...run.codeIds])).toEqual([['cd-a'], ['cd-b']]);
+  });
+
+  it('still merges stretches carrying the same codes in a different order', () => {
+    // By value and order-independent: what the render takes from this is the
+    // set's family, which the order cannot change.
+    const left = { ...span(4, 8), codeIds: ['cd-a', 'cd-b'] };
+    const right = { ...span(8, 12), codeIds: ['cd-b', 'cd-a'] };
+
+    const coded = segmentRuns(TEXT, [left, right], null).filter((run) => run.coded);
+
+    expect(coded).toHaveLength(1);
+    expect(coded[0].text).toBe('gate was');
   });
 
   it('puts every character back exactly once, whatever the inputs', () => {

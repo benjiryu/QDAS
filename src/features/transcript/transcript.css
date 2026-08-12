@@ -34,9 +34,14 @@
 
 /*
  * Measured against every background a turn can carry: the plain row 9.2:1, the
- * coded fill 7.9:1, coded-multiple 5.6:1, and both excerpt fills 6.9:1 and
- * 4.1:1. Non-text needs 3:1, so the ring stays visible inside a highlight,
- * which is where a focus ring is easiest to lose.
+ * six family washes 6.0:1 to 7.8:1, the mixed-family grey 7.6:1, and the
+ * capture's violet fills. Non-text needs 3:1, so the ring stays visible inside
+ * a highlight, which is where a focus ring is easiest to lose.
+ *
+ * The washes multiplied when coded runs took their family's colour, so the
+ * numbers are no longer worth keeping in step by hand: a browser test measures
+ * every one of them off the rendered page and fails if any drops below the
+ * threshold.
  */
 .transcript-turn:focus-visible {
   outline: var(--border-thick) solid var(--focus);
@@ -227,26 +232,41 @@
  * sentence keeps `data-display-state` for the sentence-granularity comparison
  * R-1 does; this is what the eye sees.
  */
+/*
+ * The wash is the code family's, so a reader scanning the transcript sees what
+ * kind of passage this is rather than only that it is coded. `--code-wash` is
+ * set by the `[data-color-token]` rules in index.css, the same ones the rail's
+ * pills read, so a passage and its pill cannot disagree.
+ *
+ * The fallback is the whole mixed-family rule: a run whose codes come from more
+ * than one family carries no token, nothing sets `--code-wash`, and it lands on
+ * grey. One declaration, no second selector to keep in step.
+ */
 .transcript-segment__run[data-coded-run='coded'] {
-  background: var(--coded-bg);
+  background: var(--code-wash, var(--coded-bg));
   text-decoration: underline solid var(--coded-line) 3px;
   text-underline-offset: 0.25em;
 }
 
 .transcript-segment__run[data-coded-run='coded-multiple'] {
-  background: var(--coded-multiple-bg);
+  background: var(--code-wash, var(--coded-bg));
   text-decoration: underline double var(--coded-line) 5px;
   text-underline-offset: 0.3em;
 }
 
-/*
- * Provisional hues. Task 23 owns the coded treatment and should overwrite
- * these; they are the nearest token families to what was here before.
- */
 :root {
-  --coded-bg: var(--yellow-3);
-  --coded-multiple-bg: var(--orange-2);
-  --coded-line: var(--orange-1);
+  /* Grey-100: what a run washes when its codes span more than one family. */
+  --coded-bg: var(--row-bg);
+  /*
+     One colour for every family, not each family's own shade-1.
+
+     Shade-1 on its own shade-3 measures 2.71:1 for coral and 2.67:1 for
+     cerulean, under the 3:1 a non-text indicator needs. Grey-750 gives 5.5:1 to
+     7.1:1 on every wash including grey. The background carries which family;
+     the underline carries that there is one at all, and it has to stay legible
+     on all seven.
+  */
+  --coded-line: var(--color-grey-750);
 }
 
 @media (forced-colors: active) {

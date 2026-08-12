@@ -1,4 +1,4 @@
-import type { CodedSpan } from '../../domain';
+import type { CodedSpan, Id } from '../../domain';
 
 /**
  * Splitting a sentence into the stretches that have to be drawn differently.
@@ -20,8 +20,32 @@ export interface SegmentRun {
   text: string;
   /** Null when these characters carry no saved coding. */
   coded: CodedSpan['state'] | null;
+  /**
+   * Every code covering these characters, from the span that covers them.
+   *
+   * Carried so the render can colour the run by its code family. The union
+   * across overlapping excerpts, which is what makes a run with two families on
+   * it identifiable as one.
+   */
+  codeIds: readonly Id[];
   /** True when these characters are inside the range being captured. */
   captured: boolean;
+}
+
+const NO_CODES: readonly Id[] = Object.freeze([]);
+
+/**
+ * Whether two runs carry the same codes, and so should draw the same.
+ *
+ * By value rather than by reference: two adjacent excerpts carrying the same
+ * code produce different arrays holding the same ids, and those runs are
+ * indistinguishable on screen. Order-independent, because what the render takes
+ * from this is the set's family, which order cannot change.
+ */
+function sameCodes(a: readonly Id[], b: readonly Id[]): boolean {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  return a.every((codeId) => b.includes(codeId));
 }
 
 export interface CaptureExtent {
@@ -47,7 +71,7 @@ export function segmentRuns(
   // Nothing to distinguish, so one run. The caller uses this to keep rendering
   // a bare text node, which is what most of a transcript is.
   if (spans.length === 0 && !extent) {
-    return length === 0 ? [] : [{ text, coded: null, captured: false }];
+    return length === 0 ? [] : [{ text, coded: null, codeIds: NO_CODES, captured: false }];
   }
 
   const edges = new Set<number>([0, length]);
@@ -68,20 +92,34 @@ export function segmentRuns(
     const end = boundaries[index + 1];
     if (end <= start) continue;
 
-    const coded =
-      spans.find((span) => clamp(span.start, length) <= start && clamp(span.end, length) >= end)
-        ?.state ?? null;
+    const span =
+      spans.find((candidate) => clamp(candidate.start, length) <= start && clamp(candidate.end, length) >= end) ??
+      null;
+    const coded = span?.state ?? null;
+    const codeIds = span?.codeIds ?? NO_CODES;
     const captured = extent !== null && extent.start <= start && extent.end >= end;
 
     const previous = runs[runs.length - 1];
-    // Adjacent stretches that look the same are one run, so a sentence with
-    // nothing on it does not arrive as a pile of spans.
-    if (previous && previous.coded === coded && previous.captured === captured) {
+    /*
+      Adjacent stretches that look the same are one run, so a sentence with
+      nothing on it does not arrive as a pile of spans.
+
+      `codeIds` is part of "look the same" now that the family colours the run.
+      Without it, neighbouring stretches coded from different families would
+      merge whenever their state matched, and the merged run would wear one
+      family's colour over characters belonging to another's.
+    */
+    if (
+      previous &&
+      previous.coded === coded &&
+      previous.captured === captured &&
+      sameCodes(previous.codeIds, codeIds)
+    ) {
       previous.text += text.slice(start, end);
       continue;
     }
 
-    runs.push({ text: text.slice(start, end), coded, captured });
+    runs.push({ text: text.slice(start, end), coded, codeIds, captured });
   }
 
   return runs;

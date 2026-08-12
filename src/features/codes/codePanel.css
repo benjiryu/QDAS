@@ -116,9 +116,18 @@
   padding: 0.4rem 0.9rem;
   margin-bottom: 0.35rem;
   border-radius: var(--radius-medium);
-  border: var(--border-thick) solid var(--button-secondary-border);
-  background: var(--button-secondary-bg);
-  color: var(--button-secondary-text);
+  /*
+     Grey rather than the secondary blue: this opens a reference view, and the
+     blue treatment reads as a second primary action beside Save & Close.
+
+     Grey-750 for the border and black for the text, deliberately not the
+     grey-500 pair, which is the disabled treatment. An enabled control wearing
+     the disabled colours is worse than a blue one. Black text sits at 17.3:1
+     here and the border at 6.96:1, so neither is what a dead control looks like.
+  */
+  border: var(--border-thick) solid var(--color-grey-750);
+  background: var(--row-bg);
+  color: var(--color-black);
   cursor: pointer;
 }
 
