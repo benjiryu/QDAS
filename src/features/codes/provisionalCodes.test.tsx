@@ -93,7 +93,7 @@ function codebookOrder(): string[] {
 }
 
 function search(query: string) {
-  fireEvent.change(screen.getByRole('searchbox', { name: /find codes/i }), {
+  fireEvent.change(screen.getByRole('searchbox', { name: 'Search codes' }), {
     target: { value: query },
   });
 }

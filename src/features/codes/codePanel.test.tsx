@@ -108,7 +108,7 @@ function codebookOrder(): string[] {
 }
 
 function search(query: string) {
-  fireEvent.change(screen.getByRole('searchbox', { name: /find codes/i }), {
+  fireEvent.change(screen.getByRole('searchbox', { name: 'Search codes' }), {
     target: { value: query },
   });
 }
@@ -249,7 +249,7 @@ describe('acceptance: query survives selection', () => {
     fireEvent.click(boxes[0]);
     fireEvent.click(within(results()).getAllByRole('checkbox')[1]);
 
-    expect(screen.getByRole('searchbox', { name: /find codes/i })).toHaveValue('water');
+    expect(screen.getByRole('searchbox', { name: 'Search codes' })).toHaveValue('water');
     expect(checkedCodeIds()).toHaveLength(2);
 
     const stillChecked = within(results()).getAllByRole('checkbox') as HTMLInputElement[];
@@ -393,7 +393,7 @@ describe('the container, a centered modal dialog', () => {
     renderWorkspace();
     openPanel();
 
-    expect(screen.getByRole('searchbox', { name: /find codes/i })).toHaveFocus();
+    expect(screen.getByRole('searchbox', { name: 'Search codes' })).toHaveFocus();
     expect(
       announcer.getHistory().some((entry) => /code assignment/i.test(entry.message)),
     ).toBe(true);
@@ -453,7 +453,7 @@ describe('commands, per section 2.1', () => {
     });
     chord('codes.focusSearch');
 
-    expect(screen.getByRole('searchbox', { name: /find codes/i })).toHaveFocus();
+    expect(screen.getByRole('searchbox', { name: 'Search codes' })).toHaveFocus();
   });
 
   it('offers no clear-search control, and names the field only once', () => {
@@ -466,7 +466,7 @@ describe('commands, per section 2.1', () => {
     expect(within(panel()).queryByRole('button', { name: /clear search/i })).toBeNull();
     expect(within(panel()).queryByRole('heading', { name: /search codes/i })).toBeNull();
 
-    const field = screen.getByRole('searchbox', { name: /find codes/i });
+    const field = screen.getByRole('searchbox', { name: 'Search codes' });
     expect(field).toHaveAttribute('type', 'search');
     // Emptying it by hand still removes the results region.
     fireEvent.change(field, { target: { value: '' } });

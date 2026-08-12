@@ -557,10 +557,10 @@ describe('the pending assignment region, per sections 8 and 9', () => {
     checkCode('Waiting list');
     writeNote('Kept through everything.');
 
-    fireEvent.change(screen.getByRole('searchbox', { name: /find codes/i }), {
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Search codes' }), {
       target: { value: 'water' },
     });
-    fireEvent.change(screen.getByRole('searchbox', { name: /find codes/i }), {
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Search codes' }), {
       target: { value: '' },
     });
 

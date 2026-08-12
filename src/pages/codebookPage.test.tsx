@@ -101,7 +101,7 @@ const canonicalOrder = () =>
     (node) => node.getAttribute('data-code-id')!,
   );
 
-const searchField = () => screen.getByRole('searchbox', { name: /search the codebook/i });
+const searchField = () => screen.getByRole('searchbox', { name: 'Search codebook' });
 
 /**
  * Expands the note disclosure if it is collapsed, and returns the field.

@@ -132,7 +132,12 @@ export function CodebookContent({ projectId, headingLevel, searchRef }: Codebook
 
       {/* Search. No region heading: the field's own label names it. */}
       <div className="codebook__search">
-        <label htmlFor={searchId}>Search the codebook</label>
+        {/* "Search codebook", per D-053, and the same words on both surfaces.
+            The name has to distinguish this field from the panel's "Search
+            codes" when the two are on screen together, and one component
+            rendering two different labels by surface is the drift the "do not
+            fork it" rule exists to prevent. */}
+        <label htmlFor={searchId}>Search codebook</label>
         <input
           id={searchId}
           ref={searchRef}

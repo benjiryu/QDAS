@@ -105,7 +105,7 @@ describe('the panel search', () => {
     chord('excerpt.code');
 
     const panel = screen.getByRole('dialog', { name: /code assignment/i });
-    const field = within(panel).getByRole('searchbox', { name: /find codes/i });
+    const field = within(panel).getByRole('searchbox', { name: 'Search codes' });
 
     typeQuery(field, 'water');
     // Nothing yet: the coder is still typing.
@@ -124,7 +124,7 @@ describe('the Codebook search', () => {
     // screen reader user learned the count only by navigating to the region.
     renderAt(`/projects/${project.projectId}/codebook`);
 
-    const field = screen.getByRole('searchbox', { name: /search the codebook/i });
+    const field = screen.getByRole('searchbox', { name: 'Search codebook' });
     typeQuery(field, 'water');
     expect(counts()).toEqual([]);
 
@@ -144,7 +144,7 @@ describe('discrete announcements are untouched alongside', () => {
     chord('excerpt.code');
 
     const panel = screen.getByRole('dialog', { name: /code assignment/i });
-    typeQuery(within(panel).getByRole('searchbox', { name: /find codes/i }), 'wa');
+    typeQuery(within(panel).getByRole('searchbox', { name: 'Search codes' }), 'wa');
 
     const [first, second] = fixture.codes;
     fireEvent.click(panel.querySelector(`[data-code-id="${first.codeId}"]`)!);

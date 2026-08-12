@@ -20,7 +20,7 @@ This boundary exists so that effort goes into the workflow behaviors the researc
 - No `role="application"` on the application shell, the transcript, or any region containing readable prose.
 - No positive `tabindex`. Use `0` and `-1` only.
 - One `h1` per page, naming the page. Heading levels descend without skipping.
-- Landmarks: one `banner`, one `navigation` for application-level navigation, a second labeled `navigation` for project-level navigation, one `main`, and labeled `region` elements for the transcript, the code panel, and the review workspace.
+- Landmarks: one `banner`, one `navigation` for application-level navigation, a second labeled `navigation` for project-level navigation, one `main`, and labeled `region` elements for the transcript, the code panel, the companion codebook, and the review workspace. The companion is a region per D-053, so a browse-mode user reaches it by landmark and its family cards by heading without knowing the hop chord at all — the chord is the fast route, not the only one.
 - Reading order in the DOM matches the intended workflow order at every viewport width. Regions may stack or unstack; they may not reorder.
 - Per D-051: form controls and their visible labels are natively associated, one stop, one announcement, label activates control. Every list carrying workflow content has an accessible name, because structural navigation arrives without context; a list's identity must never depend on reading order.
 

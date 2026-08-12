@@ -1,5 +1,6 @@
-import { useId } from 'react';
+import { useId, useMemo } from 'react';
 import { Dialog, Modal, ModalOverlay } from 'react-aria-components';
+import { bindingsFor, describeChord, detectPlatform } from '../../config/keybindings';
 import type { PrototypeFlags } from '../../config/flags';
 import type { Code } from '../../domain';
 import { CodebookContent } from '../codebook/CodebookContent';
@@ -70,6 +71,10 @@ export function CodePanel({ panel, flags, excerptText }: CodePanelProps) {
   const resultsId = useId();
   const proposedId = useId();
 
+  /* The chord shown on the Open Codebook button, per D-053 and contract 2.2. */
+  const platform = useMemo(() => detectPlatform(), []);
+  const bindings = useMemo(() => bindingsFor(platform), [platform]);
+
   // Destructured, so the search input's callback ref is a plain local. Reading
   // it off the panel object in JSX makes the ref rule treat every other read of
   // that object as a ref access during render.
@@ -89,11 +94,12 @@ export function CodePanel({ panel, flags, excerptText }: CodePanelProps) {
     deletePending,
     saveError,
     setErrorElement,
-    // The companion's two callback refs, destructured for the same reason as
+    // The companion's three callback refs, destructured for the same reason as
     // the search one above: read off `panel` in JSX, the ref rule treats every
     // other read of that object as a ref access during render.
     setCompanionButton,
     setCompanionSearch,
+    setCompanionRegion,
     companionOpen,
     openCompanion,
     closeCompanion,
@@ -185,7 +191,11 @@ export function CodePanel({ panel, flags, excerptText }: CodePanelProps) {
           No Clear search control either — `type="search"` gives pointer users
           the browser's own clear, and a keyboard user selects and deletes. */}
       <div className="code-panel__region">
-        <label htmlFor={searchId}>Find codes</label>
+        {/* "Search codes" against the companion's "Search codebook", per
+            D-053. With both on screen a screen reader user has to be able to
+            tell from the field's name alone which of the two searches they are
+            in, and two fields both called some variation of "codes" cannot. */}
+        <label htmlFor={searchId}>Search codes</label>
         <input
           id={searchId}
           ref={setSearchElement}
@@ -253,6 +263,17 @@ export function CodePanel({ panel, flags, excerptText }: CodePanelProps) {
             ›
           </span>
           Open Codebook
+          {/*
+            The visible control for `codes.codebook`, per contract 2.2 and
+            D-053. Out of the accessible name for the reason the toolbar gives —
+            the chord should not be repeated on every control — and here for a
+            second reason as well: this button names the codebook list below it
+            through `aria-labelledby`, so a chord inside the name would rename
+            the list along with it.
+          */}
+          <kbd className="code-panel__chord" aria-hidden="true">
+            {describeChord(bindings['codes.codebook'], platform)}
+          </kbd>
         </button>
         {/* The specific gap the Task 28a finding left: this list lost its name
             when its heading became the button. The button names it now. */}
@@ -401,13 +422,29 @@ export function CodePanel({ panel, flags, excerptText }: CodePanelProps) {
             capability; codes are checked in the panel and nowhere else.
           */}
           {companionOpen ? (
-            <div className="code-panel__companion" id={companionId} data-companion-codebook>
+            /*
+              A labeled region, per D-053, which is the free route: a browse-mode
+              user reaches the codebook by landmark and its family cards by
+              heading, without knowing the chord at all.
+
+              Named "Codebook" rather than by the button that opened it. The
+              button reads "Open Codebook", which names an action; a region
+              named for the act of opening it tells a user arriving by landmark
+              nothing about where they have arrived.
+            */
+            <section
+              className="code-panel__companion"
+              id={companionId}
+              ref={setCompanionRegion}
+              aria-label="Codebook"
+              data-companion-codebook
+            >
               <CodebookContent
                 projectId={projectId}
                 headingLevel={3}
                 searchRef={setCompanionSearch}
               />
-            </div>
+            </section>
           ) : null}
         </Dialog>
       </Modal>

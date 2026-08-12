@@ -103,7 +103,7 @@ describe('opening and closing, per D-048', () => {
 
     expect(companion()).not.toBeNull();
     return waitFor(() => {
-      expect(within(companion()!).getByRole('searchbox', { name: /search the codebook/i })).toHaveFocus();
+      expect(within(companion()!).getByRole('searchbox', { name: 'Search codebook' })).toHaveFocus();
     }).then(() => {
       fireEvent.click(toggle());
       expect(companion()).toBeNull();
@@ -249,7 +249,7 @@ describe('companion state, per D-048', () => {
 
     // Work in the panel; the companion is still there afterwards.
     fireEvent.click(panel().querySelector(`[data-code-id="${fixture.codes[0].codeId}"]`)!);
-    fireEvent.change(within(panel()).getByRole('searchbox', { name: /find codes/i }), {
+    fireEvent.change(within(panel()).getByRole('searchbox', { name: 'Search codes' }), {
       target: { value: 'water' },
     });
 

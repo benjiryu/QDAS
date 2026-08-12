@@ -248,7 +248,7 @@ test('the codebook needs no horizontal panning at 400 percent', async ({ page })
 
   expect(await overflows(), 'reading the records').toBe(false);
 
-  await page.getByRole('searchbox', { name: /search the codebook/i }).fill('water access');
+  await page.getByRole('searchbox', { name: 'Search codebook' }).fill('water access');
   await expect(page.getByRole('heading', { name: /results for/i })).toBeVisible();
   expect(await overflows(), 'with results on screen').toBe(false);
 });
@@ -322,7 +322,7 @@ test('the codebook has no violations with a query active', async ({ page }) => {
   // The static scan above covers the page at rest. The results region only
   // exists while a query does, so it needs a scan of its own.
   await page.goto(`${projectUrl}/codebook`);
-  await page.getByRole('searchbox', { name: /search the codebook/i }).fill('water');
+  await page.getByRole('searchbox', { name: 'Search codebook' }).fill('water');
   await expect(page.getByRole('heading', { name: /results for/i })).toBeVisible();
 
   const results = await new AxeBuilder({ page }).analyze();

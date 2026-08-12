@@ -118,7 +118,7 @@ describe('the lists on each surface are named', () => {
     openPanel();
 
     const panel = screen.getByRole('dialog', { name: /code assignment/i });
-    fireEvent.change(within(panel).getByRole('searchbox', { name: /find codes/i }), {
+    fireEvent.change(within(panel).getByRole('searchbox', { name: 'Search codes' }), {
       target: { value: 'water' },
     });
 
@@ -134,7 +134,7 @@ describe('the lists on each surface are named', () => {
     )!;
     expect(screen.getByRole('list', { name: family.name })).toBeInTheDocument();
 
-    fireEvent.change(screen.getByRole('searchbox', { name: /search the codebook/i }), {
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Search codebook' }), {
       target: { value: 'water' },
     });
     expect(screen.getByRole('list', { name: /results for “water”/ })).toBeInTheDocument();
@@ -169,7 +169,7 @@ describe('no list anywhere is left unnamed', () => {
     openPanel();
 
     const panel = screen.getByRole('dialog', { name: /code assignment/i });
-    fireEvent.change(within(panel).getByRole('searchbox', { name: /find codes/i }), {
+    fireEvent.change(within(panel).getByRole('searchbox', { name: 'Search codes' }), {
       target: { value: 'water' },
     });
     expect(unnamedLists()).toEqual([]);

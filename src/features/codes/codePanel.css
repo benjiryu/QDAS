@@ -131,6 +131,22 @@
   cursor: pointer;
 }
 
+/*
+ * The chord on the control that performs the same command, per contract 2.2.
+ *
+ * Quieter than the label but not grey-500, which is this panel's disabled
+ * treatment: grey-750 on the row background is 6.96:1, so it reads as secondary
+ * without reading as unavailable. Its own font size rather than the button's,
+ * because it is a reference and the label is the action.
+ */
+.code-panel__chord {
+  margin-left: 0.15rem;
+  font-family: inherit;
+  font-size: 0.75em;
+  color: var(--color-grey-750);
+  white-space: nowrap;
+}
+
 /* Points along when closed, down when the companion is open. */
 .code-panel__companion-caret {
   font-size: 1.1em;

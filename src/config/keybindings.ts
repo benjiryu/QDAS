@@ -30,6 +30,7 @@ export type Command =
   | 'codes.save'
   | 'codes.close'
   | 'codes.focusSearch'
+  | 'codes.codebook'
   | 'help.shortcuts';
 
 export interface Chord {
@@ -68,6 +69,8 @@ const windowsLinuxBindings: Record<Command, Chord> = {
   'codes.save': { key: 'Enter', ctrl: true, alt: true, shift: true },
   'codes.close': { key: 'Escape' },
   'codes.focusSearch': { key: 'f', ctrl: true, alt: true },
+  // The pair, per D-053: F always means the panel, B always means the codebook.
+  'codes.codebook': { key: 'b', ctrl: true, alt: true },
 
   'help.shortcuts': { key: '/', ctrl: true, alt: true },
 };
@@ -89,6 +92,7 @@ const macBindings: Record<Command, Chord> = {
   'codes.save': { key: 'Enter', ctrl: true, shift: true, meta: true },
   'codes.close': { key: 'Escape' },
   'codes.focusSearch': { key: 'f', ctrl: true, shift: true },
+  'codes.codebook': { key: 'b', ctrl: true, shift: true },
 
   'help.shortcuts': { key: '/', ctrl: true, shift: true },
 };

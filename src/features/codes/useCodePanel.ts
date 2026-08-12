@@ -112,9 +112,15 @@ export interface CodePanelApi {
   companionOpen: boolean;
   openCompanion: () => void;
   closeCompanion: () => void;
+  /**
+   * The hop, per D-053. One chord between the two surfaces, closing neither.
+   */
+  hopToCodebook: () => void;
   /** Callback refs, so the focus round trip has both ends to land on. */
   setCompanionButton: (node: HTMLButtonElement | null) => void;
   setCompanionSearch: (node: HTMLInputElement | null) => void;
+  /** The companion's container, so the hop can tell which side focus is on. */
+  setCompanionRegion: (node: HTMLElement | null) => void;
   /** Called by the workspace once records exist. Nothing clears before then. */
   clearAfterSave: () => void;
   focusSearch: () => void;
@@ -250,6 +256,10 @@ export function useCodePanel({
   const setCompanionSearch = useCallback((node: HTMLInputElement | null) => {
     companionSearchRef.current = node;
   }, []);
+  const companionRegionRef = useRef<HTMLElement | null>(null);
+  const setCompanionRegion = useCallback((node: HTMLElement | null) => {
+    companionRegionRef.current = node;
+  }, []);
   /** How many codes the panel opened with, for the opening announcement. */
   const loadedCountRef = useRef(0);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -377,6 +387,41 @@ export function useCodePanel({
     queueMicrotask(() => companionButtonRef.current?.focus?.());
     announcer.announce('Codebook closed.');
   }, [announcer]);
+
+  /**
+   * The hop, per D-053. Three cases, and none of them closes anything.
+   *
+   * The companion round trip was asymmetric: `codes.focusSearch` came back from
+   * anywhere, but going out meant the button, and Escape conflated returning
+   * with dismissing. The workflow the companion exists for — read a definition,
+   * check the code, read a sibling definition — needs a hop, not a close. So
+   * Escape keeps its layered meaning and stops being the only way back.
+   *
+   * Which side focus is on is asked of the companion's own container rather
+   * than tracked in state: state would have to be written from a focus handler
+   * on every move inside either surface to answer one question asked on a
+   * keypress. Anything outside the companion counts as the panel, which is how
+   * D-053 frames it and is exhaustive while the panel holds focus.
+   *
+   * Deliberately silent. Escape and the button both announce because they
+   * change what is on screen; this only moves focus, and a screen reader
+   * reports the field it lands in. A second announcement over the top would
+   * talk across the field's own name, which is the more useful of the two.
+   */
+  const hopToCodebook = useCallback(() => {
+    if (!companionOpen) {
+      // Identical to activating the button, per D-053, rather than a second
+      // opening path that could drift from it.
+      openCompanion();
+      return;
+    }
+
+    const active = document.activeElement;
+    const inCompanion = active instanceof Node && companionRegionRef.current?.contains(active);
+
+    if (inCompanion) searchRef.current?.focus?.();
+    else companionSearchRef.current?.focus?.();
+  }, [companionOpen, openCompanion]);
 
   /* ---------- Pending assignment ---------- */
 
@@ -675,13 +720,22 @@ export function useCodePanel({
         return;
       }
 
+      // The other half of the pair, per D-053. Both are on `document` for the
+      // same reason Escape is: they have to work wherever focus sits in the
+      // composite surface, including inside the companion.
+      if (matched === 'codes.codebook') {
+        event.preventDefault();
+        hopToCodebook();
+        return;
+      }
+
       // Everything else, including typing in the search field, is left alone.
       void inField;
     }
 
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [bindings, close, closeCompanion, companionOpen, focusSearch, isOpen]);
+  }, [bindings, close, closeCompanion, companionOpen, focusSearch, hopToCodebook, isOpen]);
 
   /* ---------- Closing ---------- */
 
@@ -727,8 +781,10 @@ export function useCodePanel({
     companionOpen,
     openCompanion,
     closeCompanion,
+    hopToCodebook,
     setCompanionButton,
     setCompanionSearch,
+    setCompanionRegion,
     focusSearch,
     setNoteElement,
     setSearchElement,
