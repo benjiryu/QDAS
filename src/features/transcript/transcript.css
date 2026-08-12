@@ -242,6 +242,26 @@
  * than one family carries no token, nothing sets `--code-wash`, and it lands on
  * grey. One declaration, no second selector to keep in step.
  */
+/*
+ * A highlighted run is a `mark` since D-052, which brings the user agent's own
+ * presentation with it: `background-color: Mark` and `color: MarkText`, a yellow
+ * wash with black text.
+ *
+ * Every rule below sets a background, and author styles beat the user agent
+ * sheet, so none of that would show today. This makes it so rather than leaving
+ * it to hold by coincidence: D-052 changes the element and nothing else, and a
+ * run that ever lands outside the state rules should look like the prose around
+ * it rather than like a search hit.
+ *
+ * Not inside the forced-colors block below, where the user agent taking a mark
+ * back to `Mark`/`MarkText` is the correct outcome and the system's own
+ * highlight pair is a contrast guarantee this stylesheet cannot make.
+ */
+.transcript-segment__run {
+  background: none;
+  color: inherit;
+}
+
 .transcript-segment__run[data-coded-run='coded'] {
   background: var(--code-wash, var(--coded-bg));
   text-decoration: underline solid var(--coded-line) 3px;

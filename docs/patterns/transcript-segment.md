@@ -175,6 +175,8 @@ Under the default `timestampVerbosity` of `onRequest`, timestamps are not announ
 
 Announcements use a polite live region. None of these interrupt.
 
+Reading through a coded range is not in this table, because nothing in the build says anything. Coded ranges are `mark` elements per D-052, and a screen reader reports a mark as highlighted on its own, at whatever verbosity its user has set. That is the point: the table above is what happens on focus and on request, and passing through a highlight while reading continuously is neither. No text is injected into the prose, so the continuous reading this pattern's section 1 protects is untouched.
+
 ## 7. Visual and magnification behavior
 
 - Active segment carries a persistent visible indicator that is distinct from browser focus ring and from excerpt highlighting. Three states have to be separable at a glance.

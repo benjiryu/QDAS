@@ -110,6 +110,15 @@ Run before every participant session. A failure here invalidates workflow findin
 10. Simulated save failure preserves all work
 11. Chords verified against the participant's screen reader and browser
 12. Test data reset to a known state
+13. Reading through a coded passage reports it as highlighted, per D-052
+
+Item 13 is verified per configuration rather than once. Coded ranges are `mark`
+elements, and what a screen reader makes of one is its own decision at its own
+verbosity setting: NVDA and JAWS report it, VoiceOver's support is the weakest
+of the three, and the build cannot make any of them speak. A session where
+highlights go unreported is still usable — the turn status on focus and the
+Coded data page both remain — so this is recorded rather than blocking, and the
+result belongs in the session notes.
 
 ## 5. Separating findings
 

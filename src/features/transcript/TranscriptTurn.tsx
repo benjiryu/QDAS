@@ -22,6 +22,12 @@ import { turnDescription } from './turnDescription';
  * Sentences stay individually addressable through `data-segment-id` and
  * individually styleable through their own class, neither of which puts
  * anything into the accessibility tree.
+ *
+ * The one thing inside a turn that does have a role is a highlighted run, which
+ * is a `mark` per D-052. That is not a third level: a mark is not focusable,
+ * names nothing, and adds no stop to the reading order, so the turn still reads
+ * straight through. It states what the text is and leaves how much to say about
+ * it to the reader's verbosity setting.
  */
 
 interface TranscriptTurnProps {
@@ -267,27 +273,50 @@ export function TranscriptTurn({
                   what most of a transcript is and what capture reads fastest. */}
               {plain
                 ? segment.text
-                : runs.map((run, runIndex) => (
-                    <span
-                      key={runIndex}
-                      className="transcript-segment__run"
-                      data-coded-run={run.coded ?? undefined}
-                      /* The family's hue, or absent where the run spans more
-                         than one and the stylesheet falls back to grey. The
-                         same attribute the rail's pills carry, so a passage
-                         and its pill cannot show different colours. */
-                      data-color-token={familyTokenOf(run.codeIds, codeById) ?? undefined}
-                      data-captured={run.captured ? '' : undefined}
-                      data-capture-edge={captureEdge(
-                        marker,
-                        runIndex,
-                        firstCaptured,
-                        lastCaptured,
-                      )}
-                    >
-                      {run.text}
-                    </span>
-                  ))}
+                : runs.map((run, runIndex) => {
+                    /*
+                      A highlighted run is a `mark`, per D-052. Everything about
+                      it other than the element is unchanged: the styling below
+                      is the same, the click still reopens the excerpt, and the
+                      turn's description is untouched.
+
+                      What the element buys is the one channel the styling could
+                      not reach. A wash and an underline are seen; a screen
+                      reader reading straight through a styled span passes over
+                      it with no signal at all, so a coded passage was a visual
+                      secret until D-041's description fired on focus. `mark` is
+                      what NVDA and JAWS already report as highlighted, at the
+                      verbosity their user chose, and nothing is injected into
+                      the prose to do it.
+
+                      A run that is neither coded nor captured stays a span,
+                      because it is not highlighted: a sentence coded in part
+                      marks the coded characters and no more.
+                    */
+                    const Run = run.coded !== null || run.captured ? 'mark' : 'span';
+
+                    return (
+                      <Run
+                        key={runIndex}
+                        className="transcript-segment__run"
+                        data-coded-run={run.coded ?? undefined}
+                        /* The family's hue, or absent where the run spans more
+                           than one and the stylesheet falls back to grey. The
+                           same attribute the rail's pills carry, so a passage
+                           and its pill cannot show different colours. */
+                        data-color-token={familyTokenOf(run.codeIds, codeById) ?? undefined}
+                        data-captured={run.captured ? '' : undefined}
+                        data-capture-edge={captureEdge(
+                          marker,
+                          runIndex,
+                          firstCaptured,
+                          lastCaptured,
+                        )}
+                      >
+                        {run.text}
+                      </Run>
+                    );
+                  })}
             </span>
             {/* The space belongs between the sentences, not inside one, so a
                 coded sentence's underline stops at its own last character. */}

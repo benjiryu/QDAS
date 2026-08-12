@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import type { Locator } from '@playwright/test';
 import { createSeedFixture } from '../../src/data/seed';
 
 /**
@@ -8,10 +9,16 @@ import { createSeedFixture } from '../../src/data/seed';
  * continuous prose rather than as a series of per-sentence objects.
  *
  * What a browser can actually verify is the structure that decides this: the
- * turn is one object in the accessibility tree, the sentences inside it carry
- * no role, no name, and no tab stop, and the text runs together unbroken.
- * Whether JAWS, NVDA, and VoiceOver each then read it straight through is a
- * manual check per D-024, which this does not replace.
+ * sentences inside a turn carry no role, no name, and no tab stop, and the text
+ * runs together unbroken. Whether JAWS, NVDA, and VoiceOver each then read it
+ * straight through is a manual check per D-024, which this does not replace.
+ *
+ * Since D-052 a turn is one object only where it carries no highlights. A coded
+ * range is a `mark`, which is a node in the tree by design — that is what makes
+ * a screen reader report the passage as highlighted while reading, which the
+ * wash and the underline could not do. The two tests below hold the line
+ * between the two: highlights appear, nothing else does, and they track ranges
+ * rather than sentences.
  */
 
 const fixture = createSeedFixture();
@@ -33,19 +40,100 @@ test.beforeEach(async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1, name: source.title })).toBeVisible();
 });
 
-test('a speaker turn is one object in the accessibility tree', async ({ page }) => {
-  const turn = page.locator(`[data-turn-id="${longTurn.turnId}"]`);
-
-  // One listitem, and nothing nested inside it that a screen reader would treat
-  // as an object of its own.
+/** The lines of a turn's accessibility tree, one per node. */
+async function treeNodes(turn: Locator) {
   const snapshot = await turn.ariaSnapshot();
-  const nodes = snapshot
+  return snapshot
     .split('\n')
     .map((line) => line.trim())
     .filter((line) => line.startsWith('-'));
+}
 
+test('an uncoded turn is one object in the accessibility tree', async ({ page }) => {
+  // The original form of this test, kept where it still applies: prose carrying
+  // nothing has nothing nested inside it that a screen reader would treat as an
+  // object of its own.
+  const uncodedTurnId = await page.evaluate(() =>
+    Array.from(document.querySelectorAll<HTMLElement>('[data-turn-id]'))
+      .find((turn) => turn.querySelector('mark') === null)!
+      .getAttribute('data-turn-id'),
+  );
+
+  const nodes = await treeNodes(page.locator(`[data-turn-id="${uncodedTurnId}"]`));
   expect(nodes).toHaveLength(1);
   expect(nodes[0]).toMatch(/^- listitem/);
+});
+
+test('a coded turn adds its highlights to the tree and nothing else', async ({ page }) => {
+  /*
+    What D-052 changed, stated plainly: a coded turn is no longer a single node.
+    Each highlighted range is a `mark`, which is the point — it is how NVDA and
+    JAWS know to report the passage as highlighted while reading, at whatever
+    verbosity their user set, and it is the only channel the wash and the
+    underline could not reach.
+
+    What D-002 protects is unchanged and is what the rest of this asserts: the
+    marks track coded ranges rather than sentences, they carry no names, and
+    nothing else appears. The turn is still one listitem and still one tab stop,
+    which the tests below cover.
+  */
+  const turn = page.locator(`[data-turn-id="${longTurn.turnId}"]`);
+  const nodes = await treeNodes(turn);
+
+  expect(nodes[0]).toMatch(/^- listitem/);
+  for (const node of nodes.slice(1)) {
+    expect(node, 'only text and highlights appear inside a turn').toMatch(/^- (mark|text):/);
+  }
+
+  // One node per highlight, no more: the tree is not reporting a range twice.
+  const marks = nodes.filter((node) => node.startsWith('- mark'));
+  expect(marks).toHaveLength(await turn.locator('mark').count());
+
+  // And per range rather than per sentence, which is the fragmentation D-002
+  // rules out. This turn is coded across fewer ranges than it has sentences.
+  expect(marks.length).toBeGreaterThan(0);
+  expect(marks.length).toBeLessThan(longTurn.segmentIds.length);
+});
+
+test('a mark brings none of the user agent’s own styling with it', async ({ page }) => {
+  /*
+    D-052 changes the element and nothing else. A `mark` arrives with
+    `background-color: Mark` and `color: MarkText` attached, so "nothing else"
+    has to be measured rather than assumed — and measured against a bare mark
+    rendered in this same page, so the comparison is with whatever this browser
+    actually does rather than with a colour written down here.
+  */
+  const measured = await page.evaluate(() => {
+    const bare = document.createElement('mark');
+    bare.textContent = 'x';
+    document.body.append(bare);
+    const bareStyle = getComputedStyle(bare);
+    const uaDefault = { background: bareStyle.backgroundColor, color: bareStyle.color };
+    bare.remove();
+
+    const prose = getComputedStyle(
+      document.querySelector<HTMLElement>('[data-display-state="inactive"]')!,
+    ).color;
+
+    return {
+      uaDefault,
+      prose,
+      marks: Array.from(document.querySelectorAll<HTMLElement>('.transcript__turns mark')).map(
+        (mark) => {
+          const style = getComputedStyle(mark);
+          return { background: style.backgroundColor, color: style.color };
+        },
+      ),
+    };
+  });
+
+  expect(measured.marks.length).toBeGreaterThan(0);
+  for (const mark of measured.marks) {
+    // The wash is the code family's, not the browser's highlight colour.
+    expect(mark.background).not.toBe(measured.uaDefault.background);
+    // And the text is the same ink as the prose around it.
+    expect(mark.color).toBe(measured.prose);
+  }
 });
 
 test('a turn reads as continuous prose, every sentence in order', async ({ page }) => {

@@ -34,6 +34,8 @@ Assumption until answered: real data is not deployed to an unauthenticated publi
 
 **V-2. Is turn-level capture too coarse as the screen reader mainline?** Owner: session evidence, v0.2. Where browse-mode selection never reaches the DOM, the fallback is the route, at turn granularity. If NVDA and JAWS participants live on it and fight it, that is evidence for restoring minimal boundary adjustment.
 
+**V-3. Should a captured range be readable while it is being captured?** Owner: research team, v0.2. D-052 makes captured ranges `mark` elements, but every capture command opens the code panel, D-026 makes that panel modal, and a modal `aria-hidden`s the transcript beneath it — so the captured half of D-052 has no observable effect. The element is in place and inert. Either that is correct, because a coder in the panel is looking at the panel, or the highlight under construction should be confirmable without leaving it, which is a change to D-026 rather than to D-052. Session evidence would settle it: watch whether screen reader participants ever want to re-check what they selected before choosing codes.
+
 **F-9. Figma frame hygiene.** Owner: Benji. The frame named `Project` contains the login form, the frame named `Log in` holds only the wordmark, and hidden `Home` frames carry conflicting taxonomies from different generations. Additionally, the QDAS 1.x Karma wireframe frames embed what appears to be real interview content with named speakers in a transcript-preview text layer; replace with synthetic text before the file is shared further. The team is also removing the Themes sidebar entry per D-047. Not behavioral. Resolution: clean before the MSE handoff.
 
 ## Resolved

@@ -81,6 +81,7 @@ VoiceOver testing catches structural problems: missing accessible names, wrong h
 
 - Browse mode differs. NVDA and JAWS intercept single keys for quick navigation; VoiceOver does not work this way, so keyboard conflicts will not surface here.
 - Live region handling differs across all three, particularly for queued and rapid announcements.
+- Highlight reporting differs, and here the usual risk runs backwards. Coded ranges are `mark` elements since D-052; NVDA and JAWS report them while reading, at the user's verbosity, and VoiceOver's support is the weakest of the three. So the development environment is the pessimistic case for once. **Read a coded passage with VO plus A and write down what you hear, whether that is "highlighted", a tone, or nothing at all.** Silence here is a VoiceOver limitation to record, not a defect to file — check it on a participant's own configuration before concluding anything, per smoke test item 13.
 - AFB participants are more likely to use JAWS or NVDA on Windows than VoiceOver.
 
 A clean VoiceOver pass is necessary and not sufficient. Verify chords and announcements on the participant's actual configuration before a session, per the accessibility contract section 4.
@@ -124,4 +125,4 @@ Screen recording with audio, through QuickTime, captures VoiceOver speech alongs
 
 ## 7. Before every participant session
 
-The per-task checks above are not the session gate. Run the full twelve-item smoke test in `docs/accessibility-contract.md` section 4, on the participant's own browser and screen reader combination, with test data reset to a known state.
+The per-task checks above are not the session gate. Run the full thirteen-item smoke test in `docs/accessibility-contract.md` section 4, on the participant's own browser and screen reader combination, with test data reset to a known state.

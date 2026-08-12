@@ -878,3 +878,8 @@ Caveats recorded:
 - VoiceOver's mark reporting is the weakest of the three screen readers, the reverse of the usual risk: participants skew NVDA and JAWS, where support is solid, while VoiceOver is the development environment. Verifying what each participant's configuration actually announces joins the pre-session smoke test.
 - `mark` carries no interactive semantics, and gains none: clicking a coded sentence reopening the excerpt is unchanged, and `excerpt.open` remains the keyboard route.
 - Nested or overlapping ranges remain one mark with the coded-multiple treatment; marks do not nest per range.
+
+Two things the build found on implementing this, neither settled here:
+
+- **The note-only range is not named by this decision.** A range carrying a note and no code did not exist when D-052 was written. It is marked, on the reading that leaving it the one highlight a screen reader passes over in silence would rebuild the exact gap this decision closes. Confirm or reverse.
+- **A captured range's mark cannot currently be reached.** Every command that captures opens the code panel, the panel is modal and `aria-hidden`s the transcript beneath it, and closing it with nothing to save discards the capture. So a captured range exists only while nothing can read it. The element is applied as specified and is inert. Whether the in-progress highlight should be readable at all is a question about this decision and D-026 together, recorded as V-3.
