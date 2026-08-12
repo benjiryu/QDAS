@@ -1118,6 +1118,28 @@ Done when: NVDA or JAWS reading through a coded passage reports it as
 highlighted at the user's verbosity setting, and VoiceOver behavior is
 recorded in the smoke test notes whatever it turns out to be.
 
+### Task 34. Companion hop command
+
+```
+Implement D-053 and the amended code-selection.md section 2.2.
+
+- Add codes.codebook to the Command type and both binding tables, Ctrl+Alt+B
+  and Ctrl+Shift+B, and confirm the collision guard passes
+- Behavior: companion closed, open and focus its search; focus in panel with
+  companion open, jump to companion search; focus in companion, jump to panel
+  search. Escape layering unchanged
+- The companion is a labeled region named Codebook; the panel search is
+  named Search codes and the companion search Search codebook
+- The Open Codebook button shows the chord via describeChord
+
+Tests: the three-way hop behavior; chord collision guard green; both searches
+distinguishable by accessible name; region name exposed.
+```
+
+Done when: from a checkbox in the panel, one chord lands you in the codebook
+search, the same chord brings you back to the panel search, and Escape still
+closes in layers.
+
 ## Failure modes to watch for
 
 **The agent builds something simulated.** Point it at `prototype-scope.md`. File import, authentication, and IRR are not gaps to fill.

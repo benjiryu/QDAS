@@ -883,3 +883,21 @@ Two things the build found on implementing this, neither settled here:
 
 - **The note-only range is not named by this decision.** A range carrying a note and no code did not exist when D-052 was written. It is marked, on the reading that leaving it the one highlight a screen reader passes over in silence would rebuild the exact gap this decision closes. Confirm or reverse.
 - **A captured range's mark cannot currently be reached.** Every command that captures opens the code panel, the panel is modal and `aria-hidden`s the transcript beneath it, and closing it with nothing to save discards the capture. So a captured range exists only while nothing can read it. The element is applied as specified and is inert. Whether the in-progress highlight should be readable at all is a question about this decision and D-026 together, recorded as V-3.
+
+## D-053 One chord hops between the panel and the companion codebook
+
+Date: 2026-08 | Workflow: code assignment | Status: approved. Completes D-048's route in both directions
+
+The companion round trip was asymmetric: `codes.focusSearch` returns focus to the panel from anywhere, but reaching the companion required the button, and Escape conflated returning with dismissing. The comparison workflow the companion exists for, definition, panel, sibling definition, needs a hop, not a close.
+
+**`codes.codebook`** is the hop, one chord, suggested Ctrl+Alt+B and Ctrl+Shift+B by platform, collision-checked against both tables:
+
+- Companion closed: open it and focus its search. Identical to activating the button.
+- Focus in the panel with the companion open: move focus to the companion search.
+- Focus in the companion: move focus to the panel search.
+
+Together with `codes.focusSearch` the pair reads as one habit: Ctrl+Alt+F always means the panel, Ctrl+Alt+B always means the codebook. Escape keeps its existing layered meaning, close companion first, panel second, and stops being the only way back.
+
+Naming, per D-051's logic: the companion is a labeled region, "Codebook", and the two search fields carry distinct accessible names, "Search codes" in the panel and "Search codebook" in the companion, so a screen reader user always knows which of the two searches they are in. Browse-mode users additionally get the free routes: the companion's family-card headings and the labeled region make rotor and landmark jumps between the surfaces possible without any chord.
+
+The button remains the visible control per contract 2.2, now showing the chord via describeChord like every other command.
