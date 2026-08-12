@@ -982,6 +982,35 @@ scrolling; checking codes is impossible from the companion.
 Done when: mid-capture, a coder can read any definition and return to the
 checkbox they were on without losing anything, and Escape behaves in layers.
 
+### Task 27r. Sidebar structure and visual pass
+
+```
+Revise the sidebar per the amended Sidebar rule in
+docs/pages/destinations.md shared rules. Visual language from the Figma
+sidebar; structure from the spec.
+
+- Solid --color-blue-100 background, fixed full-height at wide layout with
+  internal scroll; the D-033 narrow disclosure behavior is unchanged and the
+  sidebar is never fixed at narrow width or high zoom
+- "Project 1 Files" as a group label at the same visual weight as the
+  destination links, non-focusable, with the nested source list
+  aria-labelledby it. It is not a link and not a button
+- Sources as a nested list inside the group; current source and current
+  destination each carry aria-current="page" with their non-color indicators
+  (edge bar, white pill)
+- Verify the focus ring is visible against the blue; use a token-based ring
+  if the default fails
+- White-on-blue text pairs pass contrast per the token audit; do not introduce
+  new pairs without checking
+
+Tests: the group label is absent from the tab order and exposed as the source
+list's accessible name; both aria-current values present; at 320 width the
+disclosure behavior still passes the existing Task 27 tests.
+```
+
+Done when: tabbing through the sidebar never stops on "Project 1 Files", and
+a screen reader announces the source list by that name.
+
 ### Task 29. Coded data page
 
 ```

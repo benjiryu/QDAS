@@ -11,7 +11,9 @@
 
 ## Shared rules, all three pages
 
-**Sidebar.** Fixed order: source list, then Code book, Coded data, Notes. No Themes. The current destination carries `aria-current="page"` and a non-color indicator. The sidebar collapses to a disclosure at narrow width per D-033, and the reading order is identical in both layouts.
+**Sidebar.** One project navigation landmark, solid blue (`--color-blue-100`), fixed full-height at wide layout with its own internal scroll; collapses to a disclosure at narrow width and high zoom per D-033, never fixed there, with identical reading order in both layouts.
+
+Content order: a **project files group**, then Code book, Coded data, Notes. No Themes. The group's header ("Project 1 Files") matches the destination links in visual weight but is a non-focusable group label, not a link: the nested source list is `aria-labelledby` it, and a screen reader hears it as the list's name rather than a destination. Sources render as a nested list within the group; the current source carries `aria-current="page"` with the design's edge-bar indicator. The current destination carries `aria-current="page"` and the white active pill, shape plus color. The focus ring must be visible against the blue background; the default ring color is not assumed sufficient.
 
 **Entry.** Each page has one `h1` naming it; focus lands on the `h1` on navigation, per the Task 5a precedent and contract 2.4. Each page states its count in plain text near the `h1` ("34 codes", "12 coded excerpts", "5 notes"), which doubles as the screen reader's orientation on arrival.
 
