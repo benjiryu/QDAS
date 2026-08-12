@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useId, useMemo } from 'react';
 import { NavLink, useParams } from 'react-router';
 import { createSeedFixture } from '../../data/seed';
 import { CURRENT_CODER_ID } from '../../data/seed/project';
@@ -18,9 +18,16 @@ import { assignedSources } from './assignedSources';
  * and thickens the weight; `aria-current` is what a screen reader reads. Both
  * channels, per contract 2.6.
  *
- * The narrow-width disclosure `destinations.md` names from D-033 is not built
- * here. Task 27's brief does not list it and the sidebar keeps its current
- * wrapping behaviour; recorded as outstanding rather than quietly skipped.
+ * The files group's header is a label, not a destination. It names the nested
+ * source list through `aria-labelledby`, so a screen reader hears "Project 1
+ * Files, list" rather than a fifth place to go. A link or a button there would
+ * be worse than nothing: a stop in the tab order that leads nowhere.
+ *
+ * The narrow-width disclosure `destinations.md` names from D-033 is still not
+ * built. Neither Task 27's brief nor 27r's lists it, and 27r says the narrow
+ * behaviour is unchanged; recorded as outstanding rather than quietly skipped.
+ * What 27r does require at narrow width is that the sidebar is never fixed
+ * there, which the stylesheet handles.
  */
 
 /** Fixed, and in this order. Rendered after the source list. */
@@ -32,6 +39,7 @@ const DESTINATIONS = [
 
 export function ProjectNav() {
   const { projectId } = useParams();
+  const filesId = useId();
 
   const view = useMemo(() => {
     const fixture = createSeedFixture();
@@ -60,21 +68,39 @@ export function ProjectNav() {
         <p className="project-nav__empty">Open a project to see its sources and destinations.</p>
       ) : (
         <ul className="project-nav__list">
-          {view.sources.map((source) => (
-            <li key={source.sourceId}>
-              <NavLink
-                className="project-nav__link"
-                to={`/projects/${view.projectId}/sources/${source.sourceId}`}
-              >
-                {source.title}
-              </NavLink>
-            </li>
-          ))}
+          {/*
+            The files group first, then the destinations: the content order the
+            shared Sidebar rule fixes.
+          */}
+          <li className="project-nav__group">
+            {/*
+              A span, not a heading and not a link. `aria-labelledby` makes it
+              the source list's name, which is the whole job; a heading would
+              add a stop to the document outline for something that labels a
+              list rather than opening a section.
+            */}
+            <span id={filesId} className="project-nav__group-label">
+              Project 1 Files
+            </span>
+
+            <ul className="project-nav__sources" aria-labelledby={filesId}>
+              {view.sources.map((source) => (
+                <li key={source.sourceId}>
+                  <NavLink
+                    className="project-nav__link project-nav__source"
+                    to={`/projects/${view.projectId}/sources/${source.sourceId}`}
+                  >
+                    {source.title}
+                  </NavLink>
+                </li>
+              ))}
+            </ul>
+          </li>
 
           {DESTINATIONS.map((destination) => (
             <li key={destination.segment}>
               <NavLink
-                className="project-nav__link"
+                className="project-nav__link project-nav__destination"
                 to={`/projects/${view.projectId}/${destination.segment}`}
               >
                 {destination.label}

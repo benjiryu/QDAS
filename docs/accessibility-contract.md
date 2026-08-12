@@ -38,7 +38,7 @@ This is the rule most likely to be violated by accident, and the failure is sile
 - The application has exactly two live regions, both owned by the shared announcement service in `src/a11y`. One polite, one assertive.
 - Components never create their own live regions and never write to the DOM node directly. They call the service.
 - The assertive region is reserved for save failures and destructive-action confirmations. Nothing else interrupts.
-- Successive announcements queue. An announcement issued while another is still speaking must not replace it, because repeated boundary adjustments would otherwise drop everything except the last one.
+- Successive announcements queue. An announcement issued while another is still speaking must not replace it, because repeated boundary adjustments would otherwise drop everything except the last one. Per D-050 this rule governs **discrete** announcements: reports of completed acts. **Continuous** announcements, feedback on in-progress input such as search result counts, are the opposite case: intermediates are stale drafts, so they debounce until input pauses and coalesce, newest replacing any still pending. Callers declare the class.
 - Every announcement is repeatable on request. A user who missed it must be able to hear it again without redoing the action.
 - Announcement wording is not fixed by specification unless the wording itself is being tested. Specifications fix the information content.
 

@@ -4,7 +4,7 @@
 - Version: 0.3
 - Last updated: 2026-08-05
 
-Progress: v0.1 complete and tagged. Phase 4 defines v0.2. Tasks 18 through 29 have landed, including 28r and 28a; Task 30, the Notes page, is next and is the last in the sequence. Open findings, none blocking: the D-033 narrow-width sidebar disclosure is unbuilt (Task 27); search behaves differently in the panel and on the Codebook page, deliberately and per section 1 (Task 28); the fixture's colour tokens no longer describe their hues, so a name map in `familyHues.ts` carries what the swatch is called, guarded by a drift test (Task 28r); the panel's codebook region no longer has a heading, since D-048 made it the Open Codebook button (Task 28a); D-049 does not say which view a reviewer gets during independent coding, resolved conservatively to own work (Task 29); and the unnamed dialog on the context menu popover is still open (Task 26). D-048 closed the Task 27 finding about the D-044 journey: the companion removes its necessity.
+Progress: v0.1 complete and tagged. Phase 4 defines v0.2. Tasks 18 through 29 have landed, including 27r, 28r and 28a; Task 30, the Notes page, is next and is the last in the sequence. Open findings, none blocking: the D-033 narrow-width sidebar disclosure is still unbuilt, and more visible now that the sidebar is solid blue (Tasks 27 and 27r); the sidebar holds its place with `sticky` rather than `fixed`, which keeps it in the flex row (Task 27r); search behaves differently in the panel and on the Codebook page, deliberately and per section 1 (Task 28); the fixture's colour tokens no longer describe their hues, so a name map in `familyHues.ts` carries what the swatch is called, guarded by a drift test (Task 28r); the panel's codebook region no longer has a heading, since D-048 made it the Open Codebook button (Task 28a); D-049 does not say which view a reviewer gets during independent coding, resolved conservatively to own work (Task 29); and the unnamed dialog on the context menu popover is still open (Task 26). D-048 closed the Task 27 finding about the D-044 journey: the companion removes its necessity.
 
 Update this line when a task lands. An agent reading a stale progress line will rebuild finished work.
 
@@ -1045,6 +1045,35 @@ Excerpt notes only, grouped by source, full note text with the excerpt behind
 a disclosure, links landing focus on the noted turn. Read-only; editing routes
 through excerpt.open. Explicit empty state.
 ```
+
+### Task 31. Announcement classes and panel focus fix
+
+Two findings from manual VoiceOver testing, per D-050.
+
+```
+1. Amend the announcement service per D-050 and accessibility-contract.md
+   section 2.3: announce(message, politeness, kind) where kind is discrete or
+   continuous. Discrete keeps the existing queue-never-drop semantics
+   untouched. Continuous debounces until input pauses (roughly 600ms) and
+   coalesces, newest replacing any pending continuous announcement. Move the
+   search result-count announcements in the panel and the Codebook page to
+   continuous. Repeat-on-request returns the last spoken of either kind.
+
+2. Fix panel-open focus: focus the search input element itself, after paint,
+   not during render. The criterion is that typing works immediately under
+   VoiceOver without interacting into a group first. Check the input is not
+   wrapped in a container that VoiceOver requires interaction to enter.
+
+Tests: with fake timers, five rapid continuous announcements speak once with
+the final value while five rapid discrete announcements all speak in order;
+existing announcer tests unchanged and green. For focus, assert activeElement
+is the input element itself after open, and note in the test that the real
+criterion is the manual VoiceOver typing check.
+```
+
+Done when: typing "motivation" into panel search under VoiceOver yields one
+count announcement after the pause, and typing works the moment the panel
+opens with no VO interaction step.
 
 ## Failure modes to watch for
 

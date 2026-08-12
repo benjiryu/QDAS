@@ -835,3 +835,18 @@ Requirements the gate carries:
 - Role and phase come from the simulated user and `Project.phase`; the role switcher is already in prototype scope, and session scenarios control which role a participant holds.
 - The count badge moves adjacent to the code name; at magnification the name and its count must be visible together, the F-4 lesson. The accessible name fuses them regardless.
 - Selected code state is border plus bolded count per the style guide component, shape not color alone.
+
+## D-050 Two announcement classes: discrete queues, continuous coalesces
+
+Date: 2026-08 | Workflow: all announcements | Status: approved. Amends accessibility contract section 2.3. Found by manual VoiceOver testing, which is the only layer that could have found it
+
+The no-drop queue rule was written for discrete actions, so that rapid boundary changes would not lose announcements. Applied to search-as-you-type it faithfully queues every intermediate count: "12 results for m, 8 results for mo, 8 results for mot," when only the final count is true. The intermediates are not distinct facts; they are stale drafts of one fact.
+
+The announcer therefore carries two classes:
+
+- **Discrete** — capture, save, check and uncheck, toggle, failure. Queue in order, never drop, never replace. Unchanged.
+- **Continuous** — feedback on in-progress input, currently search result counts. Debounced until input pauses, and coalescing: a newer announcement in the same continuous channel replaces any still-pending one. The user hears the settled truth once.
+
+Callers declare the class; the service enforces the semantics. Repeat-on-request returns the last spoken announcement of either class.
+
+Also recorded from the same testing session, as a defect rather than a decision: focus on panel open must land in the search field such that typing works immediately in VoiceOver. If the user must interact into a group first, the criterion is failing regardless of what `document.activeElement` reports. Focus is set after paint, on the input element itself, and the manual check is typing a letter, not inspecting the DOM.

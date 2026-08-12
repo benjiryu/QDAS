@@ -36,25 +36,147 @@ for (const destination of DESTINATIONS) {
   });
 }
 
-test('the current destination is marked by more than colour', async ({ page }) => {
-  await page.goto(`${projectUrl}/coded-data`);
+/**
+ * The sidebar's visual language, per the amended Sidebar rule.
+ *
+ * In a browser because every value here comes through `var()`, and because the
+ * question that matters — whether a white ring survives a white pill — is only
+ * answerable once both have actually been painted.
+ */
+const WHITE = 'rgb(255, 255, 255)';
+const BLUE_100 = 'rgb(31, 71, 131)';
 
-  const marker = await page
-    .getByRole('link', { name: 'Coded data' })
-    .evaluate((element) => {
-      const style = getComputedStyle(element);
+test('the sidebar is solid blue with white text', async ({ page }) => {
+  await page.goto(`${projectUrl}/codebook`);
+
+  const painted = await page.evaluate(() => {
+    const nav = document.querySelector('.project-nav')!;
+    const destination = document.querySelector('.project-nav__destination:not([aria-current])')!;
+    return {
+      background: getComputedStyle(nav).backgroundColor,
+      text: getComputedStyle(destination).color,
+    };
+  });
+
+  expect(painted.background).toBe('rgb(31, 71, 131)');
+  expect(painted.text).toBe('rgb(255, 255, 255)');
+});
+
+test('the current destination draws a white pill and the current source a white bar', async ({
+  page,
+}) => {
+  const source = fixture.sources[0];
+
+  await page.goto(`${projectUrl}/codebook`);
+  const pill = await page
+    .locator('.project-nav__destination[aria-current="page"]')
+    .evaluate((node) => {
+      const style = getComputedStyle(node);
+      return { background: style.backgroundColor, text: style.color, radius: style.borderTopLeftRadius };
+    });
+
+  expect(pill.background).toBe(WHITE);
+  expect(pill.text).toBe('rgb(0, 0, 0)');
+  expect(parseFloat(pill.radius)).toBeGreaterThan(4);
+
+  await page.goto(`${projectUrl}/sources/${source.sourceId}`);
+  const bar = await page
+    .locator('.project-nav__source[aria-current="page"]')
+    .evaluate((node) => {
+      const style = getComputedStyle(node);
+      return { colour: style.borderLeftColor, width: parseFloat(style.borderLeftWidth) };
+    });
+
+  expect(bar.colour).toBe(WHITE);
+  expect(bar.width).toBeGreaterThan(1);
+});
+
+test('the focus ring survives the blue and the white pill alike', async ({ page }) => {
+  // The one the rule warns about: "the default ring color is not assumed
+  // sufficient". A white ring drawn on the white pill would vanish, which the
+  // offset is there to prevent.
+  await page.goto(`${projectUrl}/codebook`);
+
+  const onBlue = await page
+    .locator('.project-nav__destination:not([aria-current])')
+    .first()
+    .evaluate((node) => {
+      (node as HTMLElement).focus();
+      const style = getComputedStyle(node);
+      return { colour: style.outlineColor, offset: parseFloat(style.outlineOffset) };
+    });
+
+  expect(onBlue.colour).toBe(WHITE);
+  expect(onBlue.colour).not.toBe(BLUE_100);
+
+  const onPill = await page
+    .locator('.project-nav__destination[aria-current="page"]')
+    .evaluate((node) => {
+      (node as HTMLElement).focus();
+      const style = getComputedStyle(node);
       return {
-        current: element.getAttribute('aria-current'),
-        borderWidth: parseFloat(style.borderLeftWidth),
-        weight: style.fontWeight,
+        colour: style.outlineColor,
+        offset: parseFloat(style.outlineOffset),
+        background: style.backgroundColor,
       };
     });
 
-  // Programmatic and visible, and the visible half is a bar and a weight rather
-  // than a hue, per contract 2.5.
+  // White on white would be invisible; the offset puts the ring on the blue
+  // outside the pill instead.
+  expect(onPill.background).toBe(WHITE);
+  expect(onPill.colour).toBe(WHITE);
+  expect(onPill.offset).toBeGreaterThan(0);
+});
+
+test('the sidebar is never fixed, at any width', async ({ page }) => {
+  // The rule allows it to hold its place at wide layout but forbids it at
+  // narrow width and high zoom, per D-033: a pinned column at 400 percent eats
+  // the viewport it is meant to share.
+  for (const width of [1400, 320]) {
+    await page.setViewportSize({ width, height: 800 });
+    await page.goto(`${projectUrl}/codebook`);
+
+    const position = await page
+      .locator('.project-nav')
+      .evaluate((node) => getComputedStyle(node).position);
+
+    expect(position, `at ${width}px`).not.toBe('fixed');
+    if (width === 320) expect(position).toBe('static');
+  }
+});
+
+test('the current destination is marked by more than hue', async ({ page }) => {
+  // Restated for the pill the amended rule adopts: the indicator used to be a
+  // left bar and is now a filled shape. What has to hold is unchanged — a
+  // reader who cannot separate the two hues still has to see which one is
+  // current, per contract 2.5.
+  await page.goto(`${projectUrl}/coded-data`);
+
+  const marker = await page.evaluate(() => {
+    const current = document.querySelector('.project-nav__destination[aria-current="page"]')!;
+    const other = document.querySelector('.project-nav__destination:not([aria-current])')!;
+    const luminance = (colour: string) => {
+      const [r, g, b] = colour.match(/\d+/g)!.slice(0, 3).map((value) => {
+        const channel = Number(value) / 255;
+        return channel <= 0.03928 ? channel / 12.92 : Math.pow((channel + 0.055) / 1.055, 2.4);
+      });
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    const style = getComputedStyle(current);
+    return {
+      current: current.getAttribute('aria-current'),
+      radius: parseFloat(style.borderTopLeftRadius),
+      lift:
+        luminance(style.backgroundColor) -
+        luminance(getComputedStyle(other).backgroundColor),
+    };
+  });
+
   expect(marker.current).toBe('page');
-  expect(marker.borderWidth).toBeGreaterThan(1);
-  expect(Number(marker.weight)).toBeGreaterThan(400);
+  // A shape that is not there otherwise…
+  expect(marker.radius).toBeGreaterThan(4);
+  // …and a luminance step, so it survives greyscale rather than resting on hue.
+  expect(marker.lift).toBeGreaterThan(0.5);
 });
 
 test('only the open destination is marked', async ({ page }) => {

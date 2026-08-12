@@ -74,15 +74,55 @@
   padding: 1rem;
 }
 
+/*
+ * The project sidebar, per the amended Sidebar rule in destinations.md.
+ *
+ * Solid blue, so every text pair inside it inverts. The semantic variables are
+ * redefined for this subtree rather than each rule overridden — the same
+ * mechanism the banner uses, and one declaration moves the links, the ring, and
+ * anything added here later.
+ */
 .project-nav {
+  --focus: var(--color-white);
+  --link: var(--color-white);
+  --text: var(--color-white);
+
   flex: 1 1 14rem;
   min-width: 0;
   padding: 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-medium);
+  background: var(--color-blue-100);
+  color: var(--text);
 }
 
-.project-nav__list {
+/*
+ * Full height with its own scroll, and still in the flow.
+ *
+ * `sticky` rather than `fixed`: fixed would take the sidebar out of the flex
+ * row and leave `main` to expand underneath it, which is layout surgery for no
+ * behavioural gain — what the rule asks for is that it holds its place while
+ * the page scrolls and scrolls internally when it is taller than the viewport,
+ * and this is that.
+ *
+ * Wide layout only. At narrow width and at high zoom it returns to the flow
+ * entirely, which is the rule's "never fixed there" and D-033's reason: a
+ * pinned column at 400 percent eats the viewport it is supposed to share.
+ */
+@media (min-width: 48rem) {
+  .project-nav {
+    position: sticky;
+    top: 1rem;
+    /* Full height, as the rule asks: the blue runs the viewport rather than
+       stopping under the last link. Both bounds, so a long source list scrolls
+       inside it instead of growing the page. */
+    min-height: calc(100vh - 2rem);
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+    border-radius: var(--radius-medium);
+  }
+}
+
+.project-nav__list,
+.project-nav__sources {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -93,41 +133,99 @@
 
 .project-nav__empty {
   margin: 0;
-  color: var(--text-muted);
 }
 
 /*
- * A leading bar keeps the row's text off the border and reserves the space the
- * current-page marker will occupy, so nothing shifts sideways when it appears.
+ * The group's label. Matches the destination links in weight, per the rule, so
+ * it reads as a peer of theirs rather than as a caption — while being neither
+ * focusable nor activatable.
+ */
+.project-nav__group-label {
+  display: block;
+  padding: 0.35rem 0.5rem;
+  font-weight: var(--font-weight-bold);
+}
+
+/*
+ * The sources, indented under their label with a rail down the group.
+ *
+ * The rail is `--color-blue-50`, which measures 2.6:1 on blue-100 and so is
+ * decoration and nothing else. That is deliberate: the grouping is carried
+ * programmatically by the nested list and the name it takes from the label, and
+ * the current source is marked by a white bar at 9.18:1. Nothing a reader has
+ * to see rides on the 2.6.
+ */
+.project-nav__sources {
+  margin-left: 0.5rem;
+  padding-left: 0.5rem;
+  border-left: var(--border-thick) solid var(--color-blue-50);
+}
+
+/*
+ * A leading bar keeps the row's text off the edge and reserves the space the
+ * current-source marker will occupy, so nothing shifts sideways when it
+ * appears.
  */
 .project-nav__link {
   display: block;
   padding: 0.35rem 0.5rem;
-  border-left: var(--border-thick) solid transparent;
   border-radius: var(--radius-small);
 }
 
+.project-nav__source {
+  border-left: var(--border-thick) solid transparent;
+  margin-left: calc(-0.5rem - var(--border-thick));
+}
+
+.project-nav__destination {
+  font-weight: var(--font-weight-bold);
+}
+
 /*
- * The current destination, per D-043.
+ * The current source: a white edge bar over the group's rail, per the design.
  *
  * Selected on `aria-current` rather than on a class of its own, so the visible
- * marker and the programmatic one cannot come apart: if this draws, the screen
+ * marker and the programmatic one cannot come apart: if this draws, a screen
  * reader says "current page", and if it does not, neither happens.
- *
- * Two non-colour channels — the bar and the weight — because contract 2.5 rules
- * out state carried by colour alone, and a coder with a colour vision
- * difference has to be able to tell where they are.
  */
-.project-nav__link[aria-current='page'] {
-  border-left-color: currentColor;
+.project-nav__source[aria-current='page'] {
+  border-left-color: var(--color-white);
   font-weight: var(--font-weight-bold);
-  background: var(--row-bg);
+}
+
+/*
+ * The current destination: the design's white pill.
+ *
+ * Shape and colour together, per the rule and contract 2.5 — the fill inverts
+ * and the weight thickens, so a reader with a colour vision difference still
+ * has the pill's shape and the bolder text.
+ */
+.project-nav__destination[aria-current='page'] {
+  background: var(--color-white);
+  color: var(--color-black);
+  border-radius: var(--radius-pill);
+}
+
+/*
+ * The ring has to clear a white pill as well as the blue.
+ *
+ * Drawn white for the blue background, and offset so that on the active
+ * destination it lands outside the pill rather than vanishing into it. Measured
+ * in the browser rather than assumed.
+ */
+.project-nav a:focus-visible {
+  outline: var(--border-thick) solid var(--focus);
+  outline-offset: 2px;
 }
 
 @media (forced-colors: active) {
-  /* Backgrounds are dropped here, so the bar carries it alone. */
-  .project-nav__link[aria-current='page'] {
+  /* Backgrounds are dropped here, so the bar and the border carry it alone. */
+  .project-nav__source[aria-current='page'] {
     border-left-color: Highlight;
+  }
+
+  .project-nav__destination[aria-current='page'] {
+    outline: var(--border-thin) solid Highlight;
   }
 }
 
