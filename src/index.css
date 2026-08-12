@@ -107,39 +107,62 @@ h1:focus {
 
 /*
  * Code family hues, in one place because two surfaces read them: the code
- * panel's swatch dot and the transcript's rail pills. Defined here rather than
- * in either, so a code cannot appear in one hue on a pill and another on a dot.
+ * panel's tag pills and the transcript's rail pills. Defined here rather than
+ * in either, so a code cannot appear in one hue on a pill and another on a rail.
  *
- * Provisional. Task 25 assigns tag hue per top-level code family across the
- * thirteen token families, putting the four low-contrast borders last; this is
- * a nearest-hue placeholder until it does.
+ * One hue per top-level family, which is how the fixture already assigns
+ * `colorToken`: every code in a family carries its root's token.
+ *
+ * Assigned in canonical family order from the nine hues whose shade-1 border
+ * clears 3:1 on white. Orange, yellow, light green and sea green come last in
+ * that order, per Task 25, and with six families they are never reached — which
+ * is what putting them last is for. The token file records why: their borders
+ * fail 3:1, so hue identity degrades at a glance even though the black text on
+ * their fills still passes.
+ *
+ * A consequence worth knowing: the fixture's token names no longer describe
+ * their hue. `code-color-amber` renders cerulean. They are opaque identifiers.
+ *
+ * Each family carries two selectors. In the transcript the attribute sits on
+ * the pill itself, so it inherits; in the code panel it sits on a span that is
+ * a *sibling* of the pill, where a custom property cannot reach it. `:has()`
+ * lifts it to the row instead. Moving the attribute up one level in
+ * `CodePanel.tsx` would collapse this to one selector, which is a DOM change
+ * and belongs to whoever owns that markup next.
  */
-[data-color-token='code-color-moss'] {
-  --code-strong: var(--l-green-1);
-  --code-fill: var(--l-green-2);
-}
-[data-color-token='code-color-clay'] {
-  --code-strong: var(--coral-1);
-  --code-fill: var(--coral-2);
-}
-[data-color-token='code-color-indigo'] {
-  --code-strong: var(--blue-1);
-  --code-fill: var(--blue-2);
-}
-[data-color-token='code-color-amber'] {
-  --code-strong: var(--orange-1);
-  --code-fill: var(--orange-2);
-}
-[data-color-token='code-color-slate'] {
-  --code-strong: var(--color-grey-750);
-  --code-fill: var(--color-grey-300);
-}
-[data-color-token='code-color-rust'] {
+[data-color-token='code-color-moss'],
+.code-panel__code:has([data-color-token='code-color-moss']) {
   --code-strong: var(--red-1);
   --code-fill: var(--red-2);
 }
+[data-color-token='code-color-clay'],
+.code-panel__code:has([data-color-token='code-color-clay']) {
+  --code-strong: var(--coral-1);
+  --code-fill: var(--coral-2);
+}
+[data-color-token='code-color-indigo'],
+.code-panel__code:has([data-color-token='code-color-indigo']) {
+  --code-strong: var(--d-green-1);
+  --code-fill: var(--d-green-2);
+}
+[data-color-token='code-color-amber'],
+.code-panel__code:has([data-color-token='code-color-amber']) {
+  --code-strong: var(--cerulean-1);
+  --code-fill: var(--cerulean-2);
+}
+[data-color-token='code-color-slate'],
+.code-panel__code:has([data-color-token='code-color-slate']) {
+  --code-strong: var(--blue-1);
+  --code-fill: var(--blue-2);
+}
+[data-color-token='code-color-rust'],
+.code-panel__code:has([data-color-token='code-color-rust']) {
+  --code-strong: var(--purple-1);
+  --code-fill: var(--purple-2);
+}
 /* A proposed code is marked in words, never by colour alone. */
-[data-color-token='code-color-provisional'] {
+[data-color-token='code-color-provisional'],
+.code-panel__code:has([data-color-token='code-color-provisional']) {
   --code-strong: var(--text-muted);
   --code-fill: var(--row-bg);
 }

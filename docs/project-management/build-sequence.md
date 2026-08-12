@@ -4,7 +4,7 @@
 - Version: 0.3
 - Last updated: 2026-08-05
 
-Progress: v0.1 complete and tagged. Phase 4 defines v0.2. Tasks 18 through 24 have landed; Task 25, the Select Code panel, is next.
+Progress: v0.1 complete and tagged. Phase 4 defines v0.2. Tasks 18 through 25 have landed; Task 26, the shell and remaining chrome, is next.
 
 Update this line when a task lands. An agent reading a stale progress line will rebuild finished work.
 

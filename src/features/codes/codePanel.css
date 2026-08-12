@@ -146,17 +146,23 @@
   border: 0;
 }
 
-/* Create code, collapsed to one row. D-039. */
+/*
+ * Create code and Add note, each collapsed to one row. D-039.
+ *
+ * Secondary, like the other controls, but with the radius the tokens list for
+ * disclosure containers rather than the pill the footer buttons take: a row
+ * that expands is not the same kind of thing as a button that acts.
+ */
 .code-panel__create-row {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
   font: inherit;
-  padding: 0.4rem 0.6rem;
-  background: var(--surface);
-  color: inherit;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-small);
+  padding: 0.4rem 0.9rem;
+  border-radius: var(--radius-medium);
+  border: var(--border-thick) solid var(--button-secondary-border);
+  background: var(--button-secondary-bg);
+  color: var(--button-secondary-text);
   cursor: pointer;
 }
 
@@ -200,10 +206,14 @@
   padding: 0;
 }
 
-/* Nested lists indent, and each level also states itself in text. */
+/*
+ * Hierarchy is indentation, per D-039, which removed the text level indicator.
+ * The nesting and each nested list's own label are what expose level
+ * programmatically; this is the sighted channel for the same fact.
+ */
 .code-panel__tree .code-panel__tree {
-  padding-left: 1.25rem;
-  border-left: 1px solid var(--border);
+  padding-left: 1.5rem;
+  border-left: var(--border-thin) solid var(--color-grey-300);
 }
 
 .code-panel__code {
@@ -213,6 +223,20 @@
   padding: 0.2rem 0;
 }
 
+/*
+ * The token's checked fill, and nothing else. The browser keeps drawing the
+ * box, the checkmark, the focus ring, and the forced-colors treatment, all of
+ * which a hand-built control would have to reproduce — and the checkmark could
+ * not be a character, since Luciole has no glyph at U+2713.
+ */
+.code-panel input[type='checkbox'] {
+  accent-color: var(--checkbox-checked-bg);
+  width: 1.1em;
+  height: 1.1em;
+  margin: 0.15em 0 0;
+  flex: none;
+}
+
 .code-panel__code label {
   display: flex;
   flex-wrap: wrap;
@@ -220,8 +244,19 @@
   gap: 0.25rem 0.5rem;
 }
 
+/*
+ * The tag pill. Shade-2 fill, shade-1 border, black text: the token file's
+ * audit puts black on every shade-2 fill between 6.9:1 and 15.4:1.
+ *
+ * The name inside the pill is what keeps hue redundant rather than
+ * load-bearing, which is the condition D-039 relies on.
+ */
 .code-panel__code-name {
-  font-weight: var(--font-weight-bold);
+  padding: 0.05rem 0.6rem;
+  border-radius: var(--radius-pill);
+  border: var(--border-thick) solid var(--code-strong, var(--border));
+  background: var(--code-fill, var(--row-bg));
+  color: var(--color-black);
 }
 
 /*
@@ -240,12 +275,14 @@
  * as a second checkbox, which is exactly the confusion a redundant channel must
  * not create. Colour is redundant here and never carries meaning on its own.
  */
+/*
+ * Hidden. Once the name sits in a filled pill the dot states the same colour a
+ * second time, and the pill already carries the text channel. It is aria-hidden
+ * decoration either way; the element itself wants removing, which is a DOM
+ * change this task cannot make.
+ */
 .code-panel__swatch {
-  width: 0.6em;
-  height: 0.6em;
-  border-radius: 50%;
-  align-self: center;
-  background: var(--code-strong, var(--text-muted));
+  display: none;
 }
 
 /* Hue comes from the shared family mapping in index.css, so the dot here and
@@ -271,19 +308,40 @@
   margin-left: auto;
 }
 
+/*
+ * Secondary by default; Save & Close is the panel's one primary. Delete excerpt
+ * stays secondary because the tokens carry no destructive level, and its
+ * confirmation is what guards it. Raised in the task report.
+ */
 .code-panel__actions button {
   font: inherit;
-  padding: 0.4rem 0.8rem;
-  background: var(--surface);
-  color: inherit;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-small);
+  padding: 0.4rem 0.9rem;
+  border-radius: var(--radius-pill);
+  border: var(--border-thick) solid var(--button-secondary-border);
+  background: var(--button-secondary-bg);
+  color: var(--button-secondary-text);
   cursor: pointer;
 }
 
+.code-panel__actions button[data-command='codes.save'] {
+  background: var(--button-primary-bg);
+  border-color: var(--button-primary-border);
+  color: var(--button-primary-text);
+  font-weight: var(--font-weight-bold);
+}
+
+/*
+ * Unavailable, not removed: it keeps its place and says why when invoked, per
+ * contract 2.6. The dashed border is the channel that carries the state where
+ * the colour cannot — the token file's own audit puts the disabled pair at
+ * 3.17:1 and calls it genuinely faint.
+ */
 .code-panel__actions button[aria-disabled='true'] {
+  background: var(--button-disabled-bg);
+  border-color: var(--button-disabled-border);
   border-style: dashed;
-  opacity: 0.7;
+  color: var(--button-disabled-text);
+  font-weight: var(--font-weight-regular);
 }
 
 /* ---------- Shared utilities ---------- */
