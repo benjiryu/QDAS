@@ -850,3 +850,15 @@ The announcer therefore carries two classes:
 Callers declare the class; the service enforces the semantics. Repeat-on-request returns the last spoken announcement of either class.
 
 Also recorded from the same testing session, as a defect rather than a decision: focus on panel open must land in the search field such that typing works immediately in VoiceOver. If the user must interact into a group first, the criterion is failing regardless of what `document.activeElement` reports. Focus is set after paint, on the input element itself, and the manual check is typing a letter, not inspecting the DOM.
+
+## D-051 Labels are associated, not adjacent; every workflow list is named
+
+Date: 2026-08 | Workflow: all | Status: approved. Amends accessibility contract section 2.1. Found by manual VoiceOver testing
+
+Two rules, one principle: relationships that exist visually must exist in the accessibility tree.
+
+**Checkbox and code label are one control.** The pill text is the checkbox's label element, natively associated, so a screen reader announces one stop, "code name, state, checkbox," and activating the pill toggles the box. Reading them as two separate stops doubles the traversal cost of the code list and can leave the checkbox nameless. This was always D-004's intent; it is now explicit. F-4 fixed adjacency for magnification; this is the same requirement's programmatic half.
+
+**Every list carrying workflow content has an accessible name.** Proficient screen reader users navigate structurally, by rotor and by list-jump, and arrive at lists with no preceding context. "List, 34 items" is not an answer to "what is this"; "Codebook, list, 34 items" is. Named via `aria-labelledby` where a visible heading or control exists, `aria-label` where none does. Known gap from the Task 28a finding: the panel's code list lost its name when its heading became the Open Codebook button; the button now labels the list. Applies to search results, recent codes, the pending set as expressed by checkboxes, sidebar lists, and the destination pages' filter, results, and notes lists.
+
+Decorative or structural lists inside already-named containers need no name of their own; the rule targets lists a user would jump to.
