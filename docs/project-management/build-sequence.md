@@ -986,13 +986,26 @@ checkbox they were on without losing anything, and Escape behaves in layers.
 
 ```
 Implement the Coded data page per docs/pages/destinations.md section 2 and
-decisions D-045 and R-4.
+decision D-049. Two views behind one destination, resolved by role and phase:
+own work for coders during independent coding, project-wide for the
+qualitative lead always and for everyone after the phase closes.
 
-Filter list in canonical order with own-counts in accessible names, All codes
-default, results in source order, D-041 pill treatment, result links landing
-focus on the turn containing the excerpt start. Selected filter persists for
-the session. Nothing from the seeded second coder appears.
+The page labels its view in the count line. Counts are active assignments
+only, adjacent to the code name and fused into its accessible name. Selected
+state is border plus bolded count. Project-wide rows name source and coder.
+Result links land focus on the turn containing the excerpt start. Filter list
+stacks above results at narrow width.
+
+If the role switcher or a phase control does not yet exist in the prototype,
+build the minimal simulated version scoped in prototype-scope.md rather than
+inventing authentication.
+
+Acceptance criteria as written in section 2, all six.
 ```
+
+Done when: switching the simulated role or phase flips the view and its label,
+and a coder mid-independent-coding can find no trace of the seeded second
+coder anywhere on the page.
 
 ### Task 30. Notes page
 

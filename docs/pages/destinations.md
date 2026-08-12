@@ -45,20 +45,25 @@ Given the color value, when a screen reader reaches it, then it reads as a label
 
 ## 2. Coded data page
 
-The coder's own coded work, browsable by code. This is the "review personal work" completion criterion made into a page.
+Two views behind one destination, resolved by role and phase per D-049. The page names its view in the count line, "Your coded work" or "Project-wide view", so the viewer always knows which truth they are reading.
 
-**Regions, fixed order:** heading and count, code filter list, results list.
+**View resolution.** Coder role during `independentCoding` or earlier: own work. Qualitative lead role: project-wide, any phase. Any role after independent coding closes: project-wide, since R-4 lifts by its own terms.
 
-- The filter list shows every code the coder has used, in canonical order, each with its own-count per D-045 ("Water access, 4"). Codes the coder has not used do not appear; an "All codes" entry at the top is the default selection.
-- The count is part of the control's accessible name, not a separate visual-only badge.
-- The results list shows the coder's excerpts for the selected filter, in source order then position order: excerpt text, source title, assigned codes, and a note indicator. Code pills follow D-041: pills `aria-hidden`, with a compact text equivalent in the row's accessible content.
-- Each result is a link. Activating it navigates to the source page and moves focus to the speaker turn containing the excerpt's start, where `excerpt.open` is available for editing. This focus destination is the page's most important behavior: landing at the top of the transcript instead of at the excerpt makes the page useless.
-- The selected filter persists within the session.
+**Regions, fixed order, both views:** heading, view label and count, code filter list, results list. At narrow width and 400 percent zoom the filter list stacks above the results per D-033; no horizontal panning.
+
+**The filter list.** Canonical order. Own view: only codes the coder has used, own-counts. Project-wide view: every code with an active assignment in the project, team-wide counts. Counts count active assignments only, exclude superseded, and sit adjacent to the code name, fused into the control's accessible name ("Water access, 20"). "All codes" heads the list as default. Selected state is border plus bolded count, per the style guide component, never color alone.
+
+**The results list.** Excerpts for the selected filter, source order then position. Every row: excerpt text, source title, codes as D-041 compact text with pills aria-hidden, note indicator. Project-wide rows additionally name the coder. Each row is a link landing focus on the speaker turn containing the excerpt start, where excerpt.open is available; landing at the top of the transcript instead makes the page useless.
+
+**Persistence.** Selected filter persists within the session, per view.
 
 **Acceptance criteria.**
-Given a result for an excerpt in the second source, when activated, then the second source's page opens with focus on the turn containing the excerpt start, and its status description reflects the coded state.
-Given the coder has used three codes, when the filter list renders, then it holds All codes plus those three, in canonical order, with counts in the accessible names.
-Given independent coding, when the page renders, then nothing attributable to another coder appears (R-4).
+Given a coder during independent coding, when the page renders, then it is the own-work view, labeled, and nothing attributable to another coder appears (R-4, D-010).
+Given the qualitative lead role, when the page renders, then it is the project-wide view, labeled, with team-wide counts and coder attribution per row.
+Given the phase set past independent coding, when a coder opens the page, then the project-wide view renders.
+Given a result for an excerpt in the second source, when activated, then that source opens with focus on the turn containing the excerpt start.
+Given a superseded assignment, when counts render, then it is not counted.
+Given 320 pixel width, when the page renders, then the filter list precedes the results in one column.
 
 ## 3. Notes page
 
@@ -79,3 +84,5 @@ Given no notes, when the page renders, then the empty state names how a note is 
 **Does the Codebook page need per-code linking from the panel?** Owner: team. A "view in codebook" affordance per panel row would make D-035's round trip one activation, at the cost of a control per row in a panel the team just simplified. Assumption: not in this version; the sidebar route suffices until session evidence says otherwise.
 
 **Should Coded data offer a by-source view?** Owner: session evidence. Assumption: by-code only, matching the wireframe; source order within results partially covers it.
+
+**Does the lead's project-wide view show coder attribution during independent coding, or only after?** Owner: Angie. The lead monitoring coverage arguably needs names; D-049 assumes yes for the lead role. If the team prefers the lead to see counts without attribution mid-round, the row simply omits the coder name until phase close.

@@ -816,3 +816,22 @@ The panel as built traps focus, which broke the D-044 journey to the Codebook de
 - The sidebar remains unreachable mid-capture. Acceptable now: the definition journey no longer needs it, and reaching Coded data or Notes mid-capture is close-then-navigate, with D-042 semantics making close commit or discard depending on checked state.
 - D-044's persistence guarantee is unchanged for the navigations that still occur, and its test stands.
 - Fixing a wrong range after checking codes requires unchecking all, then closing, to reach the discard path. Subtle; flagged for session observation.
+
+## D-049 Coded data is two views, gated by role and phase
+
+Date: 2026-08 | Workflow: review of coded work | Status: approved. Preserves D-010 and R-4 while adopting the project-wide design
+
+The Coded data page resolves to one of two views:
+
+- **Own work**, per D-045: the coder's excerpts, filterable by the codes they have used, with own-counts. Shown to the coder role while `Project.phase` is `independentCoding` or earlier.
+- **Project-wide**, per the Figma design: every code used in the project with team-wide counts of active assignments, and all coders' excerpts across all sources, each row naming its source and coder. Shown to the qualitative lead role in any phase, and to every role once the phase passes independent coding, when R-4's veil lifts by its own terms.
+
+The design was drawn for the lead's monitoring need and the post-independent-coding moment; the coder-during-independent-coding case is the one D-010 and A-1 answered, and it keeps the own-work view. Nothing here reverses either decision: the page simply shows different truths to different viewers at different moments, which is what the role model was for.
+
+Requirements the gate carries:
+
+- **The page names its view.** The count line reads "Your coded work" or "Project-wide view" so no one mistakes which truth they are reading. A participant session that accidentally ran in the wrong view would contaminate silently otherwise; the label makes it visible in recordings.
+- Counts are of active assignments only; superseded assignments per D-030 are excluded.
+- Role and phase come from the simulated user and `Project.phase`; the role switcher is already in prototype scope, and session scenarios control which role a participant holds.
+- The count badge moves adjacent to the code name; at magnification the name and its count must be visible together, the F-4 lesson. The accessible name fuses them regardless.
+- Selected code state is border plus bolded count per the style guide component, shape not color alone.
