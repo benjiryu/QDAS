@@ -15,9 +15,12 @@ export function ProjectsPage() {
 
   return (
     <>
-      <h1 tabIndex={-1}>Projects</h1>
+      <h1 tabIndex={-1} id="projects-heading">
+        Projects
+      </h1>
 
-      <ul className="route-list">
+      {/* Named, per D-051: a list-jump arrives without the heading above it. */}
+      <ul className="route-list" aria-labelledby="projects-heading">
         {projects.map((project) => (
           <li key={project.projectId}>
             <Link to={`/projects/${project.projectId}`}>{project.name}</Link>

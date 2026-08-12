@@ -152,7 +152,7 @@ export function CodebookContent({ projectId, headingLevel, searchRef }: Codebook
           {results.length === 0 ? (
             <p>No codes match. The codebook below is unchanged.</p>
           ) : (
-            <ul className="codebook__list">
+            <ul className="codebook__list" aria-labelledby={resultsId}>
               {results.map((result) => (
                 <li key={result.code.codeId}>
                   <CodeRecord
@@ -200,7 +200,7 @@ export function CodebookContent({ projectId, headingLevel, searchRef }: Codebook
             Provisional codes
           </Heading>
           <p>Awaiting approval. These are not part of the codebook.</p>
-          <ul className="codebook__list">
+          <ul className="codebook__list" aria-labelledby={provisionalId}>
             {provisional.map((code) => (
               <li key={code.codeId}>
                 <CodeRecord code={code} headingLevel={childLevel} />
@@ -271,7 +271,12 @@ function FamilyCard({ family, headingLevel }: { family: CodeNode; headingLevel: 
       data-family-id={family.code.codeId}
     >
       <CodeRecord code={family.code} headingLevel={headingLevel} colorName={hue} />
-      <CodeSubtree nodes={family.children} headingLevel={headingLevel} depth={1} />
+      <CodeSubtree
+        nodes={family.children}
+        headingLevel={headingLevel}
+        depth={1}
+        parentName={family.code.name}
+      />
     </article>
   );
 }
@@ -287,19 +292,27 @@ function CodeSubtree({
   nodes,
   headingLevel,
   depth,
+  parentName,
 }: {
   nodes: CodeNode[];
   headingLevel: number;
   depth: number;
+  /** Names the list, per D-051: a list-jump arrives without the parent. */
+  parentName: string;
 }) {
   if (nodes.length === 0) return null;
 
   return (
-    <ul className="codebook__list codebook__tree">
+    <ul className="codebook__list codebook__tree" aria-label={parentName}>
       {nodes.map((node) => (
         <li key={node.code.codeId}>
           <CodeRecord code={node.code} headingLevel={headingLevelFor(headingLevel, depth)} />
-          <CodeSubtree nodes={node.children} headingLevel={headingLevel} depth={depth + 1} />
+          <CodeSubtree
+            nodes={node.children}
+            headingLevel={headingLevel}
+            depth={depth + 1}
+            parentName={node.code.name}
+          />
         </li>
       ))}
     </ul>

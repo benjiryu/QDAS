@@ -156,7 +156,7 @@ export function CodedDataPage() {
             aria-labelledby={filtersId}
           >
             <h2 id={filtersId}>Codes</h2>
-            <ul className="coded-data__filter-list">
+            <ul className="coded-data__filter-list" aria-labelledby={filtersId}>
               <li>
                 <FilterOption
                   value={ALL_CODES}
@@ -184,7 +184,7 @@ export function CodedDataPage() {
             <h2 id={resultsId}>
               {shown.length} {shown.length === 1 ? 'excerpt' : 'excerpts'}
             </h2>
-            <ul className="coded-data__result-list">
+            <ul className="coded-data__result-list" aria-labelledby={resultsId}>
               {shown.map((result) => (
                 <li key={result.excerptId}>
                   <ResultRow projectId={projectId} result={result} />
@@ -273,22 +273,23 @@ function FilterOption({
   selected: boolean;
   onSelect: (value: string) => void;
 }) {
-  const id = useId();
-
   return (
-    <span className="coded-data__filter" data-selected={selected ? '' : undefined}>
+    /*
+      Wrapping, per D-051: a `for`-associated label beside its control names it
+      and then reads again as loose text, so each filter was two stops.
+    */
+    <label className="coded-data__filter" data-selected={selected ? '' : undefined}>
       <input
-        id={id}
         type="radio"
         name="coded-data-filter"
         value={value}
         checked={selected}
         onChange={() => onSelect(value)}
       />
-      <label htmlFor={id}>
+      <span className="coded-data__filter-body">
         {label}, <span className="coded-data__count">{count}</span>
-      </label>
-    </span>
+      </span>
+    </label>
   );
 }
 

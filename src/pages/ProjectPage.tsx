@@ -77,12 +77,12 @@ export function ProjectPage() {
       <p>Coding round: {view.round.label}</p>
       <p>Your role: {view.user ? ROLE_LABELS[view.user.role] : 'Unknown'}</p>
 
-      <h2>Your sources</h2>
+      <h2 id="your-sources">Your sources</h2>
 
       {view.sources.length === 0 ? (
         <p>No sources are assigned to you in this round.</p>
       ) : (
-        <ul className="route-list">
+        <ul className="route-list" aria-labelledby="your-sources">
           {view.sources.map((source) => (
             <li key={source.sourceId}>
               <Link to={`/projects/${view.project.projectId}/sources/${source.sourceId}`}>

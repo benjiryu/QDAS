@@ -94,7 +94,9 @@ export function ExcerptToolbar({ excerpt, resolved }: ExcerptToolbarProps) {
           <p>
             {excerpt.openChoices.length} saved excerpts cover this sentence. Choose one to open.
           </p>
-          <ul className="excerpt-toolbar__choice-list">
+          {/* Named although its group is: a list-jump lands on the list, not
+              on the container that names it. D-051. */}
+          <ul className="excerpt-toolbar__choice-list" aria-label="Saved excerpts here">
             {excerpt.openChoices.map((choice, index) => (
               <li key={choice.excerptId}>
                 <button

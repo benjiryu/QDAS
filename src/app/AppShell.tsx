@@ -64,7 +64,9 @@ export function AppShell() {
         </Link>
 
         <nav aria-label="Application">
-          <ul className="nav-list">
+          {/* Named for the same reason as every other list, per D-051, even
+              though its landmark is named: the two are reached separately. */}
+          <ul className="nav-list" aria-label="Application">
             <li>
               <Link to="/projects">Projects</Link>
             </li>

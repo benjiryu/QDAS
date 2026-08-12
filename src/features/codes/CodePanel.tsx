@@ -65,8 +65,10 @@ interface CodePanelProps {
 export function CodePanel({ panel, flags, excerptText }: CodePanelProps) {
   const headingId = useId();
   const searchId = useId();
-  const uncertainId = useId();
   const companionId = useId();
+  const toggleId = useId();
+  const resultsId = useId();
+  const proposedId = useId();
 
   // Destructured, so the search input's callback ref is a plain local. Reading
   // it off the panel object in JSX makes the ref rule treat every other read of
@@ -198,13 +200,15 @@ export function CodePanel({ panel, flags, excerptText }: CodePanelProps) {
           empty region is one more thing to browse past. */}
       {query.trim() !== '' ? (
         <div className="code-panel__region" data-region="search-results">
-          <h3>
+          <h3 id={resultsId}>
             {results.length} {results.length === 1 ? 'result' : 'results'} for “{query.trim()}”
           </h3>
           {results.length === 0 ? (
             <p>No codes match. The codebook below is unchanged.</p>
           ) : (
-            <ul className="code-panel__list">
+            /* Named by its own heading, so a list-jump lands on "3 results for
+               water" rather than on "list, 3 items". D-051. */
+            <ul className="code-panel__list" aria-labelledby={resultsId}>
               {results.map((result) => (
                 <li key={result.code.codeId}>
                   <CodeCheckbox code={result.code} panel={panel} />
@@ -235,6 +239,7 @@ export function CodePanel({ panel, flags, excerptText }: CodePanelProps) {
         */}
         <button
           type="button"
+          id={toggleId}
           ref={setCompanionButton}
           className="code-panel__companion-toggle"
           aria-expanded={companionOpen}
@@ -249,7 +254,9 @@ export function CodePanel({ panel, flags, excerptText }: CodePanelProps) {
           </span>
           Open Codebook
         </button>
-        <CodeList nodes={tree} panel={panel} />
+        {/* The specific gap the Task 28a finding left: this list lost its name
+            when its heading became the button. The button names it now. */}
+        <CodeList nodes={tree} panel={panel} labelledBy={toggleId} />
       </div>
 
       {/* 5. Proposed codes. D-039's region order does not name this one, and
@@ -259,11 +266,11 @@ export function CodePanel({ panel, flags, excerptText }: CodePanelProps) {
           in the task report. */}
       {flags.allowProvisionalCodes && proposedCodes.length > 0 ? (
         <div className="code-panel__region" data-region="proposed">
-          <h3>Proposed codes</h3>
+          <h3 id={proposedId}>Proposed codes</h3>
           <p className="code-panel__note">
             Awaiting approval. These are not part of the codebook.
           </p>
-          <ul className="code-panel__list">
+          <ul className="code-panel__list" aria-labelledby={proposedId}>
             {proposedCodes.map((code) => (
               <li key={code.codeId}>
                 <CodeCheckbox code={code} panel={panel} />
@@ -368,15 +375,18 @@ export function CodePanel({ panel, flags, excerptText }: CodePanelProps) {
                 D-023 reads as uncertainty when it orders slice 3 review. The
                 label and the field no longer mean quite the same thing; raised
                 in the task report. */}
-            <span className="code-panel__code code-panel__uncertain">
+            {/* Wrapping, for the reason D-051 gives for the code rows: a
+                `for`-associated label beside its control reads as a second
+                stop. Not a code pill, so outside the letter of the task, but
+                the identical defect two lines away. */}
+            <label className="code-panel__code code-panel__uncertain">
               <input
-                id={uncertainId}
                 type="checkbox"
                 checked={uncertain}
                 onChange={(event) => setUncertain(event.target.checked)}
               />
-              <label htmlFor={uncertainId}>Flag</label>
-            </span>
+              <span className="code-panel__code-body">Flag</span>
+            </label>
           </>
         )}
       </div>
@@ -414,9 +424,25 @@ export function CodePanel({ panel, flags, excerptText }: CodePanelProps) {
  * labelled by its parent code, so a child is heard in context without a tree's
  * level announcements.
  */
-function CodeList({ nodes, panel }: { nodes: CodeNode[]; panel: CodePanelApi }) {
+function CodeList({
+  nodes,
+  panel,
+  labelledBy,
+  label,
+}: {
+  nodes: CodeNode[];
+  panel: CodePanelApi;
+  /** The root list, named by the Open Codebook button. */
+  labelledBy?: string;
+  /** A nested list, named by the code it hangs from. */
+  label?: string;
+}) {
   return (
-    <ul className="code-panel__list code-panel__tree">
+    <ul
+      className="code-panel__list code-panel__tree"
+      aria-labelledby={labelledBy}
+      aria-label={label}
+    >
       {nodes.map((node) => (
         <li key={node.code.codeId} data-depth={node.depth}>
           <CodeCheckbox code={node.code} panel={panel} depth={node.depth} />
@@ -426,7 +452,9 @@ function CodeList({ nodes, panel }: { nodes: CodeNode[]; panel: CodePanelApi }) 
                 <li key={child.code.codeId} data-depth={child.depth}>
                   <CodeCheckbox code={child.code} panel={panel} depth={child.depth} />
                   {child.children.length > 0 ? (
-                    <CodeList nodes={child.children} panel={panel} />
+                    /* Named like the level above it: every list a rotor can
+                       land on says which code it belongs to. D-051. */
+                    <CodeList nodes={child.children} panel={panel} label={child.code.name} />
                   ) : null}
                 </li>
               ))}
@@ -447,18 +475,23 @@ function CodeCheckbox({
   panel: CodePanelApi;
   depth?: number;
 }) {
-  const inputId = useId();
-
   return (
-    <span className="code-panel__code" data-depth={depth}>
+    /*
+      The label wraps the control, per D-051.
+
+      Associated by `for` and sitting beside it, the pill named the checkbox
+      correctly and *also* stayed in the accessibility tree as loose text: one
+      row, two stops, the code name read twice. Wrapping consumes the text into
+      the control's name, which is what makes the row one stop.
+    */
+    <label className="code-panel__code" data-depth={depth}>
       <input
-        id={inputId}
         type="checkbox"
         checked={panel.isPending(code.codeId)}
         onChange={(event) => panel.toggle(code.codeId, event.target.checked)}
         data-code-id={code.codeId}
       />
-      <label htmlFor={inputId}>
+      <span className="code-panel__code-body">
         <span className="code-panel__code-name">{code.name}</span>
         {/* Colour is a redundant channel only, never carrying meaning that is
             not also in text. Section 4. D-039 removed the visible level label;
@@ -472,7 +505,7 @@ function CodeCheckbox({
           data-color-token={code.colorToken}
           aria-hidden="true"
         />
-      </label>
-    </span>
+      </span>
+    </label>
   );
 }

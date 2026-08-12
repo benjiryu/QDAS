@@ -67,12 +67,17 @@ export function ProjectNav() {
         */
         <p className="project-nav__empty">Open a project to see its sources and destinations.</p>
       ) : (
-        <ul className="project-nav__list">
+        <>
           {/*
             The files group first, then the destinations: the content order the
             shared Sidebar rule fixes.
+
+            Two lists rather than one, per D-051: a list-jump arrives with no
+            context, so each has to say what it is. The single outer list that
+            held both could not — it was neither the sources nor the
+            destinations.
           */}
-          <li className="project-nav__group">
+          <div className="project-nav__group">
             {/*
               A span, not a heading and not a link. `aria-labelledby` makes it
               the source list's name, which is the whole job; a heading would
@@ -95,19 +100,21 @@ export function ProjectNav() {
                 </li>
               ))}
             </ul>
-          </li>
+          </div>
 
-          {DESTINATIONS.map((destination) => (
-            <li key={destination.segment}>
-              <NavLink
-                className="project-nav__link project-nav__destination"
-                to={`/projects/${view.projectId}/${destination.segment}`}
-              >
-                {destination.label}
-              </NavLink>
-            </li>
-          ))}
-        </ul>
+          <ul className="project-nav__list" aria-label="Destinations">
+            {DESTINATIONS.map((destination) => (
+              <li key={destination.segment}>
+                <NavLink
+                  className="project-nav__link project-nav__destination"
+                  to={`/projects/${view.projectId}/${destination.segment}`}
+                >
+                  {destination.label}
+                </NavLink>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </nav>
   );

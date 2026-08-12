@@ -374,7 +374,11 @@ label:has(+ .code-panel__search) {
   flex: none;
 }
 
-.code-panel__code label {
+/*
+ * The label is the row now, per D-051, so what used to be styled as the label
+ * inside it is the body beside the box.
+ */
+.code-panel__code-body {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
