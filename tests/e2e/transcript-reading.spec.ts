@@ -145,6 +145,143 @@ test('speaker and timestamp collapse into the leading text at narrow width', asy
   expect(wideSentence.x).toBeGreaterThan(wideMeta.x + wideMeta.width);
 });
 
+/**
+ * Width. The measure belongs to the prose column, not to the row.
+ *
+ * These are here rather than in a unit test because jsdom drops any declaration
+ * containing `var()`, so every track width in this layout is invisible to it.
+ */
+
+/** 70ch, resolved inside the list so it is Luciole's metric and not a guess. */
+async function measureIn(page: import('@playwright/test').Page): Promise<number> {
+  await page.waitForFunction(() => document.fonts.check('1rem Luciole'));
+  return page.evaluate(() => {
+    const probe = document.createElement('div');
+    probe.style.cssText = 'position:absolute;visibility:hidden;width:70ch';
+    const list = document.querySelector('.transcript__turns')!;
+    list.appendChild(probe);
+    const width = probe.getBoundingClientRect().width;
+    probe.remove();
+    return width;
+  });
+}
+
+test('the prose holds its measure, and the row fills the width around it', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 900 });
+  const measure = await measureIn(page);
+
+  const widths = await page.evaluate(() => ({
+    list: document.querySelector('.transcript__turns')!.getBoundingClientRect().width,
+    main: document.querySelector('main')!.getBoundingClientRect().width,
+    prose: Math.max(
+      ...Array.from(document.querySelectorAll('.transcript-turn__prose')).map(
+        (prose) => prose.getBoundingClientRect().width,
+      ),
+    ),
+  }));
+
+  // The measure, exactly: neither starved by the columns beside it, which is
+  // what capping the row did, nor allowed past the line length the measure is
+  // there to hold.
+  expect(widths.prose).toBeCloseTo(measure, 0);
+
+  // And the row itself is not capped by that measure. It fills `main`, which is
+  // what leaves the rail room to take the remainder.
+  expect(widths.list).toBeCloseTo(widths.main, 0);
+  expect(widths.list).toBeGreaterThan(measure);
+});
+
+test('past the crossover the rail sits beside the prose and takes the width left over', async ({
+  page,
+}) => {
+  // This is what the container query buys, and the assertion that notices if it
+  // is removed: without it the layout falls back to two columns, the prose
+  // still measures 70ch and the row still fills `main`, so every other check
+  // here would stay green while the rail dropped back underneath.
+  await page.setViewportSize({ width: 1600, height: 900 });
+  await page.waitForFunction(() => document.querySelectorAll('.transcript-turn__rail').length > 1);
+
+  const beside = await page.evaluate(() => {
+    const turn = Array.from(document.querySelectorAll('.transcript-turn')).find((candidate) =>
+      candidate.querySelector('.transcript-turn__rail'),
+    )!;
+    const prose = turn.querySelector('.transcript-turn__prose')!.getBoundingClientRect();
+    const rail = turn.querySelector('.transcript-turn__rail')!.getBoundingClientRect();
+    const remValue = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    return {
+      startsAfterProse: rail.left >= prose.right,
+      sharesTheLine: Math.abs(rail.top - prose.top) < 4,
+      railRem: rail.width / remValue,
+    };
+  });
+
+  expect(beside.startsAfterProse).toBe(true);
+  expect(beside.sharesTheLine).toBe(true);
+  // Wider than the 14rem minimum, which is the rail actually absorbing the
+  // remainder rather than merely fitting.
+  expect(beside.railRem).toBeGreaterThan(14);
+});
+
+test('the prose column is the same width on every turn', async ({ page }) => {
+  // Half the turns here are shorter than the measure, and the rail beside them
+  // starts where the prose column ends. Uniform prose widths are what keeps
+  // that edge straight down the page.
+  await page.setViewportSize({ width: 1600, height: 900 });
+  await page.waitForFunction(() => document.querySelectorAll('.transcript-turn__rail').length > 1);
+
+  const geometry = await page.evaluate(() => {
+    const distinct = (values: number[]) => [...new Set(values.map(Math.round))];
+    const prose = Array.from(document.querySelectorAll('.transcript-turn__prose'));
+    return {
+      turns: prose.length,
+      proseWidths: distinct(prose.map((node) => node.getBoundingClientRect().width)),
+      railLefts: distinct(
+        Array.from(document.querySelectorAll('.transcript-turn__rail')).map(
+          (rail) => rail.getBoundingClientRect().left,
+        ),
+      ),
+    };
+  });
+
+  expect(geometry.turns).toBeGreaterThan(20);
+  expect(geometry.proseWidths).toHaveLength(1);
+  expect(geometry.railLefts).toHaveLength(1);
+});
+
+test('the rail keeps one left edge below the crossover too', async ({ page }) => {
+  // Under the prose rather than beside it at these widths, but still lined up:
+  // it starts at the prose column, which is a fixed track.
+  for (const width of [1280, 800]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.waitForFunction(
+      () => document.querySelectorAll('.transcript-turn__rail').length > 1,
+    );
+
+    const lefts = await page.evaluate(() => [
+      ...new Set(
+        Array.from(document.querySelectorAll('.transcript-turn__rail')).map((rail) =>
+          Math.round(rail.getBoundingClientRect().left),
+        ),
+      ),
+    ]);
+
+    expect(lefts, `rails at ${width}px`).toHaveLength(1);
+  }
+});
+
+test('no width between 320px and 1920px scrolls sideways', async ({ page }) => {
+  // The grid gains and loses columns across this range, and an overflowing row
+  // would breach accessibility contract 2.5 at exactly the widths a
+  // magnification user sits at.
+  for (const width of [1920, 1600, 1280, 1024, 900, 800, 768, 600, 480, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    const overflows = await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+    );
+    expect(overflows, `overflow at ${width}px`).toBe(false);
+  }
+});
+
 test('coded state carries a shape channel, not colour alone', async ({ page }) => {
   // Read from the run rather than the sentence: since D-036 an excerpt covers
   // exact characters, so the paint is on the stretch that is actually coded.

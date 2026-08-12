@@ -7,11 +7,23 @@
  * horizontal scrolling, per accessibility contract 2.5.
  */
 
+/*
+ * The three column widths, named so the crossover below can be written as their
+ * sum rather than as a number nobody can check.
+ */
 .transcript__turns {
+  --speaker-column: 9rem;
+  --measure: 70ch;
+  --rail-column: 14rem;
+
   list-style: none;
   margin: 0;
   padding: 0;
-  max-width: 70ch;
+  /*
+   * Narrow: there is no grid here, speaker and timestamp are inline leading
+   * text, so the list's own width is the prose measure.
+   */
+  max-width: var(--measure);
 }
 
 .transcript-turn {
@@ -52,20 +64,39 @@
  * a column of its own.
  */
 @media (min-width: 48rem) {
+  /*
+   * The measure moves off the list and onto the prose column, so the row itself
+   * fills `main`. Capping the list capped the whole grid, which meant the
+   * speaker column, the rail, and the gaps all came out of the 70ch and the
+   * prose was left with about a third of it.
+   *
+   * The crossover below depends on how wide this row is, not how wide the
+   * viewport is — the sidebar and the shell padding sit in between — so the row
+   * is made a query container rather than answered with a viewport breakpoint
+   * that would go quietly wrong the next time `.project-nav` changes width.
+   */
+  .transcript__turns {
+    max-width: none;
+    container-type: inline-size;
+    container-name: transcript-row;
+  }
+
+  /*
+   * Speaker column and prose. The rail only earns a column of its own once the
+   * row is wide enough to give it one without taking the prose apart, which is
+   * the crossover below; until then it sits under the prose, as it does at
+   * narrow width.
+   */
   .transcript-turn {
     display: grid;
-    /*
-     * The rail gets its own column rather than eating the prose measure, which
-     * `.transcript__turns` caps at 70ch for readability.
-     */
-    grid-template-columns: 9rem 1fr minmax(0, 14rem);
+    grid-template-columns: var(--speaker-column) minmax(0, var(--measure));
     gap: 0 1rem;
   }
 
+  /* Under the prose, not under the speaker: auto-placement would put it in
+     column 1. */
   .transcript-turn__rail {
-    margin-top: 0;
-    flex-direction: column;
-    align-items: flex-start;
+    grid-column: 2;
   }
 
   .transcript-turn__meta {
@@ -117,6 +148,48 @@
   margin-top: 0.15rem;
   color: var(--text-muted);
   flex: none;
+}
+
+/*
+ * The crossover: the row can now hold the speaker column, the whole measure,
+ * and a full rail. The prose stops growing at the measure and the rail takes
+ * everything left, so long code names wrap less at a glance.
+ *
+ * Queried against the row rather than the viewport, because the sidebar and the
+ * shell padding sit between the two. The threshold is the sum of the three
+ * columns and the two 1rem gaps, written out rather than as `var(--measure)`
+ * because a query condition cannot read a custom property.
+ *
+ * It sits here, after the rail's own rules, rather than up with the rest of the
+ * layout: it has to override `margin-top`, and at equal specificity the cascade
+ * decides that by source order — a container query adds no specificity of its
+ * own. The wide-width block above had the same intent and sat before those
+ * rules, so its `margin-top: 0` never applied.
+ *
+ * The prose track is written as a definite width because that is what it is:
+ * past this threshold the row is guaranteed to hold the measure, so there is
+ * nothing left to negotiate. `minmax(0, 70ch)` would behave identically here —
+ * the flexible rail track leaves free space, and grid maximises the prose track
+ * to its growth limit before the `1fr` takes the remainder — so this is the
+ * plainer spelling of the same layout rather than a defence against anything.
+ */
+@container transcript-row (min-width: calc(70ch + 25rem)) {
+  .transcript-turn {
+    grid-template-columns:
+      var(--speaker-column)
+      var(--measure)
+      minmax(var(--rail-column), 1fr);
+  }
+
+  /* Beside the prose now, and stacked, which is why the base rule's top margin
+     and row direction are undone only here. */
+  .transcript-turn__rail {
+    grid-column: 3;
+    grid-row: 1;
+    margin-top: 0;
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 /*
