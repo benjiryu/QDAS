@@ -61,6 +61,7 @@ export function SourcePage() {
     return {
       resolved,
       seedExcerpts: fixture.excerpts,
+      seedNotes: fixture.notes,
       seedAssignments: fixture.codeAssignments,
       codingRoundId: fixture.codingRound.codingRoundId,
       codebookVersionId: fixture.codebookVersion.codebookVersionId,
@@ -85,6 +86,7 @@ export function SourcePage() {
         key={view.resolved.source.sourceId}
         resolved={view.resolved}
         seedExcerpts={view.seedExcerpts}
+        seedNotes={view.seedNotes}
         seedAssignments={view.seedAssignments}
         codingRoundId={view.codingRoundId}
         codebookVersionId={view.codebookVersionId}

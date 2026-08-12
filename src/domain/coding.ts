@@ -184,6 +184,56 @@ export interface SavedExcerptSummary {
 }
 
 /**
+ * What a speaker turn carries, for the code rail and its programmatic twin.
+ *
+ * Specification: decision D-041.
+ *
+ * The rail and the turn's accessible description are both built from this, so
+ * the glance channel and the announced one cannot disagree — which is the
+ * condition that makes hiding the rail from assistive technology legitimate at
+ * all.
+ *
+ * Codes are distinct, not per assignment: the description states the number of
+ * pills the rail shows, and two excerpts sharing a code show one pill.
+ *
+ * Note presence is derived here and stored nowhere on the turn, per D-011.
+ */
+export interface TurnCoding {
+  excerptCount: number;
+  /** Distinct, in the order the turn's excerpts introduce them. */
+  codeIds: Id[];
+  hasNote: boolean;
+}
+
+export function turnCoding(
+  resolved: ResolvedSource,
+  turnId: Id,
+  excerpts: Excerpt[],
+  assignments: CodeAssignment[],
+  notes: Note[] = [],
+): TurnCoding {
+  // The same derivation `excerpt.open` uses: each intersecting excerpt once,
+  // superseded assignments dropped, and excerpts with nothing standing on them
+  // left out entirely.
+  const summaries = savedExcerptsInTurn(resolved, turnId, excerpts, assignments);
+
+  const codeIds: Id[] = [];
+  for (const summary of summaries) {
+    for (const codeId of summary.codeIds) if (!codeIds.includes(codeId)) codeIds.push(codeId);
+  }
+
+  const excerptIds = new Set(summaries.map((summary) => summary.excerptId));
+
+  return {
+    excerptCount: summaries.length,
+    codeIds,
+    hasNote: notes.some(
+      (note) => note.relatedExcerptId !== null && excerptIds.has(note.relatedExcerptId),
+    ),
+  };
+}
+
+/**
  * Saved excerpts a whole speaker turn intersects, per D-030 as revised by
  * D-038.
  *

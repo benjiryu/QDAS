@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { buildCodingRecords, postCodingReturnTarget, savedExcerptsInTurn } from './coding';
+import {
+  buildCodingRecords,
+  postCodingReturnTarget,
+  savedExcerptsInTurn,
+  turnCoding,
+} from './coding';
 import { deriveSegmentDisplayStates } from './segmentDisplayState';
 import { buildTestSource } from './testing/buildTestSource';
 import type { Code, CodeAssignment, Excerpt, Id } from './types';
@@ -259,5 +264,114 @@ describe('saved excerpts a focused turn intersects, per D-038', () => {
 
   it('finds nothing for a turn that is not in the source', () => {
     expect(savedExcerptsInTurn(resolved, 'nope', [], [])).toEqual([]);
+  });
+});
+
+/**
+ * What a turn carries, for the code rail and its programmatic twin. D-041.
+ *
+ * The two channels are built from this one derivation, so they cannot disagree.
+ */
+describe('turn coding, per D-041', () => {
+  const NOW_ISO = NOW;
+
+  const excerptAt = (excerptId: Id, startSegmentId: Id, endSegmentId: Id): Excerpt => ({
+    excerptId,
+    sourceId: resolved.source.sourceId,
+    startSegmentId,
+    endSegmentId,
+    startOffset: 0,
+    endOffset: textOf(endSegmentId).length,
+    coderId: 'us-1',
+    codingRoundId: 'rd-1',
+    createdAt: NOW_ISO,
+    updatedAt: NOW_ISO,
+  });
+
+  const assignmentFor = (excerptId: Id, assignmentId: Id, codeId: Id): CodeAssignment => ({
+    assignmentId,
+    excerptId,
+    codeId,
+    coderId: 'us-1',
+    codingRoundId: 'rd-1',
+    codebookVersionId: 'cv-1',
+    status: 'active',
+    uncertaintyFlag: false,
+    visibility: 'team',
+    createdAt: NOW_ISO,
+    updatedAt: NOW_ISO,
+  });
+
+  const noteOn = (excerptId: Id | null) => ({
+    noteId: 'nt-1',
+    projectId: 'prj-test',
+    authorId: 'us-1',
+    noteType: null,
+    noteText: 'A thought.',
+    visibility: 'afterIndependentCoding' as const,
+    status: 'active' as const,
+    createdAt: NOW_ISO,
+    relatedExcerptId: excerptId,
+    relatedSourceId: null,
+    relatedAssignmentId: null,
+    relatedCodeId: null,
+    relatedReviewItemId: null,
+  });
+
+  // t2 is s4..s7.
+  const turnId = resolved.turns[2].turn.turnId;
+
+  it('counts the excerpts a turn intersects', () => {
+    const coding = turnCoding(
+      resolved,
+      turnId,
+      [excerptAt('ex-1', 's4', 's5'), excerptAt('ex-2', 's6', 's7')],
+      [assignmentFor('ex-1', 'as-1', 'cd-a'), assignmentFor('ex-2', 'as-2', 'cd-b')],
+    );
+
+    expect(coding.excerptCount).toBe(2);
+    expect(coding.codeIds).toEqual(['cd-a', 'cd-b']);
+  });
+
+  it('counts a shared code once, matching the number of pills the rail shows', () => {
+    // The description states the pill count. Two excerpts sharing a code show
+    // one pill, so counting assignments would make the two channels disagree,
+    // which is the thing D-041 forbids.
+    const coding = turnCoding(
+      resolved,
+      turnId,
+      [excerptAt('ex-1', 's4', 's5'), excerptAt('ex-2', 's6', 's7')],
+      [assignmentFor('ex-1', 'as-1', 'cd-a'), assignmentFor('ex-2', 'as-2', 'cd-a')],
+    );
+
+    expect(coding.excerptCount).toBe(2);
+    expect(coding.codeIds).toEqual(['cd-a']);
+  });
+
+  it('reports a note on any of the turn’s excerpts', () => {
+    const excerpts = [excerptAt('ex-1', 's4', 's5')];
+    const assignments = [assignmentFor('ex-1', 'as-1', 'cd-a')];
+
+    expect(turnCoding(resolved, turnId, excerpts, assignments, [noteOn('ex-1')]).hasNote).toBe(true);
+    expect(turnCoding(resolved, turnId, excerpts, assignments, [noteOn('ex-other')]).hasNote).toBe(
+      false,
+    );
+    expect(turnCoding(resolved, turnId, excerpts, assignments, [noteOn(null)]).hasNote).toBe(false);
+    expect(turnCoding(resolved, turnId, excerpts, assignments).hasNote).toBe(false);
+  });
+
+  it('ignores an excerpt with nothing standing on it', () => {
+    const coding = turnCoding(resolved, turnId, [excerptAt('ex-1', 's4', 's5')], []);
+
+    expect(coding).toEqual({ excerptCount: 0, codeIds: [], hasNote: false });
+  });
+
+  it('is empty for a turn no excerpt reaches, and for a turn that is not there', () => {
+    const excerpts = [excerptAt('ex-1', 's4', 's5')];
+    const assignments = [assignmentFor('ex-1', 'as-1', 'cd-a')];
+
+    expect(turnCoding(resolved, resolved.turns[0].turn.turnId, excerpts, assignments).excerptCount)
+      .toBe(0);
+    expect(turnCoding(resolved, 'nope', excerpts, assignments).excerptCount).toBe(0);
   });
 });

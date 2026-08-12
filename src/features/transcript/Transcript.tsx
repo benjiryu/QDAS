@@ -1,7 +1,7 @@
 import { useId } from 'react';
 import { defaultFlags } from '../../config/flags';
 import type { PrototypeFlags } from '../../config/flags';
-import type { Id, ResolvedSource, SegmentDisplayStates } from '../../domain';
+import type { Code, Id, ResolvedSource, SegmentDisplayStates, TurnCoding } from '../../domain';
 import { TranscriptTurn } from './TranscriptTurn';
 import './transcript.css';
 
@@ -28,6 +28,9 @@ interface TranscriptProps {
   excerptStartOffset?: number | null;
   excerptEndOffset?: number | null;
   excerptState?: string;
+  /** Per turn, for the code rail and its description. D-041. */
+  codingByTurnId?: Map<Id, TurnCoding>;
+  codeById?: Map<Id, Code>;
 }
 
 export function Transcript({
@@ -42,6 +45,8 @@ export function Transcript({
   excerptStartOffset = null,
   excerptEndOffset = null,
   excerptState,
+  codingByTurnId,
+  codeById,
 }: TranscriptProps) {
   const headingId = useId();
 
@@ -69,6 +74,8 @@ export function Transcript({
               excerptStartOffset={excerptStartOffset}
               excerptEndOffset={excerptEndOffset}
               excerptState={excerptState}
+              coding={codingByTurnId?.get(turn.turn.turnId)}
+              codeById={codeById}
             />
           ))}
         </ol>

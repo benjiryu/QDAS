@@ -17,6 +17,18 @@
 .transcript-turn {
   padding: 0.5rem;
   border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+/*
+ * Measured against every background a turn can carry: the plain row 9.2:1, the
+ * coded fill 7.9:1, coded-multiple 5.6:1, and both excerpt fills 6.9:1 and
+ * 4.1:1. Non-text needs 3:1, so the ring stays visible inside a highlight,
+ * which is where a focus ring is easiest to lose.
+ */
+.transcript-turn:focus-visible {
+  outline: var(--border-thick) solid var(--focus);
+  outline-offset: calc(-1 * var(--border-thin));
 }
 
 /*
@@ -34,11 +46,6 @@
   color: var(--text-muted);
 }
 
-.transcript-turn:focus-visible {
-  outline: var(--border-thick) solid var(--focus);
-  outline-offset: 2px;
-}
-
 /*
  * Wide only: the same DOM laid out as a column beside the prose. The separator
  * that reads as leading text at narrow width is not needed once the speaker has
@@ -47,8 +54,18 @@
 @media (min-width: 48rem) {
   .transcript-turn {
     display: grid;
-    grid-template-columns: 9rem 1fr;
+    /*
+     * The rail gets its own column rather than eating the prose measure, which
+     * `.transcript__turns` caps at 70ch for readability.
+     */
+    grid-template-columns: 9rem 1fr minmax(0, 14rem);
     gap: 0 1rem;
+  }
+
+  .transcript-turn__rail {
+    margin-top: 0;
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .transcript-turn__meta {
@@ -63,6 +80,60 @@
   .transcript-turn__separator {
     display: none;
   }
+}
+
+/* ---------- The code rail, per D-041 ---------- */
+
+/*
+ * A glance channel, and out of the accessibility tree. Pills carry their text
+ * label as well as their hue, so nothing here rests on colour alone even though
+ * assistive technology never reads it: the turn's description is its twin.
+ *
+ * Wraps rather than truncating. A pill reading "Changing membership" where the
+ * code is "Changing membership composition" would take from the glance exactly
+ * what it exists to give.
+ */
+.transcript-turn__rail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.25rem;
+  margin-top: 0.35rem;
+}
+
+.transcript-turn__pill {
+  padding: 0.05rem 0.5rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--code-strong, var(--border));
+  background: var(--code-fill, var(--row-bg));
+  /* Black on every shade-2 fill: 6.9:1 to 15.4:1, audited at extraction. */
+  color: var(--color-black);
+  font-size: 0.85em;
+}
+
+.transcript-turn__note {
+  width: 1em;
+  height: 1em;
+  margin-top: 0.15rem;
+  color: var(--text-muted);
+  flex: none;
+}
+
+/*
+ * The turn's accessible description. Hidden both ways on purpose: `aria-hidden`
+ * keeps it out of continuous reading, and this keeps it off the screen. It is
+ * still used to compute the description when the turn takes focus.
+ */
+.transcript-turn__description {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 /*

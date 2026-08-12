@@ -14,6 +14,7 @@ import {
   requireTurnOf,
   savedExcerptsAt,
   savedExcerptsInTurn,
+  turnCoding,
 } from '../../domain';
 import type {
   Code,
@@ -52,6 +53,8 @@ interface TranscriptWorkspaceProps {
   /** Excerpts already stored for this source, from the seeded fixture. */
   seedExcerpts: Excerpt[];
   seedAssignments: CodeAssignment[];
+  /** Notes already on the project, so the rail's note channel is not empty. */
+  seedNotes?: Note[];
   userId: Id;
   codingRoundId: Id;
   codebookVersionId: Id;
@@ -65,6 +68,7 @@ export function TranscriptWorkspace({
   resolved,
   seedExcerpts,
   seedAssignments,
+  seedNotes = [],
   userId,
   codingRoundId,
   codebookVersionId,
@@ -141,6 +145,27 @@ export function TranscriptWorkspace({
       }),
     [allExcerpts, effectiveAssignments, resolved],
   );
+
+  /** Every note in play, seeded and from this session. */
+  const allNotes = useMemo(() => [...seedNotes, ...savedNotes], [savedNotes, seedNotes]);
+
+  /**
+   * What each turn carries, for the code rail and the turn's accessible
+   * description. One derivation feeds both, per D-041, so the glance channel
+   * and the announced one cannot disagree.
+   */
+  const codingByTurnId = useMemo(
+    () =>
+      new Map(
+        resolved.turns.map((turn) => [
+          turn.turn.turnId,
+          turnCoding(resolved, turn.turn.turnId, allExcerpts, effectiveAssignments, allNotes),
+        ]),
+      ),
+    [allExcerpts, allNotes, effectiveAssignments, resolved],
+  );
+
+  const codeById = useMemo(() => new Map(codes.map((code) => [code.codeId, code])), [codes]);
 
   const orientation = useTranscriptOrientation({ resolved, userId, flags });
 
@@ -471,6 +496,8 @@ export function TranscriptWorkspace({
         excerptStartOffset={excerpt.startOffset}
         excerptEndOffset={excerpt.endOffset}
         excerptState={excerpt.selection.state}
+        codingByTurnId={codingByTurnId}
+        codeById={codeById}
       />
       {/* D-033: below the transcript at narrow width, alongside it when there
           is room, in the same logical order either way. */}

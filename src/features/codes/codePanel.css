@@ -245,20 +245,11 @@
   height: 0.6em;
   border-radius: 50%;
   align-self: center;
-  background: var(--code-color, var(--text-muted));
+  background: var(--code-strong, var(--text-muted));
 }
 
-/*
- * Provisional. Task 25 assigns tag hue per top-level code family across the
- * thirteen token families, with the four low-contrast borders last; this is a
- * nearest-hue placeholder so no raw value survives until then.
- */
-.code-panel__swatch[data-color-token='code-color-moss'] { --code-color: var(--l-green-1); }
-.code-panel__swatch[data-color-token='code-color-clay'] { --code-color: var(--coral-1); }
-.code-panel__swatch[data-color-token='code-color-indigo'] { --code-color: var(--blue-1); }
-.code-panel__swatch[data-color-token='code-color-amber'] { --code-color: var(--orange-1); }
-.code-panel__swatch[data-color-token='code-color-slate'] { --code-color: var(--color-grey-750); }
-.code-panel__swatch[data-color-token='code-color-rust'] { --code-color: var(--red-1); }
+/* Hue comes from the shared family mapping in index.css, so the dot here and
+   the rail pill in the transcript cannot disagree for the same code. */
 
 @media (forced-colors: active) {
   /* The dot conveys nothing on its own, so it simply goes. */

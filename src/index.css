@@ -104,3 +104,42 @@ h1:focus {
   outline: var(--border-thick) solid var(--focus);
   outline-offset: var(--radius-small);
 }
+
+/*
+ * Code family hues, in one place because two surfaces read them: the code
+ * panel's swatch dot and the transcript's rail pills. Defined here rather than
+ * in either, so a code cannot appear in one hue on a pill and another on a dot.
+ *
+ * Provisional. Task 25 assigns tag hue per top-level code family across the
+ * thirteen token families, putting the four low-contrast borders last; this is
+ * a nearest-hue placeholder until it does.
+ */
+[data-color-token='code-color-moss'] {
+  --code-strong: var(--l-green-1);
+  --code-fill: var(--l-green-2);
+}
+[data-color-token='code-color-clay'] {
+  --code-strong: var(--coral-1);
+  --code-fill: var(--coral-2);
+}
+[data-color-token='code-color-indigo'] {
+  --code-strong: var(--blue-1);
+  --code-fill: var(--blue-2);
+}
+[data-color-token='code-color-amber'] {
+  --code-strong: var(--orange-1);
+  --code-fill: var(--orange-2);
+}
+[data-color-token='code-color-slate'] {
+  --code-strong: var(--color-grey-750);
+  --code-fill: var(--color-grey-300);
+}
+[data-color-token='code-color-rust'] {
+  --code-strong: var(--red-1);
+  --code-fill: var(--red-2);
+}
+/* A proposed code is marked in words, never by colour alone. */
+[data-color-token='code-color-provisional'] {
+  --code-strong: var(--text-muted);
+  --code-fill: var(--row-bg);
+}

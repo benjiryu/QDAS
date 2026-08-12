@@ -1,10 +1,11 @@
-import { Fragment } from 'react';
+import { Fragment, useId } from 'react';
 import { codingOf } from '../../domain';
-import type { Id, ResolvedTurn, SegmentDisplayStates } from '../../domain';
+import type { Code, Id, ResolvedTurn, SegmentDisplayStates, TurnCoding } from '../../domain';
 import type { TimestampVerbosity } from '../../config/flags';
 import { formatTimestamp } from './formatTimestamp';
 import { segmentRuns } from './segmentRuns';
 import type { CaptureExtent } from './segmentRuns';
+import { turnDescription } from './turnDescription';
 
 /**
  * One speaker turn: a focusable list item holding continuous prose.
@@ -41,6 +42,10 @@ interface TranscriptTurnProps {
   excerptStartOffset?: number | null;
   excerptEndOffset?: number | null;
   excerptState?: string;
+  /** What this turn carries, for the rail and its description. D-041. */
+  coding?: TurnCoding;
+  /** Names and hues for the rail's pills. */
+  codeById?: Map<Id, Code>;
 }
 
 type ExcerptMarker = 'start' | 'end' | 'only' | 'in-range';
@@ -128,7 +133,15 @@ export function TranscriptTurn({
   excerptStartOffset = null,
   excerptEndOffset = null,
   excerptState,
+  coding,
+  codeById,
 }: TranscriptTurnProps) {
+  const descriptionId = useId();
+  const description = coding ? turnDescription(coding) : null;
+  const railCodes = (coding?.codeIds ?? [])
+    .map((codeId) => codeById?.get(codeId))
+    .filter((code): code is Code => code !== undefined);
+
   const first = turn.segments[0];
   const startTimeMs = first?.startTimeMs ?? null;
   const showTimestamp = timestampVerbosity !== 'never' && startTimeMs !== null;
@@ -160,6 +173,7 @@ export function TranscriptTurn({
       className="transcript-turn"
       tabIndex={0}
       data-turn-id={turn.turn.turnId}
+      aria-describedby={description ? descriptionId : undefined}
       onClick={handleClick}
     >
       {/*
@@ -252,6 +266,52 @@ export function TranscriptTurn({
           );
         })}
       </span>
+
+      {/*
+        The code rail, per D-041. A glance channel for sighted and magnification
+        users, and out of the accessibility tree: code names in the reading
+        stream would fragment the continuous prose D-002 protects. What makes
+        hiding it legitimate is the description below, which is its twin.
+
+        Pills carry their text label as well as their hue, so the rail does not
+        rely on colour even though nothing here reads it aloud.
+      */}
+      {railCodes.length > 0 || coding?.hasNote ? (
+        <span className="transcript-turn__rail" aria-hidden="true">
+          {railCodes.map((code) => (
+            <span
+              key={code.codeId}
+              className="transcript-turn__pill"
+              data-color-token={code.colorToken}
+            >
+              {code.name}
+            </span>
+          ))}
+          {coding?.hasNote ? (
+            /* Drawn rather than typed: Luciole has no glyph at U+270E, and a
+               missing glyph renders as a replacement box. */
+            <svg className="transcript-turn__note" viewBox="0 0 16 16" focusable="false">
+              <path
+                d="M2 3.5A1.5 1.5 0 0 1 3.5 2h9A1.5 1.5 0 0 1 14 3.5v6A1.5 1.5 0 0 1 12.5 11H6.7L3.4 13.8A.5.5 0 0 1 2.6 13.4V11H2.5A.5.5 0 0 1 2 10.5z"
+                fill="currentColor"
+              />
+            </svg>
+          ) : null}
+        </span>
+      ) : null}
+
+      {/*
+        The programmatic twin. Hidden both ways on purpose: `aria-hidden` keeps
+        it out of continuous reading, and the clip keeps it off the screen. A
+        hidden node referenced by `aria-describedby` is still used to compute
+        the description, so it is announced when the turn takes focus and at no
+        other time. Verified per screen reader in the smoke test.
+      */}
+      {description ? (
+        <span id={descriptionId} className="transcript-turn__description" aria-hidden="true">
+          {description}
+        </span>
+      ) : null}
     </li>
   );
 }
