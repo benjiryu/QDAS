@@ -89,6 +89,7 @@ const drafts = new Map<string, CodingDraft>();
 const savedWork = new Map<string, SavedWork>();
 const provisionalCodes = new Map<string, Code[]>();
 const codebookQueries = new Map<string, string>();
+const codedDataFilters = new Map<string, string>();
 
 export function readDraft(sourceId: Id): CodingDraft {
   return drafts.get(sourceId) ?? EMPTY_DRAFT;
@@ -152,10 +153,28 @@ export function writeCodebookQuery(projectId: Id, query: string): void {
   codebookQueries.set(projectId, query);
 }
 
+/* ---------- Coded data page filter ---------- */
+
+/**
+ * The selected code filter, per project and per view.
+ *
+ * destinations.md section 2 keeps it for the session, and per view: the two
+ * views list different codes, so a selection made in one is meaningless in the
+ * other and would silently show an empty result list.
+ */
+export function readCodedDataFilter(projectId: Id, view: string): string {
+  return codedDataFilters.get(`${projectId}|${view}`) ?? 'all';
+}
+
+export function writeCodedDataFilter(projectId: Id, view: string, codeId: string): void {
+  codedDataFilters.set(`${projectId}|${view}`, codeId);
+}
+
 /** For the between-participants reset, and for test setup. */
 export function clearCodingSession(): void {
   drafts.clear();
   savedWork.clear();
   provisionalCodes.clear();
   codebookQueries.clear();
+  codedDataFilters.clear();
 }

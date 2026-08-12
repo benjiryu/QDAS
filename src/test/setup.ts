@@ -2,6 +2,7 @@ import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
 import { afterEach } from 'vitest';
 import { clearCodingSession } from '../data/codingSessionStore';
+import { clearSimulatedSession } from '../data/simulatedSession';
 
 afterEach(() => {
   cleanup();
@@ -12,4 +13,8 @@ afterEach(() => {
     session, which is what they all already assume.
   */
   clearCodingSession();
+  // The simulated role and phase, back to the seeded scenario. D-049 resolves
+  // the Coded data view from these, so a test that switched them would
+  // otherwise decide the next one's view.
+  clearSimulatedSession();
 });

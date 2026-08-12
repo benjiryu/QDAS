@@ -376,3 +376,43 @@ export function diffReopenedAssignments(
 
   return { added, supersededAssignmentIds, unchangedCodeIds };
 }
+
+/**
+ * Marks the assignments a coder has removed, per D-030.
+ *
+ * Removal supersedes rather than deletes: the project keeps before-and-after
+ * history, and an assignment a coder took off an excerpt is evidence about how
+ * interpretation changed. The record stays and its status changes.
+ *
+ * Shared rather than repeated, because two surfaces read it and they must agree
+ * on what is still standing. The transcript decides from this which sentences
+ * still draw as coded; the Coded data page decides from it which assignments a
+ * count includes, which is its own acceptance criterion.
+ */
+export function applySupersession(
+  assignments: CodeAssignment[],
+  supersededIds: ReadonlySet<Id> | readonly Id[],
+): CodeAssignment[] {
+  const superseded = supersededIds instanceof Set ? supersededIds : new Set(supersededIds);
+  if (superseded.size === 0) return assignments;
+
+  return assignments.map((assignment) =>
+    superseded.has(assignment.assignmentId)
+      ? { ...assignment, status: 'superseded' as const }
+      : assignment,
+  );
+}
+
+/**
+ * Whether an assignment still stands.
+ *
+ * Everything except superseded. Deliberately not `status === 'active'`: an
+ * assignment of a provisional code is written `provisional`, and a coder's own
+ * proposed code showing a count of zero while its excerpt sits in the results
+ * below would be incoherent. destinations.md section 2 says "active assignments
+ * only" and gives its reason as excluding superseded ones, which is what this
+ * does. Raised in the task report.
+ */
+export function isStanding(assignment: CodeAssignment): boolean {
+  return assignment.status !== 'superseded';
+}

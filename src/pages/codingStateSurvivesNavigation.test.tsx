@@ -83,6 +83,15 @@ function chord(command: Command) {
 const sidebar = () => within(screen.getByRole('navigation', { name: 'Project' }));
 
 /**
+ * The Coded data count line.
+ *
+ * Read as text rather than matched exactly: since D-049 the line names its view
+ * as well, "Your coded work · 1 coded excerpt", so the count is one element
+ * among several.
+ */
+const summaryText = () => document.querySelector('.coded-data__summary')?.textContent ?? '';
+
+/**
  * Follows a sidebar link by finding it in the DOM rather than by role.
  *
  * Necessary, and the necessity is the finding. While the code panel is open the
@@ -237,7 +246,7 @@ describe('saved work survives the same round trip', () => {
 
     await user.click(sidebar().getByRole('link', { name: 'Coded data' }));
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Coded data');
-    expect(screen.getByText('1 coded excerpt')).toBeInTheDocument();
+    expect(summaryText()).toContain('1 coded excerpt');
 
     await user.click(sidebar().getByRole('link', { name: 'Notes' }));
     expect(screen.getByText('1 note')).toBeInTheDocument();
@@ -259,8 +268,8 @@ describe('saved work survives the same round trip', () => {
     view.unmount();
     clearCodingSession();
 
-    const second = renderAt(`/projects/${project.projectId}/coded-data`);
-    expect(within(second.container).getByText('0 coded excerpts')).toBeInTheDocument();
+    renderAt(`/projects/${project.projectId}/coded-data`);
+    expect(summaryText()).toContain('0 coded excerpts');
   });
 });
 

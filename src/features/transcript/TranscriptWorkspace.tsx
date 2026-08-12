@@ -13,6 +13,7 @@ import {
 import type { CodingDraft, SavedWork } from '../../data/codingSessionStore';
 import type { PrototypeFlags } from '../../config/flags';
 import {
+  applySupersession,
   buildCodingRecords,
   deriveSegmentDisplayStates,
   describeExcerptSize,
@@ -71,6 +72,16 @@ interface TranscriptWorkspaceProps {
   /** The project codebook, for code selection. */
   codes: Code[];
   projectId: Id;
+  /**
+   * A turn to land focus on when this page opens, from a Coded data result.
+   *
+   * destinations.md section 2 calls this the page's most important behaviour:
+   * "landing at the top of the transcript instead makes the page useless".
+   * Following a link is a user action and the element that had focus is gone,
+   * so moving focus here is the same reasoning the shell already documents for
+   * route headings, not the load-time move contract 2.4 forbids.
+   */
+  entryTurnId?: Id | null;
   flags?: PrototypeFlags;
 }
 
@@ -84,6 +95,7 @@ export function TranscriptWorkspace({
   codebookVersionId,
   codes,
   projectId,
+  entryTurnId = null,
   flags = defaultFlags,
 }: TranscriptWorkspaceProps) {
   const announcer = useAnnouncer();
@@ -156,12 +168,7 @@ export function TranscriptWorkspace({
 
   /** Every assignment in play, with superseded ones marked as such. */
   const effectiveAssignments = useMemo(
-    () =>
-      [...seedAssignments, ...savedAssignments].map((assignment) =>
-        supersededIds.has(assignment.assignmentId)
-          ? { ...assignment, status: 'superseded' as const }
-          : assignment,
-      ),
+    () => applySupersession([...seedAssignments, ...savedAssignments], supersededIds),
     [savedAssignments, seedAssignments, supersededIds],
   );
 
@@ -526,6 +533,21 @@ export function TranscriptWorkspace({
       supersededIds: [...supersededIds],
     });
   }, [projectId, savedAssignments, savedExcerpts, savedNotes, supersededIds]);
+
+  /**
+   * The landing, when a Coded data result sent the reader here.
+   *
+   * Once, on mount, and deferred: the shell moves focus to the route's `h1` on
+   * every navigation, and child effects run before parent ones, so focusing
+   * directly would be overwritten a moment later. The same `queueMicrotask`
+   * ordering fix the restored panel needs.
+   */
+  const hasLanded = useRef(false);
+  useEffect(() => {
+    if (hasLanded.current || !entryTurnId) return;
+    hasLanded.current = true;
+    queueMicrotask(() => orientation.focusTurn(entryTurnId));
+  }, [entryTurnId, orientation]);
 
   /**
    * Records proposed codes where they outlive the capture.

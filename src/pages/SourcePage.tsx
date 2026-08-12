@@ -22,6 +22,13 @@ export function SourcePage() {
   const [searchParams] = useSearchParams();
 
   /**
+   * The turn a Coded data result asked us to land on, per destinations.md
+   * section 2. Read the way the flag preset is read, so a result link is an
+   * ordinary URL and stays shareable.
+   */
+  const entryTurnId = searchParams.get('turn');
+
+  /**
    * The flag preset this session runs under, named in the URL.
    *
    * The pre-session checklist requires recording which preset a session ran
@@ -93,6 +100,7 @@ export function SourcePage() {
         codes={view.codes}
         projectId={view.projectId}
         userId={CURRENT_CODER_ID}
+        entryTurnId={entryTurnId}
         flags={flags}
       />
     </>
