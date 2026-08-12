@@ -892,6 +892,65 @@ styled.
 scaffolding rather than product, per the note on Task 24, and is unstyled on
 purpose. Verify it like any other surface; do not restyle it.
 
+## Phase 6. Project destinations
+
+Implements docs/pages/destinations.md and decisions D-043 to D-045. Phase 5
+rules stay in force: tokens only, and the wireframe decides visual language
+while the specifications decide structure and behavior.
+
+### Task 27. Sidebar destinations and state persistence
+
+```
+Implement the sidebar and routes per docs/pages/destinations.md shared rules
+and decision D-044.
+
+- Sidebar order: source list, Code book, Coded data, Notes. No Themes.
+  aria-current="page" plus a non-color indicator on the current destination
+- Routes and page shells with one h1 each; focus moves to the h1 on
+  navigation; count line near the h1
+- Coding state survives navigation: capture, checked codes, and draft note
+  are held while the user visits any destination and restored on return. The
+  panel is hidden, not unmounted or reset
+- Update the stale placeholder comment in the project navigation region
+
+Test: capture an excerpt, check two codes, draft a note, visit all three
+destinations, return, and assert all three survive. This is the D-044
+regression test and the most important thing in this task.
+```
+
+### Task 28. Codebook page
+
+```
+Implement the Codebook page per docs/pages/destinations.md section 1.
+
+Full records inline in canonical order, nested lists, stable fragment ids,
+search with results above the unchanged canonical list, provisional codes in
+their own section. Read-only. Acceptance criteria as written, including the
+D-044 round trip.
+```
+
+### Task 29. Coded data page
+
+```
+Implement the Coded data page per docs/pages/destinations.md section 2 and
+decisions D-045 and R-4.
+
+Filter list in canonical order with own-counts in accessible names, All codes
+default, results in source order, D-041 pill treatment, result links landing
+focus on the turn containing the excerpt start. Selected filter persists for
+the session. Nothing from the seeded second coder appears.
+```
+
+### Task 30. Notes page
+
+```
+Implement the Notes page per docs/pages/destinations.md section 3.
+
+Excerpt notes only, grouped by source, full note text with the excerpt behind
+a disclosure, links landing focus on the noted turn. Read-only; editing routes
+through excerpt.open. Explicit empty state.
+```
+
 ## Failure modes to watch for
 
 **The agent builds something simulated.** Point it at `prototype-scope.md`. File import, authentication, and IRR are not gaps to fill.

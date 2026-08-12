@@ -733,3 +733,31 @@ Supporting this, N-2 in `unresolved-questions.md` worries that a coder who leave
 **Accepted cost, for the team to weigh in sessions.** A note written with no code checked is now discarded without a word. The old confirmation counted a draft note as unsaved work and asked before losing it; nothing does now. There is no excerpt for such a note to attach to, so keeping it is not available, but the warning that used to catch the case is gone. If sessions show coders writing a note before choosing any code, this is where it will show up.
 
 The footer also changes: the action group sits at the trailing edge in both states, so Save & Close no longer moves depending on whether a reopened excerpt has put Delete beside it.
+
+## D-043 Project destinations: Codebook, Coded data, Notes
+
+Date: 2026-08 | Workflow: navigation | Status: approved
+
+The project sidebar carries, in fixed order: the source list, then Code book, Coded data, and Notes as destinations. Themes stays absent per D-017. The current destination is marked with `aria-current="page"` and a non-color indicator. This fills the project navigation landmark that Task 1 left as a placeholder and D-013 promised.
+
+Scope of each page is specified in `docs/pages/destinations.md`. All three are read surfaces in this version: the codebook is browsed, not edited; coded data and notes list the coder's own work; editing continues to happen through the coding panel via `excerpt.open`.
+
+## D-044 Coding state survives in-app navigation
+
+Date: 2026-08 | Workflow: excerpt capture, navigation | Status: approved. Closes C-5
+
+A captured excerpt, its checked codes, and a draft note persist while the user navigates to any destination and back, within the session.
+
+Reason: D-035 moved definition lookup to the Codebook destination, which made leaving the coding surface mid-task a designed behavior rather than an accident. A coder who leaves to check whether a passage is Water access or Water access rules, and returns to find the capture discarded, has been punished for diligence, and the coders least able to reconstruct their place pay the most.
+
+The panel does not follow the user across destinations. It is a region of the source page; navigating away hides it with state held, returning shows it as it was. A page reload still clears in-progress state, unchanged from D-036's scope.
+
+## D-045 Coded data shows the coder's own per-code counts
+
+Date: 2026-08 | Workflow: review of own work | Status: approved. Narrows D-010
+
+The Coded data page shows a count beside each code, counting only the current coder's own assignments.
+
+D-010's rule stands for everything else: aggregate counts, other coders' counts, and project-wide frequencies remain administrator-only, and R-4 keeps other coders' work invisible during independent coding. What this narrows is self-observation: the team accepts the self-influence risk in exchange for progress monitoring, matching the Figma's count badges.
+
+Recorded as a known methodological trade: if reflexivity sessions surface coders steering toward already-heavy codes of their own, this is the decision to revisit.

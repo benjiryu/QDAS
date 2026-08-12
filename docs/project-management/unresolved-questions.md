@@ -34,17 +34,6 @@ Assumption until answered: real data is not deployed to an unauthenticated publi
 
 **V-2. Is turn-level capture too coarse as the screen reader mainline?** Owner: session evidence, v0.2. Where browse-mode selection never reaches the DOM, the fallback is the route, at turn granularity. If NVDA and JAWS participants live on it and fight it, that is evidence for restoring minimal boundary adjustment.
 
-**C-5. Does a confirmed excerpt and its pending assignment survive navigating to the Codebook destination and back?**
-
-Owner: team. Opened by D-035, which moves definition lookup out of the code panel.
-
-The persistence rules in `code-selection.md` section 12 and `excerpt-selection.md` section 9 cover what survives inside the panel: search, browse, note editing, a failed save. Neither covers leaving the coding surface for another destination and returning, because until D-035 there was no reason to leave mid-coding. There now is: reading a definition requires it.
-
-If the answer is no, checking a definition costs the coder their work. A coder who cannot tell `Water access` from `Water access rules`, leaves to read them, and comes back to an empty pending assignment and a discarded excerpt has been punished for checking. That is worse than the density D-035 removed, and it would land on exactly the participants least able to reconstruct where they were.
-
-Not answered here. What settles it is a decision about whether the coding surface holds state across destinations, which is a question about the application's state model rather than about this panel.
-
-
 **F-9. Figma frame hygiene.** Owner: Benji. The frame named `Project` contains the login form, the frame named `Log in` holds only the wordmark, and three hidden `Home` frames carry conflicting taxonomies from different generations. Not behavioral. Resolution: clean before the MSE handoff.
 
 ## Resolved
@@ -88,6 +77,8 @@ Not answered here. What settles it is a decision about whether the coding surfac
 **C-3. SUPERSEDED by D-039.** Level labels are removed; hierarchy shows as indentation and pill color, with nested lists carrying level programmatically. The high-zoom legibility risk the indicator guarded against moves to session evidence.
 
 **C-4. RESOLVED.** No AI suggestions in v0.1.
+
+**C-5. RESOLVED, D-044.** Coding state survives in-app navigation within the session. The panel is hidden, not reset, while the coder visits the Codebook or any other destination. A reload still clears in-progress state.
 
 ### Notes and themes
 
