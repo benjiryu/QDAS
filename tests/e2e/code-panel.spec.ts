@@ -205,6 +205,20 @@ test('the panel reflows at 320px without scrolling sideways', async ({ page }) =
   expect(overflows).toBe(false);
 });
 
+test('the create form asks for a name and nothing else', async ({ page }) => {
+  // D-046: proposing a code mid-coding costs one field. Scanned expanded,
+  // because the form only exists while the disclosure is open.
+  await page.getByRole('button', { name: /create new code/i }).click();
+  const form = page.locator('.code-panel__create');
+  await expect(form).toBeVisible();
+
+  await expect(form.locator('input, textarea')).toHaveCount(1);
+  await expect(form.getByLabel('Code name')).toBeVisible();
+
+  const results = await new AxeBuilder({ page }).include('[role="dialog"]').analyze();
+  expect(results.violations).toEqual([]);
+});
+
 test('the open dialog has no accessibility violations', async ({ page }) => {
   const results = await new AxeBuilder({ page }).include('[role="dialog"]').analyze();
   expect(results.violations).toEqual([]);

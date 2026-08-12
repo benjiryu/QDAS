@@ -113,18 +113,11 @@ function checkedCodeIds(): string[] {
   return [...new Set(ids)];
 }
 
-function createCode(name: string, shortDefinition: string, fullDefinition = '') {
+/** A name is the whole form since D-046. */
+function createCode(name: string) {
   openCreate();
   const create = region('create');
   fireEvent.change(within(create).getByLabelText('Code name'), { target: { value: name } });
-  fireEvent.change(within(create).getByLabelText('Short definition'), {
-    target: { value: shortDefinition },
-  });
-  if (fullDefinition) {
-    fireEvent.change(within(create).getByLabelText(/full definition/i), {
-      target: { value: fullDefinition },
-    });
-  }
   fireEvent.click(within(create).getByRole('button', { name: /create provisional code/i }));
 }
 
@@ -134,7 +127,7 @@ describe('acceptance: provisional codes do not enter the canonical list', () => 
     openPanel();
     const before = codebookOrder();
 
-    createCode('Compost queue', 'Waiting to use the shared compost bays.');
+    createCode('Compost queue');
 
     // In Proposed codes, not in the codebook.
     expect(within(region('proposed')).getByText('Compost queue')).toBeInTheDocument();
@@ -152,17 +145,12 @@ describe('acceptance: provisional codes do not enter the canonical list', () => 
     expect(document.querySelectorAll('[data-region="proposed"]')).toHaveLength(1);
   });
 
-  it('shows its name and no definition, like any other code', () => {
-    // The definition is still required and still stored; the panel simply
-    // stopped showing definitions on rows.
+  it('shows its name, which since D-046 is all a created code carries', () => {
     renderWorkspace();
     openPanel();
-    createCode('Tool sharing', 'Borrowing and returning shared tools.', 'The full account.');
+    createCode('Tool sharing');
 
     expect(within(region('proposed')).getByText('Tool sharing')).toBeInTheDocument();
-    expect(
-      within(region('proposed')).queryByText('Borrowing and returning shared tools.'),
-    ).toBeNull();
   });
 });
 
@@ -236,7 +224,7 @@ describe('creating a provisional code, per section 7', () => {
     renderWorkspace();
     openPanel();
 
-    createCode('Winter planning', 'Deciding in the off season what to grow.');
+    createCode('Winter planning');
 
     // Checked is the pending state, per D-039: there is no second region
     // restating it.
@@ -249,7 +237,7 @@ describe('creating a provisional code, per section 7', () => {
   it('collapses the disclosure and returns focus to its row, per D-039', async () => {
     renderWorkspace();
     openPanel();
-    createCode('Seed swaps', 'Exchanging seed between members.');
+    createCode('Seed swaps');
     // The return runs on a microtask, after the form has gone.
     await act(async () => {});
 
@@ -258,23 +246,20 @@ describe('creating a provisional code, per section 7', () => {
     expect(row).toHaveAttribute('aria-expanded', 'false');
   });
 
-  it('requires a name and a short definition, losing nothing on a refusal', () => {
+  it('still requires a name, and refuses without losing the form', () => {
+    // The one remaining validation. Contract 2.6: the refusal says what
+    // happened and puts focus where the fix is.
     renderWorkspace();
     openPanel();
 
     openCreate();
     const create = region('create');
-    fireEvent.change(within(create).getByLabelText('Short definition'), {
-      target: { value: 'A definition with no name.' },
-    });
+    fireEvent.change(within(create).getByLabelText('Code name'), { target: { value: '   ' } });
     fireEvent.click(within(create).getByRole('button', { name: /create provisional code/i }));
 
     expect(within(create).getByText(/needs a name/i)).toBeInTheDocument();
     expect(within(create).getByLabelText('Code name')).toHaveFocus();
-    // What was typed is still there.
-    expect(within(create).getByLabelText('Short definition')).toHaveValue(
-      'A definition with no name.',
-    );
+    expect(within(create).getByLabelText('Code name')).toHaveValue('   ');
     expect(panel().querySelector('[data-region="proposed"]')).toBeNull();
 
     fireEvent.change(within(create).getByLabelText('Code name'), { target: { value: 'Named' } });
@@ -282,24 +267,28 @@ describe('creating a provisional code, per section 7', () => {
     expect(within(region('proposed')).getByText('Named')).toBeInTheDocument();
   });
 
-  it('treats the full definition as optional', () => {
+  it('asks for nothing but a name, per D-046', () => {
+    // The whole point of the change: proposing a code mid-coding costs one
+    // field, not three. Asserted as the absence of the other inputs rather
+    // than by a label query, so renaming one cannot make this pass.
     renderWorkspace();
     openPanel();
-    createCode('Bench repair', 'Fixing the shared seating.');
+    openCreate();
 
-    expect(within(region('proposed')).getByText('Bench repair')).toBeInTheDocument();
+    const fields = region('create').querySelectorAll('input, textarea');
+    expect(fields).toHaveLength(1);
+    expect(fields[0]).toHaveAccessibleName('Code name');
   });
 
   it('empties the form once the code exists', () => {
     renderWorkspace();
     openPanel();
-    createCode('Gate code sharing', 'Passing the entry code to non-members.');
+    createCode('Gate code sharing');
 
     // Reopened, since creating collapses the disclosure.
     openCreate();
     const create = region('create');
     expect(within(create).getByLabelText('Code name')).toHaveValue('');
-    expect(within(create).getByLabelText('Short definition')).toHaveValue('');
   });
 
   it('keeps the proposed region absent until a code is proposed', () => {
@@ -320,7 +309,7 @@ describe('creating a provisional code, per section 7', () => {
   it('can be unchecked like any other pending code', () => {
     renderWorkspace();
     openPanel();
-    createCode('Mulch delivery', 'Arranging bulk mulch drops.');
+    createCode('Mulch delivery');
 
     const box = within(region('proposed')).getByRole('checkbox') as HTMLInputElement;
     expect(box.checked).toBe(true);
@@ -334,7 +323,7 @@ describe('creating a provisional code, per section 7', () => {
   it('keeps the region order fixed once both new regions exist', () => {
     renderWorkspace();
     openPanel();
-    createCode('Water rota', 'Who waters when.');
+    createCode('Water rota');
     search('water');
 
     const order = Array.from(panel().querySelectorAll('[data-region]')).map((element) =>

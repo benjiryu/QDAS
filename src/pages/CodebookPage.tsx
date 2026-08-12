@@ -28,20 +28,17 @@ import './codebook.css';
  * everything a coder changes still goes through the coding panel.
  */
 
-/** The fields on every record. Order is fixed, as the field list gives it. */
+/**
+ * What a record shows, per D-046: one open-ended definition and nothing else.
+ *
+ * The short definition, the two criteria, and the status are still on the
+ * `Code` record and still in the seed; they are no longer displayed. Keeping
+ * the data means widening this again is a display decision rather than a
+ * recovery, which is what "for now" in D-046 is holding open.
+ */
 const RECORD_FIELDS: { label: string; read: (code: Code) => string }[] = [
-  { label: 'Short definition', read: (code) => code.shortDefinition },
-  { label: 'Full definition', read: (code) => code.fullDefinition },
-  { label: 'Inclusion criteria', read: (code) => code.inclusionCriteria },
-  { label: 'Exclusion criteria', read: (code) => code.exclusionCriteria },
+  { label: 'Definition', read: (code) => code.fullDefinition },
 ];
-
-const STATUS_LABELS: Record<Code['status'], string> = {
-  approved: 'Approved',
-  provisional: 'Provisional',
-  deprecated: 'Deprecated',
-  merged: 'Merged',
-};
 
 export function CodebookPage() {
   const { projectId } = useParams();
@@ -247,10 +244,6 @@ function CodeRecord({ code, headingLevel, idPrefix, parentPath, matchedIn }: Cod
             <dd>{field.read(code) === '' ? 'Not recorded.' : field.read(code)}</dd>
           </div>
         ))}
-        <div className="codebook__field">
-          <dt>Status</dt>
-          <dd>{STATUS_LABELS[code.status]}</dd>
-        </div>
       </dl>
     </article>
   );

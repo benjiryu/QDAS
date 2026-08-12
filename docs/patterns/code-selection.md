@@ -138,7 +138,7 @@ Examples remain out of scope for v0.1 per D-019, and remain hidden from a coder 
 
 ## 7. Creating a provisional code
 
-- Name and short definition are required; full definition is optional.
+- ~~Name and short definition are required; full definition is optional.~~ **Amended by D-046:** a name is the whole form. Proposing a code happens mid-coding, and two fields of prose at that moment is a codebook entry demanded in the middle of reading a transcript.
 - A created code enters the pending assignment immediately.
 - It appears in the Proposed codes region, never in the canonical codebook. The canonical structure does not change until a qualitative lead approves the code.
 - Status is `provisional` until approved.

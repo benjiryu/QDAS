@@ -9,13 +9,18 @@
  * The panel matches names and parent paths only, because a panel row shows a
  * name and a colour pill and nothing else: a result matched on text the coder
  * cannot see is a code appearing for no visible reason, which is worse than not
- * finding it. This page shows every definition and both criteria inline, so
- * that reason does not hold here. A hit on a definition is a hit the coder can
- * read the cause of, one line down.
+ * finding it. This page shows the definition inline, so a hit on it is one the
+ * coder can read the cause of, a line down.
  *
- * Section 1 asks for exactly this — "matches name, definitions, and criteria" —
- * and the same sentence calls it the panel's semantics, which it no longer is.
- * The conflict is recorded in the task report; this file is the wider half.
+ * The rule is what is on the page, not what is on the record. D-046 took the
+ * short definition, both criteria, and the status off the display, so this
+ * stopped matching them in the same change — they are still on every `Code` and
+ * still in the seed, and searching them would put a code in front of a coder
+ * with the reason nowhere on screen.
+ *
+ * Section 1 asked for "name, definitions, and criteria" and called it the
+ * panel's semantics, which it was not by then either. Both halves are recorded
+ * in the decision log.
  *
  * Results come back in canonical order, never in relevance order. A list that
  * reorders itself between queries is what code-selection.md section 4 rules out,
@@ -32,13 +37,7 @@ import type { Code } from '../../domain';
  * Its own type rather than a wider `CodeSearchResult`: the panel's union has
  * two members and should keep having two, since it can only ever match on those.
  */
-export type CodebookMatchField =
-  | 'name'
-  | 'parentPath'
-  | 'shortDefinition'
-  | 'fullDefinition'
-  | 'inclusionCriteria'
-  | 'exclusionCriteria';
+export type CodebookMatchField = 'name' | 'parentPath' | 'definition';
 
 export interface CodebookSearchResult {
   code: Code;
@@ -50,10 +49,7 @@ export interface CodebookSearchResult {
 export const MATCH_FIELD_LABELS: Record<CodebookMatchField, string> = {
   name: 'name',
   parentPath: 'parent code',
-  shortDefinition: 'short definition',
-  fullDefinition: 'full definition',
-  inclusionCriteria: 'inclusion criteria',
-  exclusionCriteria: 'exclusion criteria',
+  definition: 'definition',
 };
 
 /**
@@ -64,10 +60,7 @@ export const MATCH_FIELD_LABELS: Record<CodebookMatchField, string> = {
  */
 const FIELDS: { field: CodebookMatchField; read: (code: Code) => string }[] = [
   { field: 'name', read: (code) => code.name },
-  { field: 'shortDefinition', read: (code) => code.shortDefinition },
-  { field: 'fullDefinition', read: (code) => code.fullDefinition },
-  { field: 'inclusionCriteria', read: (code) => code.inclusionCriteria },
-  { field: 'exclusionCriteria', read: (code) => code.exclusionCriteria },
+  { field: 'definition', read: (code) => code.fullDefinition },
 ];
 
 export function searchCodebook(nodes: CodeNode[], rawQuery: string): CodebookSearchResult[] {

@@ -761,3 +761,21 @@ The Coded data page shows a count beside each code, counting only the current co
 D-010's rule stands for everything else: aggregate counts, other coders' counts, and project-wide frequencies remain administrator-only, and R-4 keeps other coders' work invisible during independent coding. What this narrows is self-observation: the team accepts the self-influence risk in exchange for progress monitoring, matching the Figma's count badges.
 
 Recorded as a known methodological trade: if reflexivity sessions surface coders steering toward already-heavy codes of their own, this is the decision to revisit.
+
+## D-046 One open-ended definition per code
+
+Date: 2026-08 | Workflow: code assignment, codebook reference | Status: approved. Amends destinations.md section 1 and code-selection.md section 7
+
+**A code shows one definition, and creating one asks only for a name.**
+
+The codebook was specified as a formal coding manual: every code carrying a short definition, a full definition, inclusion criteria, exclusion criteria, and a status, with two of those required before a coder could propose a code at all. This narrows it to a single open-ended definition paragraph, and reduces the create-code form to one field.
+
+Reason, on the reading side: a reference page is read to answer a question, and five labelled prose fields per code across fifty codes is a structure the reader has to navigate before they can read. One paragraph is the shape a definition actually takes when someone writes one.
+
+Reason, on the writing side: proposing a code happens mid-coding, in the middle of reading a transcript. Requiring a short definition there asks the coder to stop coding and compose a codebook entry, at the moment they are least able to. The name is what labels the excerpt; the definition belongs on the surface built for reading definitions.
+
+**The data does not change.** `Code` keeps `shortDefinition`, `inclusionCriteria`, `exclusionCriteria`, and `status`, and all fifty seeded codes keep their content. What changed is what is collected and what is displayed. Nothing was deleted, so widening the definition set again is a display decision rather than a recovery — which is what "for now" in the request is holding open. The consequence to know: those fields are now written by nothing and read by nothing, and a code created this session carries empty strings in all four.
+
+**Search narrows with the display.** The Codebook page's search drops the short definition and both criteria, keeping name, parent path, and the definition. The rule set when that search was widened was that this page may match more than the panel *because it displays what it matches*; once three of those fields left the page, matching them would put a code in front of a coder with the reason nowhere on screen. That is the same failure the panel was narrowed to avoid, and the rule holds in both directions.
+
+Status stops being displayed anywhere. It is still set to `provisional` on created codes and still separates the Provisional codes section from the canonical list, so nothing depends on the removed display.

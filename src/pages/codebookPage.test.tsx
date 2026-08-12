@@ -42,6 +42,16 @@ const PHRASE_OWNER = fixture.codes.find((code) =>
   code.fullDefinition.toLowerCase().includes(DEFINITION_ONLY_PHRASE),
 )!;
 
+/**
+ * A phrase in one code's inclusion criteria and nowhere else.
+ *
+ * The probe for D-046 narrowing the search alongside the display. It found a
+ * code before that change and must find nothing after it, because the criteria
+ * are no longer on the page and a hit the coder cannot see the cause of is what
+ * the rule exists to prevent.
+ */
+const CRITERIA_ONLY_PHRASE = 'carrying';
+
 let announcer: Announcer;
 
 beforeEach(() => {
@@ -227,8 +237,33 @@ describe('search reaches the whole record here, and only the name in the panel',
     renderAt(codebookUrl);
 
     await user.type(searchField(), DEFINITION_ONLY_PHRASE);
-    expect(within(region('search-results')!).getByText(/matched in full definition/i))
+    expect(within(region('search-results')!).getByText(/matched in definition/i))
       .toBeInTheDocument();
+  });
+
+  it('no longer reaches text D-046 took off the page', async () => {
+    // The narrowing, pinned from the fixture. The phrase is real, it belongs to
+    // a real code, and it is nowhere a coder can read it any more.
+    const owner = fixture.codes.find((code) =>
+      code.inclusionCriteria.toLowerCase().includes(CRITERIA_ONLY_PHRASE),
+    );
+    expect(owner, 'the probe phrase must exist in some code\'s criteria').toBeDefined();
+    expect(
+      fixture.codes.some(
+        (code) =>
+          code.name.toLowerCase().includes(CRITERIA_ONLY_PHRASE) ||
+          code.fullDefinition.toLowerCase().includes(CRITERIA_ONLY_PHRASE),
+      ),
+      'and must not appear in any name or definition, or this proves nothing',
+    ).toBe(false);
+
+    expect(searchCodebook(buildCodeTree(fixture.codes), CRITERIA_ONLY_PHRASE)).toHaveLength(0);
+
+    const user = userEvent.setup();
+    renderAt(codebookUrl);
+    await user.type(searchField(), CRITERIA_ONLY_PHRASE);
+
+    expect(within(region('search-results')!).getByText(/no codes match/i)).toBeInTheDocument();
   });
 
   it('keeps the query for the session, across a trip away and back', async () => {
@@ -248,21 +283,24 @@ describe('the record, per section 1', () => {
   const recordFor = (codeId: string) =>
     within(region('codebook')!.querySelector<HTMLElement>(`[data-code-id="${codeId}"]`)!);
 
-  it('shows every field inline, with no disclosure to open', () => {
+  it('shows the definition inline, and nothing D-046 removed', () => {
     renderAt(codebookUrl);
     const code = PHRASE_OWNER;
     const record = recordFor(code.codeId);
 
-    for (const [label, value] of [
-      ['Short definition', code.shortDefinition],
-      ['Full definition', code.fullDefinition],
-      ['Inclusion criteria', code.inclusionCriteria],
-      ['Exclusion criteria', code.exclusionCriteria],
-    ]) {
-      expect(record.getByText(label)).toBeInTheDocument();
-      expect(record.getByText(value)).toBeInTheDocument();
+    expect(record.getByText('Definition')).toBeInTheDocument();
+    expect(record.getByText(code.fullDefinition)).toBeInTheDocument();
+
+    /*
+      Asserted as the absence of this code's own text rather than of a label:
+      a record that kept rendering the criteria under a different heading would
+      pass a label check and fail a reader.
+    */
+    for (const gone of [code.shortDefinition, code.inclusionCriteria, code.exclusionCriteria]) {
+      expect(gone, 'the fixture must populate this, or the check is vacuous').not.toBe('');
+      expect(record.queryByText(gone)).toBeNull();
     }
-    expect(record.getByText('Status')).toBeInTheDocument();
+    expect(record.queryByText('Status')).toBeNull();
 
     // Nothing to expand: the page is long on purpose.
     expect(record.queryAllByRole('button')).toHaveLength(0);
@@ -330,9 +368,6 @@ describe('provisional codes, per section 1', () => {
     fireEvent.click(within(create).getByRole('button', { name: /create new code/i }));
     fireEvent.change(within(create).getByLabelText('Code name'), {
       target: { value: 'Compost queue' },
-    });
-    fireEvent.change(within(create).getByLabelText('Short definition'), {
-      target: { value: 'Waiting to get compost.' },
     });
     fireEvent.click(within(create).getByRole('button', { name: /create provisional code/i }));
 

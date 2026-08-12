@@ -29,8 +29,8 @@ The destination D-035 pointed definition lookup at. Its job: let a coder read an
 **Regions, fixed order:** heading and count, search field, search results (only while a query is active), the codebook.
 
 - The codebook renders in canonical order from `canonicalOrderIndex`, as nested lists, hierarchy by indentation, tag pill treatment per tokens with the pill decorative and the code name as text.
-- Every code shows its full record inline: name, short definition, full definition, inclusion criteria, exclusion criteria, status, codebook version. This page is where the detail lives, so no disclosure per row; the page is long and that is fine. Deep-linkable: each code has a stable fragment id so future surfaces can link to one code.
-- Search reuses the panel's semantics per D-005: matches name, definitions, and criteria; results in their own region above the unchanged canonical list; query persists within the session.
+- ~~Every code shows its full record inline: name, short definition, full definition, inclusion criteria, exclusion criteria, status, codebook version.~~ **Amended by D-046:** a record shows its name and one open-ended definition. The short definition, both criteria, and the status are still on the `Code` record and in the seed; they are no longer displayed. The codebook version is stated once beside the count rather than per record, since every code here shares one. The rest of this bullet stands: this page is where the detail lives, so no disclosure per row; the page is long and that is fine. Deep-linkable: each code has a stable fragment id so future surfaces can link to one code.
+- Search matches name, parent path, and the definition — what the page displays, per D-046, which is narrower than "name, definitions, and criteria" and no longer the panel's semantics either, since the panel matches name and parent path only. Results in their own region above the unchanged canonical list; query persists within the session.
 - Provisional codes appear in a separate labeled section after the canonical list, never interleaved.
 
 **Acceptance criteria.**

@@ -34,10 +34,15 @@ function newCodeId(): Id {
  */
 export type SaveOutcome = { ok: true } | { ok: false; message: string };
 
+/**
+ * A name and nothing else, per D-046.
+ *
+ * Section 7 required a short definition as well. Proposing a code happens
+ * mid-coding, and two fields of prose at that moment is a codebook entry
+ * demanded in the middle of reading a transcript.
+ */
 export interface NewCodeDraft {
   name: string;
-  shortDefinition: string;
-  fullDefinition: string;
 }
 
 export interface CodePanelApi {
@@ -367,16 +372,21 @@ export function useCodePanel({
   const createProvisionalCode = useCallback(
     (draft: NewCodeDraft): Code | null => {
       const name = draft.name.trim();
-      const shortDefinition = draft.shortDefinition.trim();
-      if (name === '' || shortDefinition === '') return null;
+      if (name === '') return null;
 
       const code: Code = {
         codeId: newCodeId(),
         projectId,
         parentCodeId: null,
         name,
-        shortDefinition,
-        fullDefinition: draft.fullDefinition.trim(),
+        /*
+          Empty, and left on the record rather than removed from the type. The
+          fields still exist on every canonical code and in the seed; D-046
+          narrowed what is collected and displayed, not what a `Code` is, so
+          widening the definition set later is a display change.
+        */
+        shortDefinition: '',
+        fullDefinition: '',
         inclusionCriteria: '',
         exclusionCriteria: '',
         // D-019: examples stay in the model, unwritten and unread in v0.1.
