@@ -144,7 +144,7 @@ export function TranscriptWorkspace({
   const [supersededIds, setSupersededIds] = useState<Set<Id>>(
     () => new Set(restored.work.supersededIds),
   );
-  const panelLoad = useRef<((codeIds: Id[]) => void) | null>(null);
+  const panelLoad = useRef<((codeIds: Id[], noteText?: string) => void) | null>(null);
 
   /**
    * Whether the next save is set to fail, from `simulateSaveFailure`.
@@ -246,9 +246,10 @@ export function TranscriptWorkspace({
             orientation.focusedTurnId,
             allExcerpts,
             effectiveAssignments,
+            allNotes,
           )
         : [],
-    [allExcerpts, effectiveAssignments, orientation.focusedTurnId, resolved],
+    [allExcerpts, allNotes, effectiveAssignments, orientation.focusedTurnId, resolved],
   );
 
   const excerpt = useExcerptSelection({
@@ -262,8 +263,16 @@ export function TranscriptWorkspace({
     onClosePanel: () => setPanelOpen(false),
     savedAt,
     onReopen: (summary) => {
-      // The panel opens pre-populated with what is already saved, per D-030.
-      panelLoad.current?.(summary.codeIds);
+      /*
+        The panel opens pre-populated with what is already saved, per D-030 —
+        the note included. Without it the row said "Add note" over an empty box
+        on an excerpt that already had one, and saving would then have written
+        a second note or dropped the first.
+      */
+      const note = summary.noteId
+        ? allNotes.find((candidate) => candidate.noteId === summary.noteId)
+        : undefined;
+      panelLoad.current?.(summary.codeIds, note?.noteText ?? '');
       setPanelFocus('search');
       setPanelOpen(true);
     },
@@ -296,20 +305,34 @@ export function TranscriptWorkspace({
       // A reopened excerpt writes the difference rather than a new set.
       const reopenedId = excerpt.selection.reopenedExcerptId;
       if (reopenedId) {
-        const diff = diffReopenedAssignments(
-          reopenedId,
-          effectiveAssignments,
-          pending.codeIds,
-          {
-            sourceId: resolved.source.sourceId,
-            coderId: userId,
-            codingRoundId,
-            codebookVersionId,
-          },
-          panelCodeById.current,
-          pending.uncertain,
-          new Date().toISOString(),
-        );
+        const now = new Date().toISOString();
+
+        /*
+          An empty pending list changes no assignment.
+
+          D-030: "emptying the list and saving is not a route to deleting an
+          excerpt". Now that a note alone can be saved, that route would open
+          here — uncheck everything, write a note, save — so this branch leaves
+          the assignments standing and writes only the note. Unchecking one of
+          two still supersedes that one, which is the ordinary edit.
+        */
+        const diff =
+          pending.codeIds.length === 0
+            ? { added: [], supersededAssignmentIds: [], unchangedCodeIds: [] }
+            : diffReopenedAssignments(
+                reopenedId,
+                effectiveAssignments,
+                pending.codeIds,
+                {
+                  sourceId: resolved.source.sourceId,
+                  coderId: userId,
+                  codingRoundId,
+                  codebookVersionId,
+                },
+                panelCodeById.current,
+                pending.uncertain,
+                now,
+              );
 
         setSavedAssignments((current) => [...current, ...diff.added]);
         setSupersededIds((current) => {
@@ -317,6 +340,48 @@ export function TranscriptWorkspace({
           for (const id of diff.supersededAssignmentIds) next.add(id);
           return next;
         });
+
+        /*
+          The note, which this branch used to drop on the floor: it diffed the
+          assignments and returned, so a note edited on a revisited excerpt was
+          discarded on save without a word.
+
+          Updated in place when it is the coder's own, so D-011's one note per
+          excerpt holds. Another coder's is never overwritten — the seeded
+          excerpts belong to the second coder and are reopenable, so that is
+          reachable today, and a new note is written alongside instead.
+        */
+        const noteText = pending.noteText.trim();
+        const existing = allNotes.find(
+          (candidate) => candidate.relatedExcerptId === reopenedId,
+        );
+
+        if (noteText !== '') {
+          if (existing && existing.authorId === userId) {
+            setSavedNotes((current) => {
+              const without = current.filter((note) => note.noteId !== existing.noteId);
+              return [...without, { ...existing, noteText }];
+            });
+          } else if (!existing || existing.authorId !== userId) {
+            setSavedNotes((current) => [
+              ...current,
+              {
+                noteId: `nt-${Math.random().toString(16).slice(2, 12)}`,
+                authorId: userId,
+                noteType: null,
+                noteText,
+                visibility: 'afterIndependentCoding' as const,
+                status: 'active',
+                createdAt: now,
+                relatedExcerptId: reopenedId,
+                relatedSourceId: null,
+                relatedAssignmentId: null,
+                relatedCodeId: null,
+                relatedReviewItemId: null,
+              },
+            ]);
+          }
+        }
 
         const range = excerpt.selection.range!;
         const target = postCodingReturnTarget(
@@ -392,6 +457,7 @@ export function TranscriptWorkspace({
       return { ok: true };
     },
     [
+      allNotes,
       announcer,
       codebookVersionId,
       codingRoundId,
@@ -617,12 +683,18 @@ export function TranscriptWorkspace({
   const openSavedAt = useCallback(
     (segmentId: Id) => {
       if (excerpt.selection.state === 'confirmed') return;
-      const here = savedExcerptsAt(resolved, segmentId, allExcerpts, effectiveAssignments);
+      const here = savedExcerptsAt(
+        resolved,
+        segmentId,
+        allExcerpts,
+        effectiveAssignments,
+        allNotes,
+      );
       if (here.length === 0) return;
       // One opens; several ask, exactly as the command does.
       excerpt.runOpenAt(here);
     },
-    [allExcerpts, effectiveAssignments, excerpt, resolved],
+    [allExcerpts, allNotes, effectiveAssignments, excerpt, resolved],
   );
 
   return (

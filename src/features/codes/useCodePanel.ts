@@ -63,8 +63,11 @@ export interface CodePanelApi {
   /** Codes created this session. Never part of the canonical codebook. */
   proposedCodes: Code[];
   createProvisionalCode: (draft: NewCodeDraft) => Code | null;
-  /** Seeds the pending assignment when reopening a saved excerpt. D-030. */
-  loadPending: (codeIds: Id[]) => void;
+  /**
+   * Seeds the pending assignment and the note when reopening a saved excerpt.
+   * D-030.
+   */
+  loadPending: (codeIds: Id[], noteText?: string) => void;
   /** One note per excerpt, plain text, no type. D-011 and D-020. */
   noteText: string;
   setNoteText: (text: string) => void;
@@ -423,9 +426,12 @@ export function useCodePanel({
    * nothing here happens during a render or an effect.
    */
   const loadPending = useCallback(
-    (codeIds: Id[]) => {
+    (codeIds: Id[], noteText = '') => {
       loadedCountRef.current = codeIds.length;
       applyPending(codeIds);
+      // The note comes back with the codes, so the row reads "Edit note" and
+      // opens on what is already written rather than on an empty box.
+      setNoteText(noteText);
     },
     [applyPending],
   );
@@ -488,12 +494,22 @@ export function useCodePanel({
     [announcer],
   );
 
-  const canSave = pendingCodeIds.length > 0;
+  /**
+   * A checked code or a written note is enough.
+   *
+   * Gated on codes alone, a coder who wrote only a note had no way to keep it:
+   * Save was unavailable and every exit discarded it. code-selection.md section
+   * 8 says "save is unavailable while nothing is pending"; a note is now
+   * something pending. The deletion guard that sentence also protects is kept
+   * elsewhere — an empty pending list never supersedes an assignment.
+   */
+  const hasNote = noteText.trim() !== '';
+  const canSave = pendingCodeIds.length > 0 || hasNote;
 
   const save = useCallback(() => {
-    if (pendingCodeIds.length === 0) {
+    if (pendingCodeIds.length === 0 && noteText.trim() === '') {
       announcer.announce(
-        'Save is unavailable because no codes are pending. Check at least one code.',
+        'Save is unavailable because nothing is pending. Check a code or write a note.',
       );
       return;
     }
@@ -577,12 +593,15 @@ export function useCodePanel({
    * much as through the button.
    */
   const close = useCallback(() => {
-    if (pendingCodeIds.length > 0) {
+    // Whatever `canSave` counts, closing keeps. Gated on codes alone, Escape
+    // would still have thrown away a note-only draft without a word, which is
+    // the loss this change exists to stop.
+    if (pendingCodeIds.length > 0 || noteText.trim() !== '') {
       save();
       return;
     }
     discardAndClose();
-  }, [discardAndClose, pendingCodeIds, save]);
+  }, [discardAndClose, noteText, pendingCodeIds, save]);
 
   /* ---------- Deleting a saved excerpt, per D-030 ---------- */
 

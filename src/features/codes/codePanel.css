@@ -248,11 +248,14 @@
 }
 
 /*
- * The close control reads as "Cancel" and shows as a cross. The label is
- * visible to assistive technology and not on screen, so the accessible name
- * says what the control does rather than naming a glyph.
+ * Off the screen and in the accessibility tree.
+ *
+ * The close control shows a cross and is named in words; the excerpt readback
+ * is D-040's on-demand text; the note's label names its box without repeating
+ * on screen what the button above it already says.
  */
 .code-panel__close-label,
+.code-panel__note-label,
 .code-panel__hidden-excerpt {
   position: absolute;
   width: 1px;
@@ -263,6 +266,22 @@
   clip-path: inset(50%);
   white-space: nowrap;
   border: 0;
+}
+
+/*
+ * The written note, shown under the row while the box is shut, so returning to
+ * an excerpt shows what was written without opening anything to find out.
+ *
+ * `pre-wrap`, because a note is prose the coder laid out: their line breaks are
+ * part of what they wrote.
+ */
+.code-panel__note-text {
+  margin: 0.35rem 0 0;
+  padding: 0.35rem 0.5rem;
+  max-width: 70ch;
+  background: var(--row-bg);
+  border-radius: var(--radius-small);
+  white-space: pre-wrap;
 }
 
 /*

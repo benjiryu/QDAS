@@ -67,7 +67,12 @@ export function buildCodingRecords(
   now: string,
   ids: { excerptId?: Id; noteId?: Id } = {},
 ): CodingRecords | null {
-  if (pending.codeIds.length === 0) return null;
+  /*
+    Nothing at all produces nothing. A note alone does not: since a note is
+    saveable on its own, an excerpt can legitimately carry one and no code, and
+    refusing here would have made the save a silent no-op.
+  */
+  if (pending.codeIds.length === 0 && pending.noteText.trim() === '') return null;
 
   if (positionOf(resolved, pending.range.endSegmentId) === null) return null;
 
@@ -178,6 +183,14 @@ export interface SavedExcerptSummary {
   range: CapturedRange;
   /** Assignments still standing. Superseded ones are not counted. */
   codeIds: Id[];
+  /**
+   * The note on this excerpt, where there is one.
+   *
+   * Carried so reopening can load the note's text and a later save can update
+   * that note rather than writing a second one against the same excerpt, which
+   * D-011 allows only one of.
+   */
+  noteId: Id | null;
   /** One based, for identifying the excerpt by range in a chooser. */
   startSentence: number;
   endSentence: number;
@@ -215,7 +228,7 @@ export function turnCoding(
   // The same derivation `excerpt.open` uses: each intersecting excerpt once,
   // superseded assignments dropped, and excerpts with nothing standing on them
   // left out entirely.
-  const summaries = savedExcerptsInTurn(resolved, turnId, excerpts, assignments);
+  const summaries = savedExcerptsInTurn(resolved, turnId, excerpts, assignments, notes);
 
   const codeIds: Id[] = [];
   for (const summary of summaries) {
@@ -247,6 +260,7 @@ export function savedExcerptsInTurn(
   turnId: Id,
   excerpts: Excerpt[],
   assignments: CodeAssignment[],
+  notes: Note[] = [],
 ): SavedExcerptSummary[] {
   const turn = resolved.turns.find((candidate) => candidate.turn.turnId === turnId);
   if (!turn) return [];
@@ -255,7 +269,13 @@ export function savedExcerptsInTurn(
   const summaries: SavedExcerptSummary[] = [];
 
   for (const segment of turn.segments) {
-    for (const summary of savedExcerptsAt(resolved, segment.segmentId, excerpts, assignments)) {
+    for (const summary of savedExcerptsAt(
+      resolved,
+      segment.segmentId,
+      excerpts,
+      assignments,
+      notes,
+    )) {
       if (seen.has(summary.excerptId)) continue;
       seen.add(summary.excerptId);
       summaries.push(summary);
@@ -277,6 +297,7 @@ export function savedExcerptsAt(
   segmentId: Id,
   excerpts: Excerpt[],
   assignments: CodeAssignment[],
+  notes: Note[] = [],
 ): SavedExcerptSummary[] {
   const position = positionOf(resolved, segmentId);
   if (position === null) return [];
@@ -295,9 +316,18 @@ export function savedExcerptsAt(
         )
         .map((assignment) => assignment.codeId);
 
-      // An excerpt with nothing standing on it is not coded, so it is not
-      // something to reopen.
-      if (codeIds.length === 0) return null;
+      const note = notes.find((candidate) => candidate.relatedExcerptId === excerpt.excerptId);
+
+      /*
+        An excerpt with neither a standing code nor a note is not something to
+        reopen: nothing survives on it to edit.
+
+        A note alone is enough. Since a note can now be saved without codes, an
+        excerpt can legitimately carry only one — and if that did not count
+        here, `excerpt.open` would never offer it and the note would be
+        unreachable the moment the panel closed.
+      */
+      if (codeIds.length === 0 && !note) return null;
 
       return {
         excerptId: excerpt.excerptId,
@@ -308,6 +338,7 @@ export function savedExcerptsAt(
           endOffset: excerpt.endOffset,
         },
         codeIds,
+        noteId: note?.noteId ?? null,
         startSentence: start + 1,
         endSentence: end + 1,
       };

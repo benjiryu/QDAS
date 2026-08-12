@@ -454,11 +454,14 @@ describe('save availability, per section 8', () => {
     const save = within(panel()).getByRole('button', { name: 'Save & Close' });
     expect(save).toHaveAttribute('aria-disabled', 'true');
     expect(save).not.toHaveAttribute('aria-describedby');
-    expect(panel().textContent).not.toMatch(/no codes are pending/i);
+    // The wording widened when a note became enough to save: nothing is
+    // pending, rather than no codes. The behaviour with an empty panel and no
+    // note is unchanged.
+    expect(panel().textContent).not.toMatch(/nothing is pending/i);
 
     fireEvent.click(save);
 
-    expect(lastAnnouncement()).toMatch(/no codes are pending/i);
+    expect(lastAnnouncement()).toMatch(/nothing is pending/i);
   });
 
   it('does nothing but explain itself when pressed while empty', () => {
@@ -468,7 +471,7 @@ describe('save availability, per section 8', () => {
     fireEvent.click(within(panel()).getByRole('button', { name: 'Save & Close' }));
 
     expect(saved(container)).toEqual({ excerpts: 0, assignments: 0, notes: 0 });
-    expect(lastAnnouncement()).toMatch(/no codes are pending/i);
+    expect(lastAnnouncement()).toMatch(/nothing is pending/i);
     expect(panel()).toBeInTheDocument();
   });
 

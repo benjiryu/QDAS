@@ -71,6 +71,17 @@ export function NoteDisclosure({
       </button>
 
       {/*
+        The note itself, while the box is shut. Returning to an excerpt should
+        show what was written without asking the coder to open anything to find
+        out whether there is a note at all.
+      */}
+      {hasDraft && !isOpen ? (
+        <p className="code-panel__note-text" data-note-text>
+          {noteText}
+        </p>
+      ) : null}
+
+      {/*
         Rendered only while open, so the draft lives in the panel rather than in
         the DOM: collapsing never discards what was typed, and closing the panel
         with a code checked still saves it.
@@ -86,7 +97,14 @@ export function NoteDisclosure({
             close();
           }}
         >
-          <label htmlFor={fieldId}>Note about this excerpt (optional)</label>
+          {/*
+            Visually hidden, not removed. It is the field's only accessible
+            name, and D-051 asks for a natively associated label rather than an
+            `aria-label`; deleting it outright would leave the box nameless.
+          */}
+          <label htmlFor={fieldId} className="code-panel__note-label">
+            Note about this excerpt
+          </label>
           <textarea
             id={fieldId}
             ref={setNoteElement}
