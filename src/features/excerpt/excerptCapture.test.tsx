@@ -7,6 +7,7 @@ import { defaultFlags } from '../../config/flags';
 import { bindingsFor, detectPlatform } from '../../config/keybindings';
 import type { Chord, Command } from '../../config/keybindings';
 import { createSeedFixture } from '../../data/seed';
+import { clearCodingSession } from '../../data/codingSessionStore';
 import { clearSourcePositions } from '../../data/sourcePositionStore';
 import { resolveSource } from '../../domain';
 import { TranscriptWorkspace } from '../transcript/TranscriptWorkspace';
@@ -270,7 +271,13 @@ describe('the two capture commands', () => {
     chord('excerpt.code');
     const viaCode = highlighted();
 
+    /*
+      Two independent attempts, not a navigation round trip. Since D-044 an
+      unmount hands the draft to the session store, so without this the second
+      render would resume the first capture instead of starting clean.
+    */
     view.unmount();
+    clearCodingSession();
     renderWorkspace();
     drag([segment.segmentId, 2], [segment.segmentId, 10]);
     chord('excerpt.note');

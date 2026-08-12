@@ -105,6 +105,15 @@ interface Options {
   onCapture?: (target: CaptureTarget) => void;
   /** Discard closes the panel; pending codes go with it. */
   onClosePanel?: () => void;
+  /**
+   * The capture to resume, per D-044.
+   *
+   * A coder who left this source mid-capture and came back gets the range they
+   * had. Lazy initial state rather than an effect that restores after the first
+   * render, which would paint an empty transcript first and would have to write
+   * state from an effect.
+   */
+  initialSelection?: ExcerptSelection;
 }
 
 export function useExcerptSelection({
@@ -115,9 +124,10 @@ export function useExcerptSelection({
   onReopen,
   onCapture,
   onClosePanel,
+  initialSelection = IDLE,
 }: Options): ExcerptSelectionApi {
   const announcer = useAnnouncer();
-  const [selection, dispatch] = useReducer(excerptReducer, IDLE);
+  const [selection, dispatch] = useReducer(excerptReducer, initialSelection);
 
   /** Overlapping saved excerpts awaiting a choice. D-030 does not guess. */
   const [openChoices, setOpenChoices] = useState<SavedExcerptSummary[]>([]);

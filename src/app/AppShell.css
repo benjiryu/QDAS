@@ -82,6 +82,55 @@
   border-radius: var(--radius-medium);
 }
 
+.project-nav__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.project-nav__empty {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+/*
+ * A leading bar keeps the row's text off the border and reserves the space the
+ * current-page marker will occupy, so nothing shifts sideways when it appears.
+ */
+.project-nav__link {
+  display: block;
+  padding: 0.35rem 0.5rem;
+  border-left: var(--border-thick) solid transparent;
+  border-radius: var(--radius-small);
+}
+
+/*
+ * The current destination, per D-043.
+ *
+ * Selected on `aria-current` rather than on a class of its own, so the visible
+ * marker and the programmatic one cannot come apart: if this draws, the screen
+ * reader says "current page", and if it does not, neither happens.
+ *
+ * Two non-colour channels — the bar and the weight — because contract 2.5 rules
+ * out state carried by colour alone, and a coder with a colour vision
+ * difference has to be able to tell where they are.
+ */
+.project-nav__link[aria-current='page'] {
+  border-left-color: currentColor;
+  font-weight: var(--font-weight-bold);
+  background: var(--row-bg);
+}
+
+@media (forced-colors: active) {
+  /* Backgrounds are dropped here, so the bar carries it alone. */
+  .project-nav__link[aria-current='page'] {
+    border-left-color: Highlight;
+  }
+}
+
 main {
   flex: 999 1 20rem;
   min-width: 0;

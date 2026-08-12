@@ -25,6 +25,15 @@ const assignedSourceIds = fixture.workAssignments
   )
   .map((assignment) => assignment.sourceId);
 
+/**
+ * Queries scoped to the page body.
+ *
+ * Since D-043 the sidebar lists the same sources the project page does, so an
+ * unscoped `getByRole('link', ...)` finds each title twice. These tests are
+ * about the route content, so they ask `main`; the sidebar has its own tests.
+ */
+const inMain = () => within(document.querySelector('main')!);
+
 function renderAt(path: string) {
   return render(
     <AnnouncerProvider announcer={createAnnouncer()}>
@@ -40,11 +49,11 @@ describe('reaching a source by following links alone', () => {
     const user = userEvent.setup();
     renderAt('/projects');
 
-    await user.click(screen.getByRole('link', { name: project.name }));
+    await user.click(inMain().getByRole('link', { name: project.name }));
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(project.name);
 
     const source = fixture.sources.find((candidate) => candidate.sourceId === assignedSourceIds[0])!;
-    await user.click(screen.getByRole('link', { name: source.title }));
+    await user.click(inMain().getByRole('link', { name: source.title }));
 
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(source.title);
     expect(screen.getByRole('region', { name: 'Transcript' })).toBeInTheDocument();
@@ -56,13 +65,13 @@ describe('reaching a source by following links alone', () => {
 
     for (const sourceId of assignedSourceIds) {
       const source = fixture.sources.find((candidate) => candidate.sourceId === sourceId)!;
-      expect(screen.getByRole('link', { name: source.title })).toBeInTheDocument();
+      expect(inMain().getByRole('link', { name: source.title })).toBeInTheDocument();
     }
 
     const last = fixture.sources.find(
       (candidate) => candidate.sourceId === assignedSourceIds[assignedSourceIds.length - 1],
     )!;
-    await user.click(screen.getByRole('link', { name: last.title }));
+    await user.click(inMain().getByRole('link', { name: last.title }));
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(last.title);
   });
 
@@ -108,7 +117,7 @@ describe('the project route', () => {
     renderAt(`/projects/${project.projectId}`);
 
     const source = fixture.sources.find((candidate) => candidate.sourceId === assignedSourceIds[0])!;
-    const item = screen.getByRole('link', { name: source.title }).closest('li')!;
+    const item = inMain().getByRole('link', { name: source.title }).closest('li')!;
 
     expect(within(item).getByText(/transcript/i)).toBeInTheDocument();
     expect(within(item).getByText(new RegExp(`${source.segmentCount} sentences`))).toBeInTheDocument();
@@ -165,11 +174,11 @@ describe('focus on route entry', () => {
     const user = userEvent.setup();
     renderAt('/projects');
 
-    await user.click(screen.getByRole('link', { name: project.name }));
+    await user.click(inMain().getByRole('link', { name: project.name }));
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
 
     const source = fixture.sources.find((candidate) => candidate.sourceId === assignedSourceIds[0])!;
-    await user.click(screen.getByRole('link', { name: source.title }));
+    await user.click(inMain().getByRole('link', { name: source.title }));
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
     expect(screen.getByRole('heading', { level: 1 })).toHaveFocus();
   });

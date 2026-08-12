@@ -4,7 +4,7 @@
 - Version: 0.3
 - Last updated: 2026-08-05
 
-Progress: v0.1 complete and tagged. Phase 4 defines v0.2. Tasks 18 through 26 have landed, which is every task in the sequence. The whole-app verification pass ran on Task 26; its findings are open, including an unnamed dialog on the context menu popover that belongs to Task 19.
+Progress: v0.1 complete and tagged. Phase 4 defines v0.2. Tasks 18 through 27 have landed; Task 28, the Codebook page, is next. Two findings from Task 27 are open and block nothing: the modal code panel leaves no route by which a coder can reach the sidebar mid-capture, which is the journey D-044 was written for, and the D-033 narrow-width sidebar disclosure is unbuilt. The unnamed dialog on the context menu popover, from Task 26, is still open.
 
 Update this line when a task lands. An agent reading a stale progress line will rebuild finished work.
 

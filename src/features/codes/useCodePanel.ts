@@ -146,7 +146,32 @@ interface Options {
     noteText: string;
     uncertain: boolean;
   }) => SaveOutcome | void;
+  /**
+   * The draft to resume, per D-044.
+   *
+   * Seeds the initial state rather than being restored by an effect: an effect
+   * would render an empty panel first and would have to write state from
+   * inside one, which `react-hooks/set-state-in-effect` rules out.
+   */
+  initialDraft?: InitialDraft;
 }
+
+/** The panel's share of a `CodingDraft`. Everything a coder had typed or ticked. */
+export interface InitialDraft {
+  pendingCodeIds: Id[];
+  noteText: string;
+  uncertain: boolean;
+  query: string;
+  proposedCodes: Code[];
+}
+
+const EMPTY_INITIAL_DRAFT: InitialDraft = {
+  pendingCodeIds: [],
+  noteText: '',
+  uncertain: false,
+  query: '',
+  proposedCodes: [],
+};
 
 export function useCodePanel({
   codes,
@@ -158,6 +183,7 @@ export function useCodePanel({
   onCancel,
   onSave,
   onDelete,
+  initialDraft = EMPTY_INITIAL_DRAFT,
 }: Options): CodePanelApi {
   const announcer = useAnnouncer();
   const searchRef = useRef<HTMLInputElement | null>(null);
@@ -170,8 +196,8 @@ export function useCodePanel({
     noteRef.current = node;
   }, []);
 
-  const [query, setQueryState] = useState('');
-  const [pendingCodeIds, setPendingCodeIds] = useState<Id[]>([]);
+  const [query, setQueryState] = useState(initialDraft.query);
+  const [pendingCodeIds, setPendingCodeIds] = useState<Id[]>(initialDraft.pendingCodeIds);
 
   /**
    * The pending list, mirrored so it can be read synchronously.
@@ -182,14 +208,14 @@ export function useCodePanel({
    * duplicate speech and updates the announcement log mid-render. Every write
    * goes through `applyPending`, which keeps the two in step.
    */
-  const pendingListRef = useRef<Id[]>([]);
+  const pendingListRef = useRef<Id[]>(initialDraft.pendingCodeIds);
   const applyPending = useCallback((next: Id[]) => {
     pendingListRef.current = next;
     setPendingCodeIds(next);
   }, []);
-  const [proposedCodes, setProposedCodes] = useState<Code[]>([]);
-  const [noteText, setNoteText] = useState('');
-  const [uncertain, setUncertainState] = useState(false);
+  const [proposedCodes, setProposedCodes] = useState<Code[]>(initialDraft.proposedCodes);
+  const [noteText, setNoteText] = useState(initialDraft.noteText);
+  const [uncertain, setUncertainState] = useState(initialDraft.uncertain);
   const [deletePending, setDeletePending] = useState(false);
   /** How many codes the panel opened with, for the opening announcement. */
   const loadedCountRef = useRef(0);
@@ -209,6 +235,11 @@ export function useCodePanel({
   /* ---------- Opening ---------- */
 
   const wasOpen = useRef(false);
+  /**
+   * True only when the panel was already open at the first render, which means
+   * a D-044 restore rather than a coder opening it.
+   */
+  const isRestore = useRef(isOpen);
   useEffect(() => {
     if (isOpen === wasOpen.current) return;
     wasOpen.current = isOpen;
@@ -218,7 +249,21 @@ export function useCodePanel({
     // where excerpt-selection.md section 4 sends `excerpt.code`. `excerpt.note`
     // is the one command that opens elsewhere.
     const field = openFocus === 'note' ? noteRef.current : searchRef.current;
-    field?.focus?.();
+
+    if (isRestore.current) {
+      isRestore.current = false;
+      /*
+        A restore lands mid-navigation, and the shell focuses the route's `h1`
+        on every pathname change. Child effects run before parent ones, so
+        focusing here directly would be overwritten a moment later and leave a
+        focus-trapping dialog open with focus behind it. Deferring puts this
+        after the shell, which is the same ordering fix `ExcerptContextMenu`
+        and `focusTurnOf` use.
+      */
+      queueMicrotask(() => field?.focus?.());
+    } else {
+      field?.focus?.();
+    }
 
     // Section 10: panel name, excerpt size, and for a reopened excerpt that
     // existing codes are loaded and how many, so they are not mistaken for

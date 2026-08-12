@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Link, Outlet, useLocation } from 'react-router';
+import { ProjectNav } from '../features/navigation/ProjectNav';
 import './AppShell.css';
 
 /**
@@ -73,17 +74,16 @@ export function AppShell() {
 
       <div className="app-body">
         {/*
-          Project-level navigation renders on every route, including /projects
-          where no project is in context. Its items are still not specified:
-          docs/pages is empty. D-015 closed A-2 by removing the question rather
-          than answering it, since coding is an action on the open source and
-          not a separate destination, so no navigation item owns transcript
-          coding. What the region does list awaits a page specification. The
-          landmark is present and labeled in the meantime.
+          Project-level navigation, per D-043 and docs/pages/destinations.md.
+          Renders on every route, including /projects where no project is in
+          context and it says so.
+
+          D-015 closed A-2 by removing the question rather than answering it:
+          coding is an action on the open source, not a separate destination, so
+          no item here owns transcript coding. The items are the coder's sources
+          and the three read surfaces.
         */}
-        <nav aria-label="Project" className="project-nav">
-          <p className="placeholder">Project navigation items are not yet specified.</p>
-        </nav>
+        <ProjectNav />
 
         <main id={MAIN_CONTENT_ID} ref={mainRef} tabIndex={-1}>
           <Outlet />

@@ -74,7 +74,10 @@ test('focus lands on the heading of each route entered', async ({ page }) => {
 test('the project route lists assigned sources with kind and size', async ({ page }) => {
   await page.goto(`/projects/${project.projectId}`);
 
+  // Scoped to the page body: since D-043 the sidebar lists the same sources,
+  // so an unscoped query finds each title twice. The sidebar has its own tests.
   const item = page
+    .getByRole('main')
     .getByRole('listitem')
     .filter({ has: page.getByRole('link', { name: assignedSource.title }) });
 

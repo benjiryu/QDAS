@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAnnouncer } from '../../a11y';
 import { defaultFlags } from '../../config/flags';
+import {
+  clearDraft,
+  readDraft,
+  readSavedWork,
+  writeDraft,
+  writeSavedWork,
+} from '../../data/codingSessionStore';
+import type { CodingDraft, SavedWork } from '../../data/codingSessionStore';
 import type { PrototypeFlags } from '../../config/flags';
 import {
   buildCodingRecords,
@@ -79,13 +87,33 @@ export function TranscriptWorkspace({
   const announcer = useAnnouncer();
 
   /**
+   * What this source page resumes from, per D-044.
+   *
+   * Read once, at the first render, so restoring costs no extra paint and no
+   * state write from inside an effect. `useState` with an initialiser rather
+   * than `useMemo`, because this must not be recomputed if the store changes
+   * underneath: the component owns this state from here on.
+   */
+  const [restored] = useState(() => ({
+    draft: readDraft(resolved.source.sourceId),
+    work: readSavedWork(projectId),
+  }));
+
+  /**
    * Work saved during this session. Front-end state within a session is real,
    * per prototype-scope.md; nothing is written to a server, and nothing here
    * survives a reload.
+   *
+   * Seeded from the session store so it outlives a trip to a destination. Every
+   * seeded excerpt belongs to the second coder, and R-4 keeps that off the
+   * coder-facing destinations, so this is the only work Coded data and Notes
+   * are permitted to show.
    */
-  const [savedExcerpts, setSavedExcerpts] = useState<Excerpt[]>([]);
-  const [savedAssignments, setSavedAssignments] = useState<CodeAssignment[]>([]);
-  const [savedNotes, setSavedNotes] = useState<Note[]>([]);
+  const [savedExcerpts, setSavedExcerpts] = useState<Excerpt[]>(restored.work.excerpts);
+  const [savedAssignments, setSavedAssignments] = useState<CodeAssignment[]>(
+    restored.work.assignments,
+  );
+  const [savedNotes, setSavedNotes] = useState<Note[]>(restored.work.notes);
   /**
    * Assignments the coder removed from a reopened excerpt.
    *
@@ -93,7 +121,9 @@ export function TranscriptWorkspace({
    * and a removed assignment is evidence about how interpretation changed.
    * D-030.
    */
-  const [supersededIds, setSupersededIds] = useState<Set<Id>>(() => new Set());
+  const [supersededIds, setSupersededIds] = useState<Set<Id>>(
+    () => new Set(restored.work.supersededIds),
+  );
   const panelLoad = useRef<((codeIds: Id[]) => void) | null>(null);
 
   /**
@@ -175,13 +205,13 @@ export function TranscriptWorkspace({
    * means nothing. `resolveEscape` in the binding module decides, and both
    * features read the same answer.
    */
-  const [panelOpen, setPanelOpen] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(restored.draft.panelOpen);
   /**
    * Which field the panel opens focused on, set by whichever capture command
    * opened it. Section 4: `excerpt.code` lands in search, `excerpt.note` in the
    * note field.
    */
-  const [panelFocus, setPanelFocus] = useState<CaptureTarget>('search');
+  const [panelFocus, setPanelFocus] = useState<CaptureTarget>(restored.draft.panelFocus);
   const panelCodeById = useRef<Map<Id, Code>>(new Map());
   const panelClear = useRef<(() => void) | null>(null);
 
@@ -222,6 +252,7 @@ export function TranscriptWorkspace({
       setPanelFocus('search');
       setPanelOpen(true);
     },
+    initialSelection: restored.draft.selection,
   });
 
   const excerptSummary = useMemo(() => {
@@ -445,7 +476,89 @@ export function TranscriptWorkspace({
       // turn the capture started in.
       excerpt.run('excerpt.discard');
     },
+    initialDraft: restored.draft,
   });
+
+  /**
+   * The D-044 hand-off.
+   *
+   * A ref refreshed after every render, and a cleanup that writes it when this
+   * page unmounts. Two effects rather than one because they answer different
+   * questions: what is current, and when to hand it over.
+   *
+   * Deliberately not a write on every change. That would mean setting store
+   * state from inside an effect on every keystroke, which is both what
+   * `react-hooks/set-state-in-effect` exists to stop and far more work than the
+   * one moment that matters — the moment this page goes away.
+   */
+  const snapshot = useRef<{ sourceId: Id; projectId: Id; draft: CodingDraft; work: SavedWork }>({
+    sourceId: resolved.source.sourceId,
+    projectId,
+    draft: restored.draft,
+    work: restored.work,
+  });
+
+  /**
+   * Saved work syncs on change rather than waiting for the unmount.
+   *
+   * It has to: a destination page reads the store while it renders, and React
+   * renders the incoming route before running the outgoing one's cleanup. An
+   * unmount write would arrive after Coded data had already counted, so the
+   * page would show the state from before the last save.
+   *
+   * Writing to a module store from an effect is not a state write, so this is
+   * not what `react-hooks/set-state-in-effect` is about; the store is a plain
+   * object and nothing re-renders because of it.
+   */
+  useEffect(() => {
+    writeSavedWork(projectId, {
+      excerpts: savedExcerpts,
+      assignments: savedAssignments,
+      notes: savedNotes,
+      supersededIds: [...supersededIds],
+    });
+  }, [projectId, savedAssignments, savedExcerpts, savedNotes, supersededIds]);
+
+  useEffect(() => {
+    snapshot.current = {
+      sourceId: resolved.source.sourceId,
+      projectId,
+      draft: {
+        selection: excerpt.selection,
+        panelOpen,
+        panelFocus,
+        pendingCodeIds: panel.pendingCodeIds,
+        noteText: panel.noteText,
+        uncertain: panel.uncertain,
+        query: panel.query,
+        proposedCodes: panel.proposedCodes,
+      },
+      work: {
+        excerpts: savedExcerpts,
+        assignments: savedAssignments,
+        notes: savedNotes,
+        supersededIds: [...supersededIds],
+      },
+    };
+  });
+
+  useEffect(() => {
+    return () => {
+      const held = snapshot.current;
+
+      /*
+        A capture that has become records is not a capture any more. Holding it
+        would restore a highlight over an excerpt the coder has already saved,
+        which reads as unsaved work that is not there.
+      */
+      if (held.draft.selection.state === 'idle' && held.draft.pendingCodeIds.length === 0
+          && held.draft.noteText.trim() === '') {
+        clearDraft(held.sourceId);
+        return;
+      }
+      writeDraft(held.sourceId, held.draft);
+    };
+  }, []);
 
   // Bridges, so the save handler can read the panel's code lookup and clear it
   // afterwards without the two hooks depending on each other's order. Written
