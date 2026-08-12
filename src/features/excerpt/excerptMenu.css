@@ -16,8 +16,8 @@
 .excerpt-menu__popover {
   background: var(--surface, Canvas);
   color: var(--text, CanvasText);
-  border: 1px solid var(--border, CanvasText);
-  border-radius: var(--radius-small);
+  border: var(--border-thin) solid var(--border, CanvasText);
+  border-radius: var(--radius-medium);
   box-shadow: 0 2px 8px rgb(0 0 0 / 25%);
   min-width: 16rem;
 }
@@ -36,13 +36,19 @@
   gap: 1.5rem;
   padding: 0.4rem 0.6rem;
   border-left: 4px solid transparent;
+  border-radius: var(--radius-small);
   cursor: default;
   outline: none;
 }
 
+/*
+ * The focused item reads as part of the button family. It used to borrow
+ * --excerpt-bg, which is the transcript highlight's green: the same colour
+ * meaning two unrelated things on two surfaces.
+ */
 .excerpt-menu__item[data-focused] {
-  background: var(--excerpt-bg, Highlight);
-  border-left-color: currentColor;
+  background: var(--color-blue-10, Highlight);
+  border-left-color: var(--color-blue-100, CanvasText);
 }
 
 .excerpt-menu__chord {

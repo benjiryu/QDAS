@@ -311,3 +311,61 @@ describe('position restoration', () => {
     expect(ribbonText()).toContain('No speaker turn focused');
   });
 });
+
+/**
+ * The strip's styling contract, per Task 24 and the token mappings.
+ *
+ * Structure and behaviour are asserted above; these are the properties that a
+ * restyle could quietly break.
+ */
+describe('the strip as a styled surface', () => {
+  const stripButtons = () =>
+    Array.from(document.querySelectorAll<HTMLElement>('.transcript-toolbar__button, .excerpt-toolbar__button'));
+
+  it('shows a chord on every control', () => {
+    // Contract 2.2's chords are only discoverable if they are on the control.
+    renderWorkspace();
+
+    const buttons = stripButtons();
+    expect(buttons).toHaveLength(5);
+    for (const button of buttons) {
+      expect(button.querySelector('kbd')?.textContent).toBeTruthy();
+    }
+  });
+
+  it('gives Code selection the primary treatment and the rest secondary', () => {
+    renderWorkspace();
+
+    const primary = document.querySelector<HTMLElement>('[data-command="excerpt.code"]')!;
+    expect(primary).toHaveStyle({ fontWeight: 'var(--font-weight-bold)' });
+
+    const note = document.querySelector<HTMLElement>('[data-command="excerpt.note"]')!;
+    expect(note).not.toHaveStyle({ fontWeight: 'var(--font-weight-bold)' });
+  });
+
+  it('carries a disabled control on a channel other than colour', () => {
+    // The token file's own audit puts the disabled pair at 3.17:1 and calls it
+    // "genuinely faint", so colour alone would not carry the state.
+    renderWorkspace();
+
+    const open = document.querySelector<HTMLElement>('[data-command="excerpt.note"]')!;
+    expect(open).toBeInTheDocument();
+
+    // Nothing is focused, so the capture commands are available and the
+    // orientation ones are not: an unavailable control is the one to inspect.
+    const unavailable = stripButtons().find(
+      (button) => button.getAttribute('aria-disabled') === 'true',
+    )!;
+    expect(unavailable).toBeDefined();
+    expect(unavailable).toHaveStyle({ borderStyle: 'dashed' });
+  });
+
+  it('still says why an unavailable control did nothing', () => {
+    // Styling never replaces the reason: contract 2.6.
+    renderWorkspace();
+
+    pressChord('position.report');
+
+    expect(lastAnnouncement()).toMatch(/tab/i);
+  });
+});
