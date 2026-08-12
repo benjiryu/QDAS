@@ -108,8 +108,9 @@ Native checkboxes in nested lists. Not a tree widget.
 
 Rationale: `role="tree"` with multi-selection has uneven screen reader support and requires reimplementing keyboard behavior that native controls already provide correctly. The accessibility contract prefers semantic HTML over ARIA recreation, and this is the place where that preference pays for itself. Hierarchy is conveyed through nested list structure and through each group's accessible name, so a user reaching a child code hears its parent context without needing a tree's level announcements.
 
-- Each code is a native checkbox with a visible label.
+- Each code is a native checkbox with a visible label. Per D-054 the accessible name is exactly the code name; lineage rides in the accessible description, "in [parent]" or "in [parent], [child]", so speech reads specific before general while the visual tree stays general before specific. Description verbosity belongs to the user's screen reader settings.
 - Child codes sit in a nested list under their parent, labeled by the parent code.
+- Typing a printable character anywhere in the code list moves focus to the search field with that character starting the query, per D-054. Space and Enter keep their checkbox meanings.
 - Checking a parent does not check its children. Coding a parent is a distinct analytic act from coding its children.
 - Checking a box adds the code to the pending assignment and announces the pending count. The panel does not close.
 - Unchecking removes it from pending.

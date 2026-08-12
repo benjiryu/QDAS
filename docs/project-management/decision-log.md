@@ -901,3 +901,21 @@ Together with `codes.focusSearch` the pair reads as one habit: Ctrl+Alt+F always
 Naming, per D-051's logic: the companion is a labeled region, "Codebook", and the two search fields carry distinct accessible names, "Search codes" in the panel and "Search codebook" in the companion, so a screen reader user always knows which of the two searches they are in. Browse-mode users additionally get the free routes: the companion's family-card headings and the labeled region make rotor and landmark jumps between the surfaces possible without any chord.
 
 The button remains the visible control per contract 2.2, now showing the chord via describeChord like every other command.
+
+## D-054 Lineage in the description, and typing in the list reaches search
+
+Date: 2026-08 | Workflow: code assignment | Status: approved. First decisions driven by participant interview findings, both workflow-class
+
+Two findings from screen reader participant interviews on the panel's code list.
+
+**Hierarchy was imperceptible in speech.** Nested lists and indentation carry the family structure visually, but screen readers flatten nested lists in form contexts and lineage never reached the ear. A participant proposed name-first order: the code, then its parents.
+
+Resolution, the D-041 twin pattern applied to hierarchy: the visual channel is unchanged, parent above, children indented, the spatial family tree intact. Programmatically, each checkbox's accessible **name remains the pure code name** and its accessible **description carries the lineage**: "Rules, unchecked, checkbox, in Water access." Specific before general is the correct temporal idiom for speech, which cannot be skimmed; left-to-right general-before-specific remains the correct spatial idiom for vision. The channels say the same relation in their own grammar, and description verbosity stays under the user's own screen reader settings. Grandchildren describe the full path, "in Water access, Rules".
+
+The D-051 test amends accordingly: the accessible name is exactly the code name; the lineage is in the description, never the name, so search, sorting, and the redirect below all operate on clean names.
+
+**First-letter navigation was expected and absent.** Type-ahead is a property of widget roles, listboxes and menus and trees, which D-004 deliberately declined to imitate; label association could not restore what the widget type never had. The participants' underlying need, jump-by-typing from within the list, is met by search, and the finding exposed the seam between list and search rather than a missing widget.
+
+Resolution: **typing a printable character while focus is anywhere in the code list moves focus to the search field with that character beginning the query**, announced by the existing continuous search count per D-050. Type-ahead in spirit, the search machinery in fact, no ARIA recreation. Browse-mode users are unaffected, their letter keys belong to their screen reader, and they retain search and `codes.focusSearch`. Space and Enter keep their native checkbox meanings; only printable characters redirect.
+
+Classified per the contract's taxonomy: both were workflow findings, not access blockers. Participants completed tasks; the structure under-communicated and an expectation went unmet.

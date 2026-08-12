@@ -1140,6 +1140,30 @@ Done when: from a checkbox in the panel, one chord lands you in the codebook
 search, the same chord brings you back to the panel search, and Escape still
 closes in layers.
 
+### Task 35. Lineage descriptions and type-to-search
+
+```
+Implement D-054 in the panel's code list.
+
+1. Each checkbox's accessible description carries its lineage: children "in
+   [parent name]", grandchildren "in [parent name], [child name]". The
+   accessible name remains exactly the code name. Amend the D-051 test that
+   asserted name equality; it still must, and a new assertion covers the
+   description.
+
+2. Printable-character keydown anywhere in the code list moves focus to the
+   search field and begins the query with that character. Space and Enter are
+   untouched. The result count announces via the existing continuous class.
+
+Tests: description content per level; name purity preserved; typing a letter
+from a focused checkbox lands in search with the letter as query; Space still
+toggles.
+```
+
+Done when: a screen reader on any grandchild hears its name, its state, and
+then its family, and typing "wa" from inside the list yields the search field
+with "wa" and one settled count announcement.
+
 ## Failure modes to watch for
 
 **The agent builds something simulated.** Point it at `prototype-scope.md`. File import, authentication, and IRR are not gaps to fill.
