@@ -1,38 +1,59 @@
 /*
- * Base styles. Nothing here is a pattern; patterns bring their own.
+ * Base styles, and the bridge from tokens to the names components use.
+ *
+ * Every value here comes from src/styles/tokens.css. Components reference these
+ * semantic names rather than the raw token, so a token change reaches the whole
+ * application in one place.
  *
  * Sizing is in rem so that browser text sizing works, and the shell reflows to
  * a 320px viewport without horizontal scrolling, per
- * docs/accessibility-contract.md section 2.5.
+ * docs/accessibility-contract.md section 2.5. The space tokens are in px and so
+ * are deliberately not used for padding, margins, or gaps: they would stop that
+ * spacing scaling with the reader's text size.
  */
 
-:root {
-  --text: #1c1a20;
-  --text-muted: #55505c;
-  --bg: #fff;
-  --surface: #fff;
-  --border: #8a8593;
-  --link: #0b4fbe;
-  --focus: #0b4fbe;
-
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-
-  font: 100%/1.5 var(--sans);
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
+/*
+ * Luciole, designed for low-vision readers. Creative Commons Attribution 4.0,
+ * © Laurent Bourcellier & Jonathan Perez; see public/fonts/LICENSE.txt.
+ *
+ * `swap` so text is readable in the fallback face while the font loads rather
+ * than invisible, which matters most on the slow connections this is least
+ * able to assume.
+ */
+@font-face {
+  font-family: 'Luciole';
+  src: url('/fonts/Luciole-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #f3f4f6;
-    --text-muted: #c3c6cd;
-    --bg: #16171d;
-    --surface: #22242c;
-    --border: #6f7480;
-    --link: #9ec5ff;
-    --focus: #9ec5ff;
-  }
+@font-face {
+  font-family: 'Luciole';
+  src: url('/fonts/Luciole-Bold.woff2') format('woff2');
+  font-weight: 600 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --text: var(--color-black);
+  --text-muted: var(--color-grey-750);
+  --bg: var(--color-white);
+  --surface: var(--color-white);
+  --border: var(--color-grey-500);
+  --link: var(--color-blue-100);
+  --focus: var(--color-blue-100);
+  --error: var(--color-error);
+
+  font: var(--font-weight-regular) 100%/1.5 var(--font-family);
+  /*
+   * Light only. The Figma style guide carries no dark palette, so there is no
+   * token pairing to express one; see the task report.
+   */
+  color-scheme: light;
+  color: var(--text);
+  background: var(--bg);
 }
 
 body {
@@ -41,6 +62,7 @@ body {
 
 h1 {
   font-size: 1.75rem;
+  font-weight: var(--font-weight-bold);
   line-height: 1.2;
   margin: 0 0 1rem;
 }
@@ -68,8 +90,8 @@ a {
 
 /* Indicators must stay visible at high magnification. Section 2.4. */
 :focus-visible {
-  outline: 3px solid var(--focus);
-  outline-offset: 2px;
+  outline: var(--border-thick) solid var(--focus);
+  outline-offset: var(--border-thin);
 }
 
 /*
@@ -79,6 +101,6 @@ a {
  * smaller cost than a keyboard user unable to see where they are.
  */
 h1:focus {
-  outline: 3px solid var(--focus);
-  outline-offset: 4px;
+  outline: var(--border-thick) solid var(--focus);
+  outline-offset: var(--radius-small);
 }

@@ -34,8 +34,8 @@
 
 .code-panel {
   background: var(--surface);
-  border: 2px solid var(--border);
-  border-radius: 4px;
+  border: var(--border-thin) solid var(--border);
+  border-radius: var(--radius-small);
   padding: 0.75rem;
   outline: none;
   /*
@@ -120,7 +120,7 @@
   background: transparent;
   color: inherit;
   border: 1px solid transparent;
-  border-radius: 4px;
+  border-radius: var(--radius-small);
   cursor: pointer;
 }
 
@@ -156,7 +156,7 @@
   background: var(--surface);
   color: inherit;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-small);
   cursor: pointer;
 }
 
@@ -221,7 +221,7 @@
 }
 
 .code-panel__code-name {
-  font-weight: 600;
+  font-weight: var(--font-weight-bold);
 }
 
 /*
@@ -248,12 +248,17 @@
   background: var(--code-color, var(--text-muted));
 }
 
-.code-panel__swatch[data-color-token='code-color-moss'] { --code-color: #4f7a2a; }
-.code-panel__swatch[data-color-token='code-color-clay'] { --code-color: #a2542a; }
-.code-panel__swatch[data-color-token='code-color-indigo'] { --code-color: #3b4c9a; }
-.code-panel__swatch[data-color-token='code-color-amber'] { --code-color: #9a6b12; }
-.code-panel__swatch[data-color-token='code-color-slate'] { --code-color: #4a5560; }
-.code-panel__swatch[data-color-token='code-color-rust'] { --code-color: #96401f; }
+/*
+ * Provisional. Task 25 assigns tag hue per top-level code family across the
+ * thirteen token families, with the four low-contrast borders last; this is a
+ * nearest-hue placeholder so no raw value survives until then.
+ */
+.code-panel__swatch[data-color-token='code-color-moss'] { --code-color: var(--l-green-1); }
+.code-panel__swatch[data-color-token='code-color-clay'] { --code-color: var(--coral-1); }
+.code-panel__swatch[data-color-token='code-color-indigo'] { --code-color: var(--blue-1); }
+.code-panel__swatch[data-color-token='code-color-amber'] { --code-color: var(--orange-1); }
+.code-panel__swatch[data-color-token='code-color-slate'] { --code-color: var(--color-grey-750); }
+.code-panel__swatch[data-color-token='code-color-rust'] { --code-color: var(--red-1); }
 
 @media (forced-colors: active) {
   /* The dot conveys nothing on its own, so it simply goes. */
@@ -281,7 +286,7 @@
   background: var(--surface);
   color: inherit;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-small);
   cursor: pointer;
 }
 
@@ -314,7 +319,7 @@
   padding: 0.15rem 0.4rem;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-small);
   cursor: pointer;
 }
 
@@ -346,9 +351,9 @@
 .code-panel__error {
   margin: 0;
   padding: 0.35rem 0.5rem;
-  border: 2px solid var(--error, #a2231d);
-  border-radius: 4px;
-  color: var(--error, #a2231d);
+  border: var(--border-thin) solid var(--error);
+  border-radius: var(--radius-small);
+  color: var(--error);
 }
 
 /*
@@ -358,9 +363,9 @@
 .code-panel__save-error {
   flex: 1 1 100%;
   padding: 0.5rem 0.75rem;
-  border: 2px solid var(--error, #a2231d);
-  border-radius: 4px;
-  color: var(--error, #a2231d);
+  border: var(--border-thin) solid var(--error);
+  border-radius: var(--radius-small);
+  color: var(--error);
 }
 
 .code-panel__save-error p {
@@ -368,7 +373,7 @@
 }
 
 .code-panel__save-error:focus-visible {
-  outline: 3px solid var(--focus);
+  outline: var(--border-thick) solid var(--focus);
   outline-offset: 2px;
 }
 
@@ -380,10 +385,4 @@
 /* A proposed code is marked in words, never by colour alone. */
 .code-panel__swatch[data-color-token='code-color-provisional'] {
   --code-color: var(--text-muted);
-}
-
-@media (prefers-color-scheme: dark) {
-  .code-panel__error {
-    --error: #ff9d94;
-  }
 }

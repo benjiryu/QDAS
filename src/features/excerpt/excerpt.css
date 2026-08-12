@@ -20,7 +20,7 @@
   padding: 0.5rem 0.75rem;
   margin-bottom: 1rem;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-small);
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem 1rem;
@@ -36,13 +36,13 @@
 }
 
 .excerpt-toolbar__state {
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
 }
 
 /* The state is spelled out, so it is never carried by styling alone. */
 .excerpt-toolbar__state[data-state='idle'] {
   color: var(--text-muted);
-  font-weight: 400;
+  font-weight: var(--font-weight-regular);
 }
 
 .excerpt-toolbar__size {
@@ -65,7 +65,7 @@
   color: inherit;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-small);
   cursor: pointer;
 }
 
@@ -131,16 +131,13 @@
   }
 }
 
+/*
+ * The dark green family, which is where these values already sat: the edge was
+ * within a shade of --d-green-1. Task 23 owns the captured-excerpt treatment
+ * and may revise them.
+ */
 :root {
-  --excerpt-bg: #e6f4ea;
-  --excerpt-confirmed-bg: #c9e7d3;
-  --excerpt-edge: #1e7f43;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --excerpt-bg: #16301f;
-    --excerpt-confirmed-bg: #1d4630;
-    --excerpt-edge: #6fd08c;
-  }
+  --excerpt-bg: var(--d-green-3);
+  --excerpt-confirmed-bg: var(--d-green-2);
+  --excerpt-edge: var(--d-green-1);
 }

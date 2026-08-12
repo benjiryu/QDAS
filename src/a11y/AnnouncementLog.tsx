@@ -52,15 +52,17 @@ const STYLES = `
   z-index: 1000;
   max-width: min(28rem, calc(100vw - 1rem));
   font: 12px/1.4 ui-monospace, Consolas, monospace;
-  color: #f3f4f6;
-  background: #16171d;
-  border: 1px solid #6f7480;
-  border-radius: 4px;
+  /* Tokens, like everything else. The neutral ramp keeps it reading as a debug
+     overlay rather than part of the application. */
+  color: var(--color-white);
+  background: var(--color-grey-750);
+  border: 1px solid var(--color-grey-300);
+  border-radius: var(--radius-small);
 }
 .announcement-log summary {
   padding: 0.25rem 0.5rem;
   cursor: pointer;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
 }
 .announcement-log__list {
   max-height: 30vh;
@@ -68,20 +70,20 @@ const STYLES = `
   margin: 0;
   padding: 0 0.5rem;
   list-style: none;
-  border-top: 1px solid #6f7480;
+  border-top: 1px solid var(--color-grey-300);
 }
 .announcement-log__entry {
   display: grid;
   grid-template-columns: auto auto 1fr;
   gap: 0.5rem;
   padding: 0.2rem 0;
-  border-bottom: 1px solid #2e303a;
+  border-bottom: 1px solid var(--color-grey-500);
 }
-.announcement-log__time { color: #c3c6cd; }
-.announcement-log__politeness { color: #9ec5ff; }
-.announcement-log__entry--assertive .announcement-log__politeness { color: #ffb4a2; }
+.announcement-log__time { color: var(--color-grey-300); }
+.announcement-log__politeness { color: var(--color-blue-10); }
+.announcement-log__entry--assertive .announcement-log__politeness { color: var(--color-warning); }
 .announcement-log__message { overflow-wrap: anywhere; }
-.announcement-log__empty { padding: 0.4rem 0; color: #c3c6cd; }
+.announcement-log__empty { padding: 0.4rem 0; color: var(--color-grey-300); }
 .announcement-log__clear { margin: 0.4rem 0.5rem; font: inherit; cursor: pointer; }
 `;
 

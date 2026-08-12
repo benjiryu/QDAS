@@ -4,7 +4,7 @@
 - Version: 0.3
 - Last updated: 2026-08-05
 
-Progress: v0.1 complete and tagged. Phase 4 defines v0.2. Tasks 18 through 21 have landed.
+Progress: v0.1 complete and tagged. Phase 4 defines v0.2. Tasks 18 through 22 have landed; Task 23, the transcript surface, is next.
 
 Update this line when a task lands. An agent reading a stale progress line will rebuild finished work.
 

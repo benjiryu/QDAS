@@ -24,18 +24,18 @@
  * flow as the prose, so nothing has to be panned to sideways.
  */
 .transcript-turn__meta {
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
 }
 
 .transcript-turn__timestamp {
   margin-left: 0.5ch;
-  font-weight: 400;
+  font-weight: var(--font-weight-regular);
   font-variant-numeric: tabular-nums;
   color: var(--text-muted);
 }
 
 .transcript-turn:focus-visible {
-  outline: 3px solid var(--focus);
+  outline: var(--border-thick) solid var(--focus);
   outline-offset: 2px;
 }
 
@@ -95,18 +95,14 @@
   text-underline-offset: 0.3em;
 }
 
+/*
+ * Provisional hues. Task 23 owns the coded treatment and should overwrite
+ * these; they are the nearest token families to what was here before.
+ */
 :root {
-  --coded-bg: #fdf3d3;
-  --coded-multiple-bg: #efcf85;
-  --coded-line: #7a5a00;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --coded-bg: #2b2718;
-    --coded-multiple-bg: #4a3f22;
-    --coded-line: #e8c45f;
-  }
+  --coded-bg: var(--yellow-3);
+  --coded-multiple-bg: var(--orange-2);
+  --coded-line: var(--orange-1);
 }
 
 @media (forced-colors: active) {
@@ -133,7 +129,7 @@
   gap: 0.5rem 1rem;
   padding: 0.5rem 0.75rem;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-small);
   margin-bottom: 0.75rem;
 }
 
@@ -145,7 +141,7 @@
 }
 
 .position-ribbon__title {
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
 }
 
 .position-ribbon__label {
@@ -175,7 +171,7 @@
   color: inherit;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-small);
   cursor: pointer;
 }
 
@@ -192,12 +188,4 @@
 .transcript-toolbar__button[aria-disabled='true'] {
   border-style: dashed;
   opacity: 0.7;
-}
-
-:root {
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-  }
 }
