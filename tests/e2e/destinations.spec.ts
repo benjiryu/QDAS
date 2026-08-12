@@ -105,6 +105,43 @@ test('a reload clears the session, per D-044', async ({ page }) => {
   await expect(page.getByText('0 coded excerpts')).toBeVisible();
 });
 
+/**
+ * Section 1's third acceptance criterion: "Given the page at 400 percent zoom,
+ * when the coder reads a code record, then no horizontal panning is required."
+ *
+ * 400 percent zoom of a 1280px viewport is 320 effective pixels, which is how
+ * WCAG 1.4.10 defines the target and how it can be driven here. Checked with a
+ * query active as well, because the results region is the widest thing the page
+ * renders.
+ */
+test('the codebook needs no horizontal panning at 400 percent', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 800 });
+  await page.goto(`${projectUrl}/codebook`);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Code book');
+
+  const overflows = () =>
+    page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+    );
+
+  expect(await overflows(), 'reading the records').toBe(false);
+
+  await page.getByRole('searchbox', { name: /search the codebook/i }).fill('water access');
+  await expect(page.getByRole('heading', { name: /results for/i })).toBeVisible();
+  expect(await overflows(), 'with results on screen').toBe(false);
+});
+
+test('the codebook has no violations with a query active', async ({ page }) => {
+  // The static scan above covers the page at rest. The results region only
+  // exists while a query does, so it needs a scan of its own.
+  await page.goto(`${projectUrl}/codebook`);
+  await page.getByRole('searchbox', { name: /search the codebook/i }).fill('water');
+  await expect(page.getByRole('heading', { name: /results for/i })).toBeVisible();
+
+  const results = await new AxeBuilder({ page }).analyze();
+  expect(results.violations).toEqual([]);
+});
+
 test('the sidebar reflows at 320px without scrolling sideways', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 800 });
 

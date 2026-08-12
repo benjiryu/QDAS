@@ -2,8 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAnnouncer } from '../../a11y';
 import { defaultFlags } from '../../config/flags';
 import {
+  addProvisionalCode,
   clearDraft,
   readDraft,
+  readProvisionalCodes,
   readSavedWork,
   writeDraft,
   writeSavedWork,
@@ -97,6 +99,12 @@ export function TranscriptWorkspace({
   const [restored] = useState(() => ({
     draft: readDraft(resolved.source.sourceId),
     work: readSavedWork(projectId),
+    /*
+      Project-scoped, unlike the draft: a code the coder proposed while working
+      another source is still theirs to use here, and one already assigned must
+      keep a record to resolve its name from.
+    */
+    provisionalCodes: readProvisionalCodes(projectId),
   }));
 
   /**
@@ -476,7 +484,7 @@ export function TranscriptWorkspace({
       // turn the capture started in.
       excerpt.run('excerpt.discard');
     },
-    initialDraft: restored.draft,
+    initialDraft: { ...restored.draft, proposedCodes: restored.provisionalCodes },
   });
 
   /**
@@ -519,6 +527,17 @@ export function TranscriptWorkspace({
     });
   }, [projectId, savedAssignments, savedExcerpts, savedNotes, supersededIds]);
 
+  /**
+   * Records proposed codes where they outlive the capture.
+   *
+   * Append-only, so a save that clears the panel cannot take one away, and a
+   * repeat is ignored. Without this a coder could assign a provisional code and
+   * then find the assignment naming a code with no record anywhere.
+   */
+  useEffect(() => {
+    for (const code of panel.proposedCodes) addProvisionalCode(projectId, code);
+  }, [panel.proposedCodes, projectId]);
+
   useEffect(() => {
     snapshot.current = {
       sourceId: resolved.source.sourceId,
@@ -531,7 +550,6 @@ export function TranscriptWorkspace({
         noteText: panel.noteText,
         uncertain: panel.uncertain,
         query: panel.query,
-        proposedCodes: panel.proposedCodes,
       },
       work: {
         excerpts: savedExcerpts,

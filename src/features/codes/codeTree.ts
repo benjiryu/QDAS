@@ -34,7 +34,8 @@ export interface CodeSearchResult {
   matchedOn: 'name' | 'parentPath';
 }
 
-function byCanonicalOrder(a: Code, b: Code): number {
+/** Shared with the Codebook page, so the two surfaces cannot order differently. */
+export function byCanonicalOrder(a: Code, b: Code): number {
   return a.canonicalOrderIndex - b.canonicalOrderIndex;
 }
 

@@ -321,6 +321,8 @@ describe('destination entry, per the shared rules', () => {
     renderAt(`/projects/${project.projectId}`);
 
     for (const [label, count] of [
+      // The Codebook states its version beside the count, so this is a
+              // substring of the summary line rather than the whole of it.
       ['Code book', `${fixture.codes.length} codes`],
       ['Coded data', '0 coded excerpts'],
       ['Notes', '0 notes'],
@@ -331,7 +333,7 @@ describe('destination entry, per the shared rules', () => {
       expect(headings).toHaveLength(1);
       expect(headings[0]).toHaveTextContent(label);
       expect(headings[0]).toHaveFocus();
-      expect(screen.getByText(count)).toBeInTheDocument();
+      expect(screen.getByText(new RegExp(count))).toBeInTheDocument();
     }
   });
 

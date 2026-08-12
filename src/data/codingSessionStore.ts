@@ -19,9 +19,9 @@
  * lifetime. Writing this to storage would be a behaviour change.
  *
  * Two scopes, because they expire differently. A draft belongs to one source
- * and dies when it is saved or discarded; saved work belongs to the project and
- * accumulates across every source the coder visits, which is what the Coded
- * data and Notes destinations read.
+ * and dies when it is saved or discarded; the rest belongs to the project and
+ * accumulates across every source the coder visits, which is what the Codebook,
+ * Coded data, and Notes destinations read.
  *
  * A reset between participants must call `clearCodingSession`; seed-data.md
  * section 5 requires one command returning the application to a known state,
@@ -36,9 +36,11 @@ import type { ExcerptSelection } from '../features/excerpt/excerptMachine';
 /**
  * What the coder was in the middle of, for one source.
  *
- * `proposedCodes` travels with the pending list rather than being rebuilt: a
- * code created during this capture can be checked, and restoring an id whose
- * code no longer exists would leave a pending entry naming nothing.
+ * Provisional codes are deliberately *not* here. A code the coder proposed
+ * outlives the capture that produced it: it can be assigned, it shows on the
+ * Codebook page, and other sources can use it. Holding it per source would mean
+ * it disappeared the moment the draft was cleared, leaving its id on
+ * assignments with no record to resolve.
  */
 export interface CodingDraft {
   selection: ExcerptSelection;
@@ -48,7 +50,6 @@ export interface CodingDraft {
   noteText: string;
   uncertain: boolean;
   query: string;
-  proposedCodes: Code[];
 }
 
 /**
@@ -75,7 +76,6 @@ export const EMPTY_DRAFT: CodingDraft = {
   noteText: '',
   uncertain: false,
   query: '',
-  proposedCodes: [],
 };
 
 export const EMPTY_SAVED_WORK: SavedWork = {
@@ -87,6 +87,8 @@ export const EMPTY_SAVED_WORK: SavedWork = {
 
 const drafts = new Map<string, CodingDraft>();
 const savedWork = new Map<string, SavedWork>();
+const provisionalCodes = new Map<string, Code[]>();
+const codebookQueries = new Map<string, string>();
 
 export function readDraft(sourceId: Id): CodingDraft {
   return drafts.get(sourceId) ?? EMPTY_DRAFT;
@@ -114,8 +116,46 @@ export function writeSavedWork(projectId: Id, work: SavedWork): void {
   savedWork.set(projectId, work);
 }
 
+/* ---------- Provisional codes, per project ---------- */
+
+/**
+ * Codes the coder proposed this session, per section 7 of code-selection.md.
+ *
+ * Project-scoped and append-only. They never join the canonical codebook —
+ * that structure does not change until a qualitative lead approves them — but
+ * they do have to outlast the capture that produced them, because an
+ * assignment can already name one.
+ */
+export function readProvisionalCodes(projectId: Id): Code[] {
+  return provisionalCodes.get(projectId) ?? [];
+}
+
+/** Records one, ignoring a repeat. Nothing here ever removes a code. */
+export function addProvisionalCode(projectId: Id, code: Code): void {
+  const current = provisionalCodes.get(projectId) ?? [];
+  if (current.some((candidate) => candidate.codeId === code.codeId)) return;
+  provisionalCodes.set(projectId, [...current, code]);
+}
+
+/* ---------- Codebook page query ---------- */
+
+/**
+ * The Codebook search query, which destinations.md section 1 keeps for the
+ * session: a coder who looks something up, leaves, and comes back does not
+ * retype it.
+ */
+export function readCodebookQuery(projectId: Id): string {
+  return codebookQueries.get(projectId) ?? '';
+}
+
+export function writeCodebookQuery(projectId: Id, query: string): void {
+  codebookQueries.set(projectId, query);
+}
+
 /** For the between-participants reset, and for test setup. */
 export function clearCodingSession(): void {
   drafts.clear();
   savedWork.clear();
+  provisionalCodes.clear();
+  codebookQueries.clear();
 }

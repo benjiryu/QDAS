@@ -1,0 +1,105 @@
+/*
+ * The Codebook page.
+ *
+ * Specification: docs/pages/destinations.md section 1.
+ *
+ * Sizing in rem and ch throughout, so the page reflows to 320 effective pixels
+ * and to 400 percent zoom without horizontal panning, which section 1 names as
+ * an acceptance criterion of its own. A reference page a magnification user has
+ * to pan sideways through is one they cannot use at all.
+ */
+
+.codebook__summary {
+  color: var(--text-muted);
+}
+
+.codebook__search {
+  margin-bottom: 1rem;
+}
+
+.codebook__search input {
+  font: inherit;
+  padding: 0.35rem;
+  width: 100%;
+  max-width: 24rem;
+  box-sizing: border-box;
+}
+
+/* The label and the field share a line, so the label needs the space. */
+.codebook__search label {
+  margin-right: 0.5rem;
+}
+
+.codebook__region {
+  margin-bottom: 1.5rem;
+}
+
+.codebook__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/*
+ * Hierarchy as indentation, per section 1, with a rule down the nesting so the
+ * relationship survives at magnification where the parent is off screen. The
+ * nesting itself is what carries it programmatically.
+ */
+.codebook__tree .codebook__tree {
+  padding-left: 1.5rem;
+  border-left: var(--border-thin) solid var(--color-grey-300);
+}
+
+.codebook__record {
+  padding: 0.5rem 0;
+  /* Records run long, so the measure holds here as it does in the transcript. */
+  max-width: 70ch;
+}
+
+.codebook__name {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+}
+
+/*
+ * Decorative. The code name sits beside it and says everything it does, which
+ * is what keeps colour a redundant channel rather than a carrier. D-041.
+ */
+.codebook__pill {
+  flex: none;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--code-strong, var(--border));
+  background: var(--code-fill, var(--row-bg));
+}
+
+.codebook__path,
+.codebook__matched {
+  margin: 0 0 0.25rem;
+  color: var(--text-muted);
+}
+
+.codebook__fields {
+  margin: 0;
+}
+
+/*
+ * Label above value rather than beside it. At 400 percent a two-column
+ * definition list is the first thing to force sideways panning, and the label
+ * is short enough that stacking costs little vertical space.
+ */
+.codebook__field {
+  margin-bottom: 0.35rem;
+}
+
+.codebook__field dt {
+  font-weight: var(--font-weight-bold);
+}
+
+.codebook__field dd {
+  margin: 0;
+}
