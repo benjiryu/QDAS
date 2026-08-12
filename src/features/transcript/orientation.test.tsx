@@ -246,11 +246,7 @@ describe('what the movement commands left behind', () => {
 });
 
 describe('what the strip holds afterwards', () => {
-  it('carries the three orientation controls and the three capture controls', () => {
-    // D-038 leaves a strip of six. Task 20 names five of them; the sixth is
-    // Open saved excerpt, which D-038 explicitly keeps as a command and which
-    // contract 2.2 therefore requires a visible control for. Raised in the
-    // task report.
+  it('carries exactly the five controls D-038 names, in order', () => {
     renderWorkspace();
 
     const labels = screen
@@ -264,7 +260,6 @@ describe('what the strip holds afterwards', () => {
       'Where am I',
       'Code selection',
       'Add note',
-      'Open saved excerpt',
     ]);
   });
 });

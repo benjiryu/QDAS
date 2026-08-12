@@ -222,7 +222,9 @@ describe('nothing to capture', () => {
   it('says so, opens no panel, and captures nothing', () => {
     renderWorkspace();
     act(() => {
-      document.querySelector<HTMLButtonElement>('[data-command="excerpt.open"]')!.focus();
+      // Any control outside the transcript: step 3 is reached by focus being
+      // somewhere the capture rule cannot resolve a turn from.
+      document.querySelector<HTMLButtonElement>('[data-command="excerpt.note"]')!.focus();
     });
 
     chord('excerpt.code');

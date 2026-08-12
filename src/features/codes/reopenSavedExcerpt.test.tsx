@@ -177,11 +177,11 @@ describe('reopening a saved excerpt', () => {
     expect(codesPending()).toHaveLength(soleCodeIds.length);
   });
 
-  it('offers the command only where a saved excerpt is', () => {
+  it('says why where there is no saved excerpt to open', () => {
+    // The command carries no strip control: contract 2.2 no longer asks for
+    // one, and D-038 names five. It is reachable by chord and by clicking a
+    // coded highlight, and it still explains itself rather than doing nothing.
     renderWorkspace();
-
-    const control = () => screen.getByRole('button', { name: 'Open saved excerpt' });
-    expect(control()).toHaveAttribute('aria-disabled', 'true');
 
     chord('excerpt.open');
     expect(announced().some((message) => /not inside a saved excerpt/i.test(message))).toBe(true);

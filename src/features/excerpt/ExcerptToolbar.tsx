@@ -26,9 +26,13 @@ import './excerpt.css';
 const CONTROLS: { command: ExcerptCommand; label: string }[] = [
   // Named for what they do to the selection, matching the context menu items in
   // section 2 word for word: the menu adds no capability the strip lacks.
+  //
+  // Two, not three. `excerpt.open` has no control of its own: D-038 names five
+  // for the whole strip, and contract 2.2 no longer asks every command to carry
+  // one. It stays reachable by chord and by clicking a coded highlight, which
+  // is the route D-030 specifies.
   { command: 'excerpt.code', label: 'Code selection' },
   { command: 'excerpt.note', label: 'Add note' },
-  { command: 'excerpt.open', label: 'Open saved excerpt' },
 ];
 
 interface ExcerptToolbarProps {
