@@ -1,5 +1,15 @@
 # Pattern: Code Selection and Assignment
 
+## v0.2 revision, D-042
+
+Every way out of the panel commits. Escape, the close control, and clicking outside all do what Save & Close does: the pending codes are written, the draft note is attached, and the panel closes. The discard confirmation is removed, because there is no longer anything for it to guard.
+
+Where no code is checked, save is still unavailable, so closing writes nothing and the capture is discarded. That is the only remaining route to leaving without a record, and it is what keeps a panel opened by mistake from becoming a trap. On a reopened excerpt it leaves the saved assignments standing, so unchecking everything and closing is not a back route to the deletion D-030 keeps a separate explicit action.
+
+The close control is named "Close", not "Cancel". The command is `codes.close`, not `codes.cancel`; the Escape chord is unchanged.
+
+Where sections 2, 2.1, 7, 9, and 12 below conflict with this banner, the banner governs. They are retained as history.
+
 ## Metadata
 
 - Status: Draft for team review
@@ -46,7 +56,7 @@ Consequences of being non-modal that the pattern has to handle:
 
 - **The panel is a labeled region**, so a screen reader user browsing the document can find it without tabbing.
 - **`codes.focusSearch` returns focus to the panel** from anywhere, which matters more here than it would in a dialog because focus can legitimately be in the transcript while the panel is open.
-- **Escape cancels the panel** wherever focus sits, so a user who has moved into the transcript is not stranded with an open panel and no way to dismiss it.
+- **Escape cancels the panel** wherever focus sits, so a user who has moved into the transcript is not stranded with an open panel and no way to dismiss it. *(D-042: Escape now closes and commits. The reason it exists — never being stranded — is unchanged.)*
 
 The panel resizes and scrolls internally rather than holding fixed dimensions. The Hi-Fi frame is 441 by 568, which cannot fit at 400 percent zoom.
 
@@ -57,11 +67,11 @@ Placement remains a `codebookPresentation` flag, so the comparison recorded agai
 | Command | Available when | Result |
 |---|---|---|
 | `codes.save` | Pending assignment is non-empty | Write assignments, close panel, return per `postCodingReturn` |
-| `codes.cancel` | Panel open | Discard pending codes and draft note, close panel, excerpt stays `confirmed` |
+| `codes.close` | Panel open | Commit pending codes and note and close; with an empty assignment, close and discard the capture. D-042, replacing `codes.cancel` |
 | `codes.focusSearch` | Panel open | Move focus to the search field without clearing it |
 | `codes.clearSearch` | Query is non-empty | Clear query, remove results region, focus search field |
 
-Escape maps to `codes.cancel` and works wherever focus sits while the panel is open. Because Escape means something different with the panel closed, it is resolved by `resolveEscape(panelOpen)` in `src/config/keybindings.ts` rather than read from the chord table. See excerpt-selection.md section 4.2.
+Escape maps to `codes.close` and works wherever focus sits while the panel is open. Because Escape means something different with the panel closed, it is resolved by `resolveEscape(panelOpen)` in `src/config/keybindings.ts` rather than read from the chord table. See excerpt-selection.md section 4.2.
 
 There is no separate adjust-boundaries command. The panel is non-modal, so the boundary commands in `excerpt-selection.md` section 4 reach the application directly and the excerpt toolbar remains visible and operable.
 
@@ -152,7 +162,9 @@ Removing a code that was already saved sets its `CodeAssignment.status` to `supe
 
 Save stays unavailable with an empty pending assignment. Emptying the list and saving is therefore not a route to deleting an excerpt; deletion is a separate explicit action, not built in v0.1. A destructive action reached by clearing a list and pressing Save is too easy to perform by accident.
 
-Cancel discards all pending changes and the draft note, and creates no records. On a reopened excerpt, cancel leaves the saved assignments as they were. Cancel prompts for confirmation when there are unsaved changes.
+~~Cancel discards all pending changes and the draft note, and creates no records. On a reopened excerpt, cancel leaves the saved assignments as they were. Cancel prompts for confirmation when there are unsaved changes.~~
+
+**Superseded by D-042.** Closing commits the pending codes and the note. With an empty assignment it creates no records and discards the capture, and on a reopened excerpt it leaves the saved assignments as they were. There is no confirmation.
 
 ## 9. Focus behavior
 
@@ -165,7 +177,7 @@ Cancel discards all pending changes and the draft note, and creates no records. 
 | Save succeeds | Per `postCodingReturn`, default `excerptStartSegment` |
 | Boundary command invoked from the panel | The invoked boundary control; panel closes, pending codes held |
 | Save fails | The error message, with retry adjacent |
-| Cancel | Command strip, excerpt still confirmed |
+| Close with an empty assignment | Command strip; the capture is discarded, per D-042 and excerpt-selection §3 |
 
 ## 10. Screen reader information
 
@@ -261,7 +273,7 @@ Note
 
 **Provisional codes do not enter the canonical list.** Given a newly created code, when the panel is reopened, then the code appears under Proposed codes and the canonical codebook order is unchanged.
 
-**Cancel creates nothing.** Given two pending codes and a draft note, when the user confirms cancel, then no assignment and no note exist, and the excerpt remains confirmed.
+**Closing with an empty assignment creates nothing.** Given no checked code, when the user closes the panel, then no excerpt, assignment, or note exists. *(D-042 replaced the v0.1 criterion, which asserted that confirming a cancel discarded two pending codes and a draft note. Those are now committed.)*
 
 **Save failure preserves everything.** Given two pending codes and a draft note, when saving fails, then both codes, the note, and the excerpt are preserved and retry is available.
 

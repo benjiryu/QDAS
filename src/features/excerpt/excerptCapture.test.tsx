@@ -302,14 +302,14 @@ describe('the strip control route', () => {
   });
 });
 
-describe('cancel discards', () => {
+describe('closing with nothing checked discards', () => {
   it('removes the highlight, records nothing, and returns to idle', () => {
     renderWorkspace();
     focusTurn(multiSentenceTurn.turn.turnId);
     chord('excerpt.code');
     expect(highlighted()).not.toBe('');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
 
     expect(excerptState()).toBe('idle');
     expect(highlighted()).toBe('');
@@ -322,7 +322,7 @@ describe('cancel discards', () => {
     focusTurn(multiSentenceTurn.turn.turnId);
     chord('excerpt.code');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
     // After the dialog has unwound its own focus restore.
     await act(async () => {});
 

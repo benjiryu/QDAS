@@ -55,7 +55,7 @@ Requirements carried from D-028: the menu adds no capability, every item exists 
 | `confirmed` | A range is captured and the panel is open |
 | `saved` | Range persisted with at least one code assignment |
 
-Transitions: `idle` → `confirmed` on capture. `confirmed` → `saved` on save with a non-empty pending assignment. `confirmed` → `idle` on panel cancel, which discards the capture and creates nothing. `saved` → `confirmed` via `excerpt.open` per D-030, range locked, assignments preloaded.
+Transitions: `idle` → `confirmed` on capture. `confirmed` → `saved` on save with a non-empty pending assignment. `confirmed` → `idle` on closing the panel with an empty assignment, which discards the capture and creates nothing; with codes checked, closing commits instead and the transition is `confirmed` → `saved`, per D-042. `saved` → `confirmed` via `excerpt.open` per D-030, range locked, assignments preloaded.
 
 There is no adjustment phase. Fixing a wrong range means cancelling and reselecting, which native selection makes cheap. If sessions show that cancel-and-reselect is not cheap for screen reader users, that is D-036's reopening evidence.
 
@@ -92,7 +92,7 @@ Boundaries are exact characters: `startSegmentId` + `startOffset` through `endSe
 
 **Native menu preserved.** Given no selection, when the user right-clicks the transcript, then the native browser menu appears.
 
-**Cancel discards.** Given a captured range with the panel open, when the user cancels, then no excerpt record exists and the highlight is removed.
+**Closing with no code checked discards.** Given a captured range with the panel open and nothing checked, when the user closes it, then no excerpt record exists and the highlight is removed. With a code checked, closing writes the excerpt instead. D-042.
 
 **Capture survives the panel.** Given a captured range, when the user searches, checks codes, and saves, then the stored range is unchanged throughout.
 

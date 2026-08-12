@@ -28,7 +28,7 @@ export type Command =
   | 'excerpt.open'
   | 'excerpt.menu'
   | 'codes.save'
-  | 'codes.cancel'
+  | 'codes.close'
   | 'codes.focusSearch'
   | 'help.shortcuts';
 
@@ -66,7 +66,7 @@ const windowsLinuxBindings: Record<Command, Chord> = {
   'excerpt.menu': { key: 'F10', shift: true },
 
   'codes.save': { key: 'Enter', ctrl: true, alt: true, shift: true },
-  'codes.cancel': { key: 'Escape' },
+  'codes.close': { key: 'Escape' },
   'codes.focusSearch': { key: 'f', ctrl: true, alt: true },
 
   'help.shortcuts': { key: '/', ctrl: true, alt: true },
@@ -87,7 +87,7 @@ const macBindings: Record<Command, Chord> = {
   'excerpt.menu': { key: 'F10', shift: true },
 
   'codes.save': { key: 'Enter', ctrl: true, shift: true, meta: true },
-  'codes.cancel': { key: 'Escape' },
+  'codes.close': { key: 'Escape' },
   'codes.focusSearch': { key: 'f', ctrl: true, shift: true },
 
   'help.shortcuts': { key: '/', ctrl: true, shift: true },
@@ -120,14 +120,15 @@ export function alternatesFor(command: Command): Chord[] {
  * Escape is the one chord whose meaning depends on context, so it is not a row
  * in the binding table.
  *
- * With the code panel open it cancels the panel. With the panel closed it means
- * nothing: D-036 removed the in-progress range, so there is no capture to
- * discard outside the panel and Escape belongs to the browser.
+ * With the code panel open it closes the panel, which per D-042 commits the
+ * pending codes and the note rather than discarding them. With the panel closed
+ * it means nothing: D-036 removed the in-progress range, so there is no capture
+ * to discard outside the panel and Escape belongs to the browser.
  *
  * Components call this rather than branching on Escape themselves.
  */
 export function resolveEscape(panelOpen: boolean): Command | null {
-  return panelOpen ? 'codes.cancel' : null;
+  return panelOpen ? 'codes.close' : null;
 }
 
 export function matches(event: KeyboardEvent, chord: Chord): boolean {

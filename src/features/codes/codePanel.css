@@ -303,8 +303,18 @@
   border-top: 1px solid var(--border);
 }
 
-/* Destructive, and set apart from the control beside it for that reason. */
-.code-panel__delete {
+/*
+ * The action group sits at the trailing edge in both of the footer's states.
+ *
+ * Pushing whichever button comes first carries the rest of the group with it,
+ * so `[Delete][Save & Close][Flag]` on a reopened excerpt and
+ * `[Save & Close][Flag]` on a fresh one land in the same place. Save & Close
+ * used to move depending on whether Delete was there to push it.
+ *
+ * A child selector, so the buttons inside the delete confirmation — which are
+ * nested a level deeper — are not caught by it.
+ */
+.code-panel__actions > button:first-of-type {
   margin-left: auto;
 }
 

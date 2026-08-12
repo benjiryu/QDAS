@@ -72,14 +72,15 @@ export function NoteDisclosure({
 
       {/*
         Rendered only while open, so the draft lives in the panel rather than in
-        the DOM: collapsing never discards what was typed, and the cancel
-        confirmation keeps counting it.
+        the DOM: collapsing never discards what was typed, and closing the panel
+        with a code checked still saves it.
       */}
       {isOpen ? (
         <div
           onKeyDown={(event) => {
             // Escape collapses the row and stops there. The panel's own Escape
-            // handler cancels everything, and one key should not do two things.
+            // handler closes the whole panel, and one key should not do two
+            // things at once.
             if (event.key !== 'Escape') return;
             event.stopPropagation();
             close();

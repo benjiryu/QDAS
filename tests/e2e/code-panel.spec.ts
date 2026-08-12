@@ -140,8 +140,11 @@ test('the flag checkbox stays visible', async ({ page }) => {
 });
 
 test('Save & Close carries the primary treatment and the rest do not', async ({ page }) => {
+  // Exact, or "Close" also matches "Save & Close" and the locator resolves to two.
   const fill = (name: string) =>
-    page.getByRole('button', { name }).evaluate((el) => getComputedStyle(el).backgroundColor);
+    page
+      .getByRole('button', { name, exact: true })
+      .evaluate((el) => getComputedStyle(el).backgroundColor);
 
   // Disabled until something is pending, and the disabled treatment wins while
   // it is: check a code first, or this measures the wrong state.
@@ -149,7 +152,26 @@ test('Save & Close carries the primary treatment and the rest do not', async ({ 
 
   // blue-100, the primary fill.
   expect(await fill('Save & Close')).toBe('rgb(31, 71, 131)');
-  expect(await fill('Cancel')).not.toBe('rgb(31, 71, 131)');
+  expect(await fill('Close')).not.toBe('rgb(31, 71, 131)');
+});
+
+test('the action group sits at the trailing edge with and without Delete', async ({ page }) => {
+  // Save & Close used to sit at the leading edge on a fresh capture and jump to
+  // the trailing one as soon as a reopened excerpt put Delete beside it. Its
+  // place should not depend on what else happens to be in the row.
+  await page.locator('[data-region="codebook"] input[type="checkbox"]').first().check();
+
+  const trailing = await page.evaluate(() => {
+    const actions = document.querySelector('[data-region="actions"]')!.getBoundingClientRect();
+    const save = document
+      .querySelector('[data-region="actions"] [data-command="codes.save"]')!
+      .getBoundingClientRect();
+    // The flag sits after it, so measure the gap in front rather than behind.
+    return { gapBefore: save.left - actions.left, actionsWidth: actions.width };
+  });
+
+  // Pushed well clear of the leading edge rather than starting at it.
+  expect(trailing.gapBefore).toBeGreaterThan(trailing.actionsWidth / 3);
 });
 
 test('the open dialog has no accessibility violations', async ({ page }) => {

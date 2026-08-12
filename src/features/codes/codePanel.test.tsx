@@ -177,9 +177,9 @@ describe('acceptance: stable code order', () => {
     openPanel();
     const before = codebookOrder();
 
-    // Cancel discards the capture, so reopening means capturing again. D-036
-    // removed the adjustment route this test used to take.
-    fireEvent.click(within(panel()).getByRole('button', { name: 'Cancel' }));
+    // Closing with nothing checked discards the capture, so reopening means
+    // capturing again. D-036 removed the adjustment route this test used to take.
+    fireEvent.click(within(panel()).getByRole('button', { name: 'Close' }));
     expect(screen.queryByRole('dialog', { name: /code assignment/i })).toBeNull();
     // Focus returns to the turn after the dialog unwinds its own restore, and
     // the next capture needs it there.
@@ -401,20 +401,22 @@ describe('the container, a centered modal dialog', () => {
 });
 
 describe('commands, per section 2.1', () => {
-  it('cancels from anywhere inside the dialog', () => {
+  it('closes from anywhere inside the dialog', () => {
     // Focus can no longer sit in the transcript while this is open, so the
     // "anywhere" D-027 worried about is now anywhere within the trap.
     renderWorkspace();
     openPanel();
 
     act(() => {
-      within(panel()).getByRole('button', { name: 'Cancel' }).focus();
+      within(panel()).getByRole('button', { name: 'Close' }).focus();
     });
     press({ key: 'Escape' });
 
     expect(screen.queryByRole('dialog', { name: /code assignment/i })).toBeNull();
+    // Nothing was checked, so nothing was committed and the announcement says
+    // so rather than reporting a save that did not happen.
     expect(
-      announcer.getHistory().some((entry) => /cancelled/i.test(entry.message)),
+      announcer.getHistory().some((entry) => /closed\. Nothing was coded/i.test(entry.message)),
     ).toBe(true);
   });
 
@@ -769,7 +771,7 @@ describe('the fixed header and footer', () => {
     expect(
       scroll.contains(within(panel()).getByRole('button', { name: 'Save & Close' })),
     ).toBe(false);
-    expect(scroll.contains(within(panel()).getByRole('button', { name: 'Cancel' }))).toBe(false);
+    expect(scroll.contains(within(panel()).getByRole('button', { name: 'Close' }))).toBe(false);
   });
 
   it('puts the codebook and the disclosures inside it', () => {

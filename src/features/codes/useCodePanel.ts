@@ -86,13 +86,14 @@ export interface CodePanelApi {
   requestDelete: () => void;
   confirmDelete: () => void;
   keepExcerpt: () => void;
-  /** Cancel asks first when there are unsaved changes. Section 8. */
-  cancelPending: boolean;
-  requestCancel: () => void;
-  keepEditing: () => void;
+  /**
+   * The single exit, per D-042: Escape, the close control, and clicking
+   * outside. Commits the pending codes and the note where there are any, and
+   * otherwise closes on an empty assignment, creating nothing.
+   */
+  close: () => void;
   /** Called by the workspace once records exist. Nothing clears before then. */
   clearAfterSave: () => void;
-  cancel: () => void;
   focusSearch: () => void;
   /** Callback ref for the note field, which `excerpt.note` opens focused on. */
   setNoteElement: (node: HTMLTextAreaElement | null) => void;
@@ -129,7 +130,11 @@ interface Options {
    */
   onDelete?: () => void;
 
-  /** Cancel closes the panel and returns focus to the command strip, per section 9. */
+  /**
+   * Closing on an empty assignment: discards the capture and returns focus to
+   * the command strip, per section 9. Since D-042 this is the only route that
+   * reaches it — closing with codes pending goes through `onSave`.
+   */
   onCancel: () => void;
   /**
    * Writes the records and performs the return. The panel collects the pending
@@ -185,7 +190,6 @@ export function useCodePanel({
   const [proposedCodes, setProposedCodes] = useState<Code[]>([]);
   const [noteText, setNoteText] = useState('');
   const [uncertain, setUncertainState] = useState(false);
-  const [cancelPending, setCancelPending] = useState(false);
   const [deletePending, setDeletePending] = useState(false);
   /** How many codes the panel opened with, for the opening announcement. */
   const loadedCountRef = useRef(0);
@@ -414,51 +418,50 @@ export function useCodePanel({
     setNoteText('');
     setUncertainState(false);
     setQueryState('');
-    setCancelPending(false);
     setDeletePending(false);
     announcedFor.current = null;
   }, [applyPending]);
 
   /**
-   * Section 2.1: discard pending codes and the draft note and close the panel.
-   * The capture goes with it, per excerpt-selection section 3, so this no
-   * longer says the excerpt survives; what happened to the range is announced
-   * by whoever owns it.
+   * Closing with nothing to commit: the capture goes and no record is created.
+   *
+   * Per D-042 this is no longer the general exit, only the empty one. Save is
+   * unavailable with an empty pending assignment, so there is nothing here to
+   * keep. On a reopened excerpt the saved assignments are untouched, which is
+   * what keeps unchecking-everything-then-closing from becoming the deletion
+   * route D-030 forbids.
    */
-  const cancelNow = useCallback(() => {
+  const discardAndClose = useCallback(() => {
     loadedCountRef.current = 0;
     setSaveError(null);
     applyPending([]);
     setNoteText('');
     setUncertainState(false);
     setQueryState('');
-    setCancelPending(false);
     setDeletePending(false);
     announcedFor.current = null;
-    announcer.announce('Code selection cancelled.');
+    announcer.announce('Code Assignment closed. Nothing was coded.');
     onCancel();
   }, [announcer, applyPending, onCancel]);
 
   /**
-   * Cancel asks first when there is unsaved work, because it destroys pending
-   * codes and a draft note. Confirmation is announced assertively: contract 2.3
-   * reserves the assertive region for exactly this and for save failures.
+   * The one way out, per D-042. Every exit — Escape, the close control, and
+   * clicking outside — comes through here, so there is a single rule to learn:
+   * leaving the panel keeps your work.
+   *
+   * With codes pending this *is* Save & Close. A failed save still closes
+   * nothing and loses nothing: `save` records the error and returns, and only
+   * the workspace's success path closes the panel, so the contract's "no user
+   * work is discarded as a side effect of an error" holds through this route as
+   * much as through the button.
    */
-  const requestCancel = useCallback(() => {
-    const hasUnsavedWork = pendingCodeIds.length > 0 || noteText.trim() !== '';
-    if (!hasUnsavedWork) {
-      cancelNow();
+  const close = useCallback(() => {
+    if (pendingCodeIds.length > 0) {
+      save();
       return;
     }
-    setCancelPending(true);
-    announcer.announce(
-      `Discard ${pendingCodeIds.length} pending ${
-        pendingCodeIds.length === 1 ? 'code' : 'codes'
-      }${noteText.trim() === '' ? '' : ' and your note'}? Nothing is discarded until you confirm.`,
-      'assertive',
-      'destructiveConfirmation',
-    );
-  }, [announcer, cancelNow, noteText, pendingCodeIds]);
+    discardAndClose();
+  }, [discardAndClose, pendingCodeIds, save]);
 
   /* ---------- Deleting a saved excerpt, per D-030 ---------- */
 
@@ -485,11 +488,6 @@ export function useCodePanel({
     announcer.announce('Nothing was deleted.');
   }, [announcer]);
 
-  const keepEditing = useCallback(() => {
-    setCancelPending(false);
-    announcer.announce('Still editing. Nothing was discarded.');
-  }, [announcer]);
-
   /* ---------- Chords ---------- */
 
   const bindings = useMemo(() => bindingsFor(detectPlatform()), []);
@@ -506,15 +504,15 @@ export function useCodePanel({
       const matched = commandFor(event, bindings);
       if (!matched) return;
 
-      // Escape while the panel is open means cancel, wherever focus sits. The
+      // Escape while the panel is open means close, wherever focus sits. The
       // resolution lives in the binding module because Escape means something
       // else with the panel closed.
-      if (matched === 'codes.cancel') {
-        if (resolveEscape(true) !== 'codes.cancel') return;
+      if (matched === 'codes.close') {
+        if (resolveEscape(true) !== 'codes.close') return;
         event.preventDefault();
-        // Escape asks first when there is unsaved work, exactly as the Cancel
-        // control does. It is the same command.
-        requestCancel();
+        // The same exit as the close control and as clicking outside, so all
+        // three keep the work. D-042.
+        close();
         return;
       }
 
@@ -530,7 +528,7 @@ export function useCodePanel({
 
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [bindings, focusSearch, isOpen, requestCancel]);
+  }, [bindings, close, focusSearch, isOpen]);
 
   /* ---------- Closing ---------- */
 
@@ -571,10 +569,7 @@ export function useCodePanel({
     requestDelete,
     confirmDelete,
     keepExcerpt,
-    cancelPending,
-    requestCancel,
-    keepEditing,
-    cancel: cancelNow,
+    close,
     focusSearch,
     setNoteElement,
     setSearchElement,

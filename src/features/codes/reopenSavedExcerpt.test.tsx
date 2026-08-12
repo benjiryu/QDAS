@@ -299,8 +299,8 @@ describe('saving a reopened excerpt writes the difference', () => {
   });
 });
 
-describe('cancel leaves a reopened excerpt untouched', () => {
-  it('keeps its saved assignments after discarding the changes', () => {
+describe('closing a reopened excerpt, per D-042', () => {
+  it('commits a code added to it', () => {
     const { container } = renderWorkspace();
     clickSegment(container, soleExcerpt.startSegmentId);
 
@@ -309,17 +309,34 @@ describe('cancel leaves a reopened excerpt untouched', () => {
       within(region('codebook')).getByRole('checkbox', { name: new RegExp(added.name) }),
     );
 
-    fireEvent.click(within(panel()).getByRole('button', { name: 'Cancel' }));
-    fireEvent.click(screen.getByRole('button', { name: /discard them/i }));
+    fireEvent.click(within(panel()).getByRole('button', { name: 'Close' }));
 
-    // Cancel discards this round of changes and returns to idle, per section 3.
-    // What was already saved is untouched, which is what D-030 requires.
+    // Reopening shows the addition standing alongside what was already there.
+    clickSegment(container, soleExcerpt.startSegmentId);
+    expect(codesPending()).toContain(added.codeId);
+    expect(codesPending()).toHaveLength(soleCodeIds.length + 1);
+  });
+
+  it('leaves the saved assignments alone when everything is unchecked', () => {
+    // The guard that keeps D-042 from opening a back route to deletion.
+    // Unchecking every code makes the assignment empty, so there is nothing to
+    // save; closing then discards this round rather than superseding what was
+    // already written. D-030 keeps deletion a separate explicit action.
+    const { container } = renderWorkspace();
+    clickSegment(container, soleExcerpt.startSegmentId);
+
+    for (const codeId of soleCodeIds) {
+      fireEvent.click(panel().querySelector(`[data-code-id="${codeId}"]`)!);
+    }
+    expect(codesPending()).toHaveLength(0);
+
+    fireEvent.click(within(panel()).getByRole('button', { name: 'Close' }));
     expect(excerptState()).toBe('idle');
 
-    // Reopening shows exactly what was saved before.
+    // Still exactly what was saved before.
     clickSegment(container, soleExcerpt.startSegmentId);
+    expect(codesPending()).toEqual(expect.arrayContaining(soleCodeIds));
     expect(codesPending()).toHaveLength(soleCodeIds.length);
-    expect(codesPending()).not.toContain(added.codeId);
   });
 });
 
@@ -334,7 +351,7 @@ describe('deleting a saved excerpt', () => {
       .querySelector(`[data-segment-id="${segmentId}"]`)!
       .getAttribute('data-display-state');
 
-  it('is not offered on a fresh capture, where Cancel already discards', () => {
+  it('is not offered on a fresh capture, which leaves no record behind', () => {
     const { container } = renderWorkspace();
     const uncoded = resolved.segments.find(
       (segment) => codedAt(container, segment.segmentId) === 'inactive',

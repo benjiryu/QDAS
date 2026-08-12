@@ -143,7 +143,8 @@ describe('acceptance: provisional codes do not enter the canonical list', () => 
     expect(within(region('codebook')).queryByText('Compost queue')).toBeNull();
 
     // And still there, still outside the codebook, when the panel is reopened.
-    fireEvent.click(within(panel()).getByRole('button', { name: 'Cancel' }));
+    // Closed with nothing checked, so the capture goes and nothing is written.
+    fireEvent.click(within(panel()).getByRole('button', { name: 'Close' }));
     chord('excerpt.code');
 
     expect(within(region('proposed')).getByText('Compost queue')).toBeInTheDocument();

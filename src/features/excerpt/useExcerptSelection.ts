@@ -380,9 +380,9 @@ export function useExcerptSelection({
 
       // Escape is the one chord whose meaning depends on context, so the
       // resolution lives in the binding module rather than in a branch here.
-      // With the panel open it means cancel, which the panel owns; with no
+      // With the panel open it means close, which the panel owns; with no
       // panel there is nothing to capture out of, so it resolves to nothing.
-      if (matched === 'codes.cancel') {
+      if (matched === 'codes.close') {
         void resolveEscape(panelOpen);
         return;
       }

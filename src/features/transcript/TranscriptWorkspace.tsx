@@ -171,9 +171,9 @@ export function TranscriptWorkspace({
 
   /**
    * Whether code selection is open. Held here because Escape resolves against
-   * it: with the panel open Escape cancels the panel, and with it closed Escape
-   * discards a pending excerpt. `resolveEscape` in the binding module decides,
-   * and both features read the same answer.
+   * it: with the panel open Escape closes the panel, and with it closed Escape
+   * means nothing. `resolveEscape` in the binding module decides, and both
+   * features read the same answer.
    */
   const [panelOpen, setPanelOpen] = useState(false);
   /**
@@ -438,9 +438,11 @@ export function TranscriptWorkspace({
     onSave: handleSave,
     onDelete: handleDelete,
     onCancel: () => {
-      // A reopened excerpt's saved assignments are untouched by cancel. D-030.
-      // For a fresh capture, cancel discards it and creates nothing, per
-      // section 3, and returns focus to the turn the capture started in.
+      // Reached only when the assignment is empty, per D-042: there is nothing
+      // to commit, so the capture goes and nothing is created. A reopened
+      // excerpt's saved assignments are untouched, which is what keeps this
+      // from becoming the deletion route D-030 forbids. Focus returns to the
+      // turn the capture started in.
       excerpt.run('excerpt.discard');
     },
   });

@@ -56,7 +56,7 @@ export function CreateCodeDisclosure({ panel }: { panel: CodePanelApi }) {
           id={formId}
           onKeyDown={(event) => {
             // Escape collapses without discarding anything else. The panel's own
-            // Escape handler cancels the whole panel, so this stops here rather
+            // Escape handler closes the whole panel, so this stops here rather
             // than letting one key do two things at once.
             if (event.key !== 'Escape') return;
             event.stopPropagation();

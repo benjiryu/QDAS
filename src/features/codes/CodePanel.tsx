@@ -12,7 +12,13 @@ import './codePanel.css';
  * The Code Assignment card.
  *
  * Specification: docs/patterns/code-selection.md sections 2 to 7, as revised by
- * decisions D-039 and D-040.
+ * decisions D-039, D-040, and D-042.
+ *
+ * D-042 gave the panel one way out. Escape, the close control, and clicking
+ * outside all commit, exactly as Save & Close does; the discard confirmation is
+ * gone because nothing is destroyed on the way out any more. Closing with
+ * nothing checked still creates nothing, which is what keeps a panel opened by
+ * mistake from being a trap.
  *
  * D-039 cut this down to the card: the verbose heading, the excerpt summary and
  * its read-back control, the visual level labels, and the pending assignment
@@ -77,7 +83,6 @@ export function CodePanel({ panel, flags, excerptText }: CodePanelProps) {
     canSave,
     canDelete,
     deletePending,
-    cancelPending,
     saveError,
     setErrorElement,
   } = panel;
@@ -87,20 +92,20 @@ export function CodePanel({ panel, flags, excerptText }: CodePanelProps) {
       className="code-panel__overlay"
       isOpen={panel.isOpen}
       /*
-        Controlled, which is what makes cancelling safe. `requestCancel` closes
-        only when there is nothing to lose; with pending codes or a draft note
-        it raises its confirmation instead, `isOpen` stays true, and the dialog
-        stays put. So clicking outside cannot silently discard work, which is
-        the one thing that separates it from the other three exits.
+        Clicking outside is the same exit as Escape and the close control, per
+        D-042: it commits. Controlled rather than self-closing, because a save
+        that fails has to leave the dialog standing — `close` runs the save,
+        `isOpen` stays true when it reports an error, and the work is still
+        here to retry.
       */
       onOpenChange={(open) => {
-        if (!open) panel.requestCancel();
+        if (!open) panel.close();
       }}
       isDismissable
       /*
         Escape stays with the binding module. `resolveEscape` decides who owns
         it and `useCodePanel` acts on that; letting React Aria also close on
-        Escape would give one key two handlers racing to cancel.
+        Escape would give one key two handlers racing to close.
       */
       isKeyboardDismissDisabled
     >
@@ -112,18 +117,21 @@ export function CodePanel({ panel, flags, excerptText }: CodePanelProps) {
           Code Assignment
         </h2>
         {/*
-          The card's close control. Named "Cancel" rather than "Close" because
-          that is what D-039 says it is and what it does: it discards the
-          pending codes and the draft note, asking first when there are any.
+          The card's close control. Named "Close" since D-042: it commits the
+          pending codes and the note rather than discarding them, so the name
+          D-039 gave it, "Cancel", would now describe the opposite of what it
+          does. This span is the control's whole accessible name — the glyph is
+          hidden — so the name is the only thing standing between a screen
+          reader user and a surprise.
         */}
         <button
           type="button"
           className="code-panel__close"
-          data-command="codes.cancel"
-          onClick={panel.requestCancel}
+          data-command="codes.close"
+          onClick={panel.close}
         >
           <span aria-hidden="true">×</span>
-          <span className="code-panel__close-label">Cancel</span>
+          <span className="code-panel__close-label">Close</span>
         </button>
 
       {/*
@@ -235,7 +243,8 @@ export function CodePanel({ panel, flags, excerptText }: CodePanelProps) {
       <div className="code-panel__region code-panel__actions" data-region="actions">
         {deletePending ? (
           /*
-            Deleting asks first, in the same shape as cancelling. D-030 built
+            Deleting asks first. It is the panel's only confirmation now that
+            D-042 removed the discard one, and it stays because D-030 built
             the confirmation into the requirement: a destructive action that is
             easy to perform by accident is the thing it was guarding against.
           */
@@ -249,21 +258,6 @@ export function CodePanel({ panel, flags, excerptText }: CodePanelProps) {
             </button>
             <button type="button" onClick={panel.keepExcerpt}>
               Keep it
-            </button>
-          </div>
-        ) : cancelPending ? (
-          // Cancel asks before destroying pending codes and a draft note.
-          <div className="code-panel__confirm" data-confirm="cancel">
-            <p>
-              Discard {pendingCodeIds.length}{' '}
-              {pendingCodeIds.length === 1 ? 'code' : 'codes'}
-              {noteText.trim() === '' ? '' : ' and your note'}? Nothing has been discarded yet.
-            </p>
-            <button type="button" autoFocus onClick={panel.cancel}>
-              Discard them
-            </button>
-            <button type="button" onClick={panel.keepEditing}>
-              Keep editing
             </button>
           </div>
         ) : (
@@ -293,9 +287,11 @@ export function CodePanel({ panel, flags, excerptText }: CodePanelProps) {
                 with nothing checked still announces the reason, so contract
                 2.6's "a disabled control with no explanation is a dead end"
                 holds through the ear rather than the eye. */}
-            {/* Only where there is a saved excerpt to delete. On a fresh
-                capture Cancel already discards everything, so a delete control
-                would be a second name for it. */}
+            {/* Only where there is a saved excerpt to delete. A fresh capture
+                has no record to remove: closing it with nothing checked
+                already leaves nothing behind. Its confirmation stays, unlike
+                the discard one D-042 removed — deleting destroys records that
+                exist, which is what D-030 made it ask about. */}
             {canDelete ? (
               <button
                 type="button"

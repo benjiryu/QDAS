@@ -711,3 +711,25 @@ Hiding a channel is only legitimate while an equivalent primary channel exists, 
 - Rail pills use the tag tokens with their non-color text labels for sighted users; the rail's absence from the accessibility tree is what makes color-plus-text sufficient there.
 
 Contract basis: every state visible and programmatic, section 2.6, satisfied by the pair rather than by either channel alone.
+
+## D-042 Every exit from the code panel commits
+
+Date: 2026-08 | Workflow: code assignment | Status: approved. Supersedes the cancel semantics in D-039, code-selection.md sections 2, 2.1, 7, 9, and 12, and excerpt-selection.md sections 3 and 7
+
+**Escape, the close control, and clicking outside all do what Save & Close does.** The pending codes are written, the draft note is attached, and the panel closes. The discard confirmation is removed: with nothing destroyed on the way out, there is nothing for it to guard.
+
+Previously the panel had two kinds of exit. One committed and three discarded, and the three asked first. That split put the most destructive outcome behind the easiest gesture — a stray click on the backdrop — and made a confirmation necessary to hold it back. One rule removes both problems: leaving the panel keeps your work.
+
+The rule and its one exception:
+
+- **With codes checked, closing saves.** Identical to Save & Close, including on failure: a failed save writes nothing, closes nothing, and leaves the codes, the note, and the excerpt exactly where they were, with retry adjacent. Contract 2.4 holds on these routes as much as on the button.
+- **With nothing checked, closing discards the capture and creates nothing.** Save is unavailable on an empty assignment, so there is nothing to commit. This is deliberately not a refusal to close: code-selection.md section 2 keeps Escape working wherever focus sits so that nobody is stranded in a panel they opened by mistake, and that reason survives this decision intact.
+- **On a reopened excerpt, closing with everything unchecked leaves the saved assignments standing.** Unchecking and closing is therefore not a back route to deletion. D-030 keeps deleting a coded excerpt a separate explicit action, and its confirmation stays — that one destroys records that already exist.
+
+**The close control is renamed "Close"**, from D-039's "Cancel", and the command `codes.cancel` becomes `codes.close`. The Escape chord is unchanged. The label is visually hidden text and is the control's entire accessible name, so a control announcing itself as Cancel while committing assignments is exactly the mismatch contract 2.6 exists to prevent. The name had to move with the meaning.
+
+Supporting this, N-2 in `unresolved-questions.md` worries that a coder who leaves the panel to check a definition "comes back to an empty pending assignment and a discarded excerpt has been punished for checking." That punishment is now gone, which narrows the question rather than answering it.
+
+**Accepted cost, for the team to weigh in sessions.** A note written with no code checked is now discarded without a word. The old confirmation counted a draft note as unsaved work and asked before losing it; nothing does now. There is no excerpt for such a note to attach to, so keeping it is not available, but the warning that used to catch the case is gone. If sessions show coders writing a note before choosing any code, this is where it will show up.
+
+The footer also changes: the action group sits at the trailing edge in both states, so Save & Close no longer moves depending on whether a reopened excerpt has put Delete beside it.
