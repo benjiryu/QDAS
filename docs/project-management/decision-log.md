@@ -862,3 +862,19 @@ Two rules, one principle: relationships that exist visually must exist in the ac
 **Every list carrying workflow content has an accessible name.** Proficient screen reader users navigate structurally, by rotor and by list-jump, and arrive at lists with no preceding context. "List, 34 items" is not an answer to "what is this"; "Codebook, list, 34 items" is. Named via `aria-labelledby` where a visible heading or control exists, `aria-label` where none does. Known gap from the Task 28a finding: the panel's code list lost its name when its heading became the Open Codebook button; the button now labels the list. Applies to search results, recent codes, the pending set as expressed by checkboxes, sidebar lists, and the destination pages' filter, results, and notes lists.
 
 Decorative or structural lists inside already-named containers need no name of their own; the rule targets lists a user would jump to.
+
+## D-052 Coded ranges are mark elements, so reading reports them natively
+
+Date: 2026-08 | Workflow: transcript display | Status: approved. Closes the discovery gap D-041 left in browse-mode reading
+
+The build renders coded and captured ranges as styled spans, which are semantically invisible: a screen reader user reading continuously passes through coded text with no signal, while a sighted user sees every highlight at a glance. The D-041 turn status fires only on focus, so discovery-while-reading was a visual secret.
+
+Coded and captured ranges therefore render as `<mark>`, the native semantic for highlighted text. NVDA and JAWS report "highlighted" on entering a mark during reading, governed by the user's own verbosity settings, which is the correct division of responsibility: the platform states what the text is, the assistive technology and its user decide how much to say about it. No announcement text is injected into the prose; continuous reading stays continuous, per D-002.
+
+The three-tier D-041 model becomes four honest tiers: reading reports "highlighted" natively as you pass through; focus gives the turn's compact status; `excerpt.open` gives detail; the Coded data page gives the directory.
+
+Caveats recorded:
+
+- VoiceOver's mark reporting is the weakest of the three screen readers, the reverse of the usual risk: participants skew NVDA and JAWS, where support is solid, while VoiceOver is the development environment. Verifying what each participant's configuration actually announces joins the pre-session smoke test.
+- `mark` carries no interactive semantics, and gains none: clicking a coded sentence reopening the excerpt is unchanged, and `excerpt.open` remains the keyboard route.
+- Nested or overlapping ranges remain one mark with the coded-multiple treatment; marks do not nest per range.

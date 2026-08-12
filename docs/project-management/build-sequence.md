@@ -1101,6 +1101,23 @@ option.
 Done when: in VoiceOver's rotor list menu, every list reads as what it is, and
 arrowing through the code list yields one stop per code.
 
+### Task 33. Mark semantics for coded ranges
+
+```
+Implement D-052: coded and captured ranges in the transcript render as mark
+elements instead of styled spans. Styling, data attributes, click-to-reopen,
+and the D-041 turn description are unchanged; only the element changes.
+Overlapping ranges stay one mark with the coded-multiple treatment.
+
+Tests: coded runs expose the mark role in the accessibility tree; the turn
+still reads as continuous prose with no per-sentence focus stops; existing
+transcript and capture tests green.
+```
+
+Done when: NVDA or JAWS reading through a coded passage reports it as
+highlighted at the user's verbosity setting, and VoiceOver behavior is
+recorded in the smoke test notes whatever it turns out to be.
+
 ## Failure modes to watch for
 
 **The agent builds something simulated.** Point it at `prototype-scope.md`. File import, authentication, and IRR are not gaps to fill.
