@@ -200,6 +200,24 @@
   box-sizing: border-box;
 }
 
+/*
+ * Search is the one labelled field here that is not wrapped in
+ * `.code-panel__field`, so its label and input share a line as inline text
+ * against an inline-block, and at the panel's width they meet exactly.
+ *
+ * The margin belongs to the label rather than the input: the input is
+ * `width: 100%` with `box-sizing: border-box`, so a left margin on it would
+ * push the total past the container and bring back the horizontal scrolling
+ * accessibility contract 2.5 rules out.
+ *
+ * Selected through the input rather than as `.code-panel__region > label`,
+ * which is unique today only because the note and create-code labels happen to
+ * sit a level deeper inside their wrappers.
+ */
+label:has(+ .code-panel__search) {
+  margin-right: 0.5rem;
+}
+
 .code-panel__list {
   list-style: none;
   margin: 0;

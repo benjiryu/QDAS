@@ -174,6 +174,37 @@ test('the action group sits at the trailing edge with and without Delete', async
   expect(trailing.gapBefore).toBeGreaterThan(trailing.actionsWidth / 3);
 });
 
+test('the search label keeps clear of its field', async ({ page }) => {
+  // The two share a line — search is the one labelled field not wrapped in
+  // `.code-panel__field` — and at the panel's width they met exactly, with the
+  // label's right edge on the input's left border.
+  const row = await page.evaluate(() => {
+    const input = document.querySelector('.code-panel__search')!;
+    const label = input.previousElementSibling!;
+    const inputBox = input.getBoundingClientRect();
+    const labelBox = label.getBoundingClientRect();
+    return {
+      sharesTheLine: inputBox.top < labelBox.bottom,
+      gap: inputBox.left - labelBox.right,
+    };
+  });
+
+  expect(row.sharesTheLine).toBe(true);
+  expect(row.gap).toBeGreaterThanOrEqual(8);
+});
+
+test('the panel reflows at 320px without scrolling sideways', async ({ page }) => {
+  // Re-checked here because the search row is the one place in the panel where
+  // two things share a line, so it is where spacing would first push past the
+  // edge. Accessibility contract 2.5.
+  await page.setViewportSize({ width: 320, height: 800 });
+
+  const overflows = await page.evaluate(
+    () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+  );
+  expect(overflows).toBe(false);
+});
+
 test('the open dialog has no accessibility violations', async ({ page }) => {
   const results = await new AxeBuilder({ page }).include('[role="dialog"]').analyze();
   expect(results.violations).toEqual([]);
