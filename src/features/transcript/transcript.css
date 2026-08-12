@@ -193,14 +193,21 @@
 
 /* ---------- Position ribbon ---------- */
 
+/*
+ * Product, not scaffolding: D-009 makes this the visible twin of the spoken
+ * position report, and both are built from the same fields so they cannot
+ * disagree. It sits above the command strip, which is scaffolding and stays
+ * plain, so the two will not match.
+ */
 .position-ribbon {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   gap: 0.5rem 1rem;
   padding: 0.5rem 0.75rem;
+  background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius-small);
+  border-radius: var(--radius-medium);
   margin-bottom: 0.75rem;
 }
 

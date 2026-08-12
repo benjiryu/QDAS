@@ -75,16 +75,32 @@ a {
   color: var(--link);
 }
 
+/*
+ * Project and source lists. Rows rather than bullets: this is the first screen
+ * a participant sees, and a bulleted list of links reads as an unfinished page.
+ *
+ * `--row-bg` is scoped in the token file to selection states. Borrowing it for
+ * navigation rows is slightly outside that, and is flagged rather than answered
+ * with a new token.
+ */
 .route-list {
   margin: 0 0 1rem;
-  padding-left: 1.25rem;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .route-list li {
-  margin-bottom: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  background: var(--row-bg);
+  border-radius: var(--radius-medium);
 }
 
+/* Its own line, so the title is the row's first and loudest thing. */
 .route-meta {
+  display: block;
   color: var(--text-muted);
 }
 

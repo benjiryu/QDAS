@@ -4,7 +4,7 @@
 - Version: 0.3
 - Last updated: 2026-08-05
 
-Progress: v0.1 complete and tagged. Phase 4 defines v0.2. Tasks 18 through 25 have landed; Task 26, the shell and remaining chrome, is next.
+Progress: v0.1 complete and tagged. Phase 4 defines v0.2. Tasks 18 through 26 have landed, which is every task in the sequence. The whole-app verification pass ran on Task 26; its findings are open, including an unnamed dialog on the context menu popover that belongs to Task 19.
 
 Update this line when a task lands. An agent reading a stale progress line will rebuild finished work.
 
