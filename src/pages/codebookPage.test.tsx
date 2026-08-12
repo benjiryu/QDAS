@@ -12,6 +12,7 @@ import { clearCodingSession } from '../data/codingSessionStore';
 import { createSeedFixture } from '../data/seed';
 import { clearSourcePositions } from '../data/sourcePositionStore';
 import { buildCodeTree, searchCodes } from '../features/codes/codeTree';
+import { FAMILY_HUE_NAMES } from '../features/codebook/familyHues';
 import { searchCodebook } from '../features/codebook/searchCodebook';
 
 /**
@@ -288,7 +289,6 @@ describe('the record, per section 1', () => {
     const code = PHRASE_OWNER;
     const record = recordFor(code.codeId);
 
-    expect(record.getByText('Definition')).toBeInTheDocument();
     expect(record.getByText(code.fullDefinition)).toBeInTheDocument();
 
     /*
@@ -325,7 +325,7 @@ describe('the record, per section 1', () => {
     expect(ids.every((id) => id.startsWith('code-'))).toBe(true);
   });
 
-  it('nests children inside their parent, with headings descending', () => {
+  it('nests children inside their family card', () => {
     renderAt(codebookUrl);
 
     const parent = fixture.codes.find(
@@ -333,17 +333,104 @@ describe('the record, per section 1', () => {
     )!;
     const child = fixture.codes.find((code) => code.parentCodeId === parent.codeId)!;
 
-    const parentItem = region('codebook')!
-      .querySelector(`[data-code-id="${parent.codeId}"]`)!
-      .closest('li')!;
+    const card = region('codebook')!.querySelector(`[data-family-id="${parent.codeId}"]`)!;
+    expect(card.querySelector(`[data-code-id="${child.codeId}"]`)).not.toBeNull();
+  });
+});
 
-    expect(parentItem.querySelector(`[data-code-id="${child.codeId}"]`)).not.toBeNull();
-    expect(
-      within(region('codebook')!).getByRole('heading', { level: 3, name: parent.name }),
-    ).toBeInTheDocument();
-    expect(
-      within(region('codebook')!).getByRole('heading', { level: 4, name: child.name }),
-    ).toBeInTheDocument();
+describe('acceptance: heading levels match depth, per D-047', () => {
+  /** A code's depth, walked from the fixture's own parent chain. */
+  function depthOf(codeId: string): number {
+    const byId = new Map(fixture.codes.map((code) => [code.codeId, code]));
+    let depth = 0;
+    let current = byId.get(codeId)!;
+    while (current.parentCodeId) {
+      current = byId.get(current.parentCodeId)!;
+      depth += 1;
+    }
+    return depth;
+  }
+
+  it('renders every code name at the level its depth gives it', () => {
+    // Derived rather than a fixed list of names, so a codebook that grows a
+    // fourth level fails here instead of quietly rendering it wrong.
+    renderAt(codebookUrl);
+
+    const depths = new Set(fixture.codes.map((code) => depthOf(code.codeId)));
+    expect(depths, 'the fixture must have more than one level').toEqual(new Set([0, 1, 2]));
+
+    for (const code of fixture.codes) {
+      const heading = region('codebook')!.querySelector(
+        `[data-code-id="${code.codeId}"] h2, [data-code-id="${code.codeId}"] h3,` +
+          ` [data-code-id="${code.codeId}"] h4, [data-code-id="${code.codeId}"] h5`,
+      );
+      expect(heading, `${code.name} has no heading`).not.toBeNull();
+      expect(heading!.tagName.toLowerCase(), `${code.name} at depth ${depthOf(code.codeId)}`).toBe(
+        `h${2 + depthOf(code.codeId)}`,
+      );
+    }
+  });
+
+  it('leaves no heading above the families to break the outline', () => {
+    // Families are h2 per section 1, so a "Codebook" heading over them would
+    // sit at the same level and stop the heading list reading as the hierarchy.
+    renderAt(codebookUrl);
+
+    const familyNames = fixture.codes
+      .filter((code) => code.parentCodeId === null)
+      .map((code) => code.name);
+    const h2s = within(region('codebook')!)
+      .getAllByRole('heading', { level: 2 })
+      .map((heading) => heading.textContent);
+
+    expect(h2s).toEqual(familyNames);
+  });
+});
+
+describe('acceptance: the family colour is a value, not a control', () => {
+  it('reads as a labelled static value on every card', () => {
+    renderAt(codebookUrl);
+
+    const cards = region('codebook')!.querySelectorAll('[data-family-id]');
+    expect(cards).toHaveLength(6);
+
+    for (const card of cards) {
+      const family = fixture.codes.find(
+        (code) => code.codeId === card.getAttribute('data-family-id'),
+      )!;
+      const value = card.querySelector('.codebook__color')!;
+
+      expect(value, `${family.name} has no colour value`).not.toBeNull();
+      expect(value.textContent).toContain('Color:');
+      expect(value.textContent).toContain(FAMILY_HUE_NAMES[family.colorToken]);
+    }
+  });
+
+  it('offers nothing operable in a card, per the frame override', () => {
+    // The frame draws a combobox. D-047 renders a value instead, because a
+    // control that looks operable and refuses is worse over a screen reader
+    // than no control at all.
+    renderAt(codebookUrl);
+    const cards = within(region('codebook')!);
+
+    for (const role of ['combobox', 'button', 'listbox', 'textbox'] as const) {
+      expect(cards.queryAllByRole(role), `a ${role} appeared in the codebook`).toHaveLength(0);
+    }
+  });
+
+  it('names the hue that is drawn, not the token word', () => {
+    // `code-color-moss` renders red. Naming it "Moss" would mislead exactly the
+    // reader this text exists for, since it is their only colour channel.
+    renderAt(codebookUrl);
+
+    const moss = fixture.codes.find(
+      (code) => code.parentCodeId === null && code.colorToken === 'code-color-moss',
+    );
+    expect(moss, 'the fixture must still use this token on a family').toBeDefined();
+
+    const card = region('codebook')!.querySelector(`[data-family-id="${moss!.codeId}"]`)!;
+    expect(card.querySelector('.codebook__color')!.textContent).toContain('Red');
+    expect(card.querySelector('.codebook__color')!.textContent).not.toContain('Moss');
   });
 });
 

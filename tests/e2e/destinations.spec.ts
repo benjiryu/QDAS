@@ -131,6 +131,71 @@ test('the codebook needs no horizontal panning at 400 percent', async ({ page })
   expect(await overflows(), 'with results on screen').toBe(false);
 });
 
+/**
+ * The drift guard between `familyHues.ts` and the hue mapping in `index.css`.
+ *
+ * One file decides which hue a token draws, the other what that hue is called.
+ * Nothing in the type system holds them together, so this reads the border a
+ * card actually renders and checks it against the token for the name the card
+ * claims. Hexes are fine here: `tokens.test.ts` scans `src/`, and this is not
+ * in it.
+ */
+const HUE_HEXES: Record<string, string> = {
+  Red: 'rgb(227, 62, 62)',
+  Coral: 'rgb(227, 104, 67)',
+  'Dark green': 'rgb(29, 126, 77)',
+  Cerulean: 'rgb(56, 154, 202)',
+  Blue: 'rgb(51, 101, 211)',
+  Purple: 'rgb(102, 89, 217)',
+};
+
+test('every card draws the hue its colour value names', async ({ page }) => {
+  await page.goto(`${projectUrl}/codebook`);
+
+  const cards = await page.locator('[data-family-id]').evaluateAll((nodes) =>
+    nodes.map((node) => ({
+      border: getComputedStyle(node).borderTopColor,
+      value: node.querySelector('.codebook__color')?.textContent ?? '',
+    })),
+  );
+
+  expect(cards).toHaveLength(6);
+
+  for (const card of cards) {
+    const named = Object.keys(HUE_HEXES).find((hue) => card.value.includes(hue));
+    expect(named, `no known hue name in "${card.value}"`).toBeDefined();
+    expect(card.border, `card says ${named} and draws something else`).toBe(HUE_HEXES[named!]);
+  }
+
+  // And the six families take six different hues, so the check above cannot
+  // pass by every card claiming the same one.
+  expect(new Set(cards.map((card) => card.border)).size).toBe(6);
+});
+
+test('the colour value needs no pan to the card edge at 400 percent', async ({ page }) => {
+  // Section 1's amended third criterion. At 320 effective pixels the value
+  // wraps beneath the name and stays in the flow rather than sitting out at
+  // the card's far edge where it has to be panned to.
+  await page.setViewportSize({ width: 320, height: 800 });
+  await page.goto(`${projectUrl}/codebook`);
+
+  const first = page.locator('[data-family-id]').first();
+  await expect(first).toBeVisible();
+
+  const geometry = await first.evaluate((card) => {
+    const value = card.querySelector('.codebook__color')!.getBoundingClientRect();
+    const heading = card.querySelector('h2')!.getBoundingClientRect();
+    return {
+      right: value.right,
+      viewport: document.documentElement.clientWidth,
+      belowTheName: value.top >= heading.bottom - 1,
+    };
+  });
+
+  expect(geometry.right).toBeLessThanOrEqual(geometry.viewport);
+  expect(geometry.belowTheName, 'the value should wrap under the name at this width').toBe(true);
+});
+
 test('the codebook has no violations with a query active', async ({ page }) => {
   // The static scan above covers the page at rest. The results region only
   // exists while a query does, so it needs a scan of its own.

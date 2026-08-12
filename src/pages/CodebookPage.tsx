@@ -3,6 +3,7 @@ import { useParams } from 'react-router';
 import { readCodebookQuery, readProvisionalCodes, writeCodebookQuery } from '../data/codingSessionStore';
 import { createSeedFixture } from '../data/seed';
 import type { Code } from '../domain';
+import { hueNameFor } from '../features/codebook/familyHues';
 import { codeFragmentId } from '../features/codebook/fragmentId';
 import { MATCH_FIELD_LABELS, searchCodebook } from '../features/codebook/searchCodebook';
 import { buildCodeTree } from '../features/codes/codeTree';
@@ -29,16 +30,19 @@ import './codebook.css';
  */
 
 /**
- * What a record shows, per D-046: one open-ended definition and nothing else.
+ * The heading level a code sits at, from its depth in the tree.
  *
- * The short definition, the two criteria, and the status are still on the
- * `Code` record and still in the seed; they are no longer displayed. Keeping
- * the data means widening this again is a display decision rather than a
- * recovery, which is what "for now" in D-046 is holding open.
+ * Section 1 as amended by D-047: families at `h2`, children `h3`, grandchildren
+ * `h4`. This is what makes a screen reader's heading list read as the
+ * codebook's own hierarchy, which is the point of the whole structure.
+ *
+ * Clamped at `h6`, the last level HTML has. A codebook deeper than four would
+ * flatten there rather than emit an invalid tag; nothing in the fixture goes
+ * past three, and the depth test would fail loudly if one did.
  */
-const RECORD_FIELDS: { label: string; read: (code: Code) => string }[] = [
-  { label: 'Definition', read: (code) => code.fullDefinition },
-];
+function headingLevelFor(depth: number): number {
+  return Math.min(2 + depth, 6);
+}
 
 export function CodebookPage() {
   const { projectId } = useParams();
@@ -144,10 +148,20 @@ export function CodebookPage() {
         </section>
       ) : null}
 
-      <section className="codebook__region" data-region="codebook" aria-labelledby="codebook-canonical">
-        <h2 id="codebook-canonical">Codebook</h2>
-        <CodeTree nodes={view.tree} headingLevel={3} />
-      </section>
+      {/*
+        One card per top-level family, per D-047 and frame 247:357.
+
+        No heading of its own above the cards. Section 1 puts families at `h2`,
+        so a "Codebook" heading here would sit at the same level and interrupt
+        the outline this structure exists to produce: h1, then family, child,
+        grandchild. The container keeps its marker and stays a plain div, which
+        also keeps it out of the landmark list.
+      */}
+      <div className="codebook__region" data-region="codebook">
+        {view.tree.map((family) => (
+          <FamilyCard key={family.code.codeId} family={family} />
+        ))}
+      </div>
 
       {/* After the canonical list and never interleaved, per section 1. Absent
           rather than empty when the coder has proposed nothing, the same rule
@@ -174,20 +188,48 @@ export function CodebookPage() {
 }
 
 /**
- * The codebook as nested lists, in canonical order.
+ * One top-level family, as a card.
  *
- * Hierarchy shows as indentation and as the nesting itself. Each nested list is
- * labelled by its parent, so a child is heard in context.
+ * The card carries the family's colour token, so the border resolves through the
+ * same `--code-strong` rule the pills and the transcript rail use: one place
+ * decides what a family is coloured, and this cannot disagree with the panel.
+ *
+ * With six families the hue assignment never reaches the four shade-1 tokens
+ * that fail 3:1 on white, so no low-contrast border is in play. If a seventh
+ * family arrived one would be, which is why section 1 has the colour name
+ * carrying the identity in text as well.
  */
-function CodeTree({ nodes, headingLevel }: { nodes: CodeNode[]; headingLevel: number }) {
+function FamilyCard({ family }: { family: CodeNode }) {
+  const hue = hueNameFor(family.code.colorToken);
+
+  return (
+    <article
+      className="codebook__card"
+      data-color-token={family.code.colorToken}
+      data-family-id={family.code.codeId}
+    >
+      <CodeRecord code={family.code} headingLevel={headingLevelFor(0)} colorName={hue} />
+      <CodeSubtree nodes={family.children} depth={1} />
+    </article>
+  );
+}
+
+/**
+ * Children and grandchildren inside a card.
+ *
+ * Nested lists, so the hierarchy is programmatic as well as indented, and the
+ * headings descend with the depth. The frame draws the same relationship as
+ * indentation alone; the nesting is what a screen reader gets.
+ */
+function CodeSubtree({ nodes, depth }: { nodes: CodeNode[]; depth: number }) {
+  if (nodes.length === 0) return null;
+
   return (
     <ul className="codebook__list codebook__tree">
       {nodes.map((node) => (
         <li key={node.code.codeId}>
-          <CodeRecord code={node.code} headingLevel={headingLevel} />
-          {node.children.length > 0 ? (
-            <CodeTree nodes={node.children} headingLevel={Math.min(headingLevel + 1, 6)} />
-          ) : null}
+          <CodeRecord code={node.code} headingLevel={headingLevelFor(depth)} />
+          <CodeSubtree nodes={node.children} depth={depth + 1} />
         </li>
       ))}
     </ul>
@@ -196,12 +238,14 @@ function CodeTree({ nodes, headingLevel }: { nodes: CodeNode[]; headingLevel: nu
 
 interface CodeRecordProps {
   code: Code;
-  /** 3 under a section h2, descending with the nesting. Contract 2.1. */
+  /** From the code's depth: 2 for a family, descending with the nesting. */
   headingLevel: number;
   /** Distinguishes the results copy of a record from the canonical one. */
   idPrefix?: string;
   parentPath?: string[];
   matchedIn?: string;
+  /** The family hue, on the card's own record only. D-047. */
+  colorName?: string | null;
 }
 
 /**
@@ -212,24 +256,61 @@ interface CodeRecordProps {
  * without reading every line of every one, which is the whole difficulty of a
  * long reference page.
  */
-function CodeRecord({ code, headingLevel, idPrefix, parentPath, matchedIn }: CodeRecordProps) {
-  const Heading = `h${headingLevel}` as 'h3';
+function CodeRecord({
+  code,
+  headingLevel,
+  idPrefix,
+  parentPath,
+  matchedIn,
+  colorName,
+}: CodeRecordProps) {
+  const Heading = `h${headingLevel}` as 'h2';
   const fragmentId = codeFragmentId(code.codeId);
 
   return (
-    <article
+    <div
       className="codebook__record"
       /* The canonical list owns the fragment; the results copy takes a derived
          id so a deep link never lands on a record that vanishes with a query. */
       id={idPrefix ? `${idPrefix}-${fragmentId}` : fragmentId}
       data-code-id={code.codeId}
     >
-      <Heading className="codebook__name">
-        {/* Colour is a redundant channel, never carrying meaning on its own:
-            the name beside it says everything the pill does. D-041, Task 25. */}
-        <span className="codebook__pill" data-color-token={code.colorToken} aria-hidden="true" />
-        {code.name}
-      </Heading>
+      {/*
+        Heading and colour on one row, which is where the frame puts them.
+
+        The colour follows the heading in the DOM as well as beside it on
+        screen, so the two orders agree at every width. That is what keeps
+        section 1's 400 percent criterion — the colour value in the reading
+        order rather than out at the card's far edge — true by construction
+        rather than by a breakpoint that has to be remembered.
+      */}
+      <div className="codebook__head">
+        <Heading className="codebook__name">
+          {/* Colour is a redundant channel here: the name says it in text. */}
+          <span className="codebook__pill" data-color-token={code.colorToken} aria-hidden="true" />
+          {code.name}
+        </Heading>
+
+        {colorName ? (
+          /*
+            A labelled value, never a control, per D-047. The frame draws a
+            combobox; colour assignment is a codebook-formation privilege and no
+            coder-facing surface edits it, so a control here would look operable
+            and refuse. Static text is the honest rendering, and over a screen
+            reader it is the difference between a value and a collapsed widget
+            that will not open.
+          */
+          <p className="codebook__color">
+            <span className="codebook__color-label">Color:</span>{' '}
+            <span
+              className="codebook__swatch"
+              data-color-token={code.colorToken}
+              aria-hidden="true"
+            />{' '}
+            {colorName}
+          </p>
+        ) : null}
+      </div>
 
       {parentPath && parentPath.length > 0 ? (
         <p className="codebook__path">in {parentPath.join(' › ')}</p>
@@ -237,14 +318,12 @@ function CodeRecord({ code, headingLevel, idPrefix, parentPath, matchedIn }: Cod
 
       {matchedIn ? <p className="codebook__matched">Matched in {matchedIn}</p> : null}
 
-      <dl className="codebook__fields">
-        {RECORD_FIELDS.map((field) => (
-          <div key={field.label} className="codebook__field">
-            <dt>{field.label}</dt>
-            <dd>{field.read(code) === '' ? 'Not recorded.' : field.read(code)}</dd>
-          </div>
-        ))}
-      </dl>
-    </article>
+      {/* One open-ended definition, per D-046. Unlabelled: it follows its own
+          heading, and a "Definition" label on every one of fifty records is a
+          word the reader steps over each time. */}
+      <p className="codebook__definition">
+        {code.fullDefinition === '' ? 'No definition recorded.' : code.fullDefinition}
+      </p>
+    </div>
   );
 }

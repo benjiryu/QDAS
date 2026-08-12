@@ -4,7 +4,7 @@
 - Version: 0.3
 - Last updated: 2026-08-05
 
-Progress: v0.1 complete and tagged. Phase 4 defines v0.2. Tasks 18 through 28 have landed; Task 29, the Coded data page, is next. Open findings, none blocking: the modal code panel leaves no route by which a coder can reach the sidebar mid-capture, which is the journey D-044 was written for (Task 27); the D-033 narrow-width sidebar disclosure is unbuilt (Task 27); search now behaves differently in the panel and on the Codebook page, deliberately and per section 1 (Task 28); and the unnamed dialog on the context menu popover is still open (Task 26).
+Progress: v0.1 complete and tagged. Phase 4 defines v0.2. Tasks 18 through 28 have landed, and 28r has brought the Codebook page to D-047; Task 28a, the companion codebook, is next and reuses that component. Open findings, none blocking: the D-033 narrow-width sidebar disclosure is unbuilt (Task 27); search behaves differently in the panel and on the Codebook page, deliberately and per section 1 (Task 28); the fixture's colour tokens no longer describe their hues, so a name map in `familyHues.ts` carries what the swatch is called, guarded by a drift test (Task 28r); and the unnamed dialog on the context menu popover is still open (Task 26). D-048 supersedes the Task 27 finding that the modal panel left no route to the Codebook mid-capture: the companion removes the journey's necessity.
 
 Update this line when a task lands. An agent reading a stale progress line will rebuild finished work.
 

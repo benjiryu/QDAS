@@ -41,19 +41,46 @@
 }
 
 /*
- * Hierarchy as indentation, per section 1, with a rule down the nesting so the
- * relationship survives at magnification where the parent is off screen. The
- * nesting itself is what carries it programmatically.
+ * One card per top-level family, per D-047 and frame 247:357.
+ *
+ * The border takes the family's shade-1 token through `--code-strong`, the same
+ * custom property the panel's pills and the transcript rail read, so a family's
+ * colour is decided in one place and the three surfaces cannot disagree.
  */
-.codebook__tree .codebook__tree {
+.codebook__card {
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  border: var(--border-thick) solid var(--code-strong, var(--border));
+  border-radius: var(--radius-medium);
+}
+
+/*
+ * Hierarchy as indentation, per section 1 and the frame, with a rule down the
+ * nesting so the relationship survives at magnification where the parent is off
+ * screen. The nesting itself is what carries it programmatically.
+ */
+.codebook__tree {
   padding-left: 1.5rem;
   border-left: var(--border-thin) solid var(--color-grey-300);
 }
 
 .codebook__record {
-  padding: 0.5rem 0;
-  /* Records run long, so the measure holds here as it does in the transcript. */
-  max-width: 70ch;
+  padding: 0.35rem 0;
+}
+
+/*
+ * Name and colour on one row, the frame's arrangement.
+ *
+ * Wraps rather than shrinking, so at 320 pixels and at 400 percent the colour
+ * value drops beneath the name and stays in the flow. Section 1 asks for
+ * exactly that: reachable without panning to the card's far edge.
+ */
+.codebook__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
 }
 
 .codebook__name {
@@ -62,6 +89,29 @@
   gap: 0.4rem;
   margin: 0 0 0.25rem;
   font-size: 1rem;
+}
+
+/* A value, not a control. Nothing here is focusable or hoverable. */
+.codebook__color {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  margin: 0 0 0.25rem;
+  color: var(--text-muted);
+}
+
+.codebook__color-label {
+  font-weight: var(--font-weight-bold);
+}
+
+.codebook__swatch {
+  align-self: center;
+  flex: none;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--code-strong, var(--border));
+  background: var(--code-fill, var(--row-bg));
 }
 
 /*
@@ -83,23 +133,12 @@
   color: var(--text-muted);
 }
 
-.codebook__fields {
-  margin: 0;
-}
-
 /*
- * Label above value rather than beside it. At 400 percent a two-column
- * definition list is the first thing to force sideways panning, and the label
- * is short enough that stacking costs little vertical space.
+ * The definition. Measured rather than full-width: a card spans the content
+ * area, and a line of prose running its whole width is the thing a low-vision
+ * reader loses their place in.
  */
-.codebook__field {
-  margin-bottom: 0.35rem;
-}
-
-.codebook__field dt {
-  font-weight: var(--font-weight-bold);
-}
-
-.codebook__field dd {
-  margin: 0;
+.codebook__definition {
+  margin: 0 0 0.25rem;
+  max-width: 70ch;
 }
