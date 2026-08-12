@@ -177,6 +177,9 @@ export function TranscriptWorkspace({
     [savedExcerpts, seedExcerpts],
   );
 
+  /** Every note in play, seeded and from this session. */
+  const allNotes = useMemo(() => [...seedNotes, ...savedNotes], [savedNotes, seedNotes]);
+
   // Coded state covers seeded work and this session's saves alike, so a
   // sentence the coder just saved reads as coded immediately. An excerpt whose
   // assignments have all been superseded is no longer coded.
@@ -185,14 +188,20 @@ export function TranscriptWorkspace({
       deriveSegmentDisplayStates(resolved, {
         excerpts: allExcerpts,
         codeAssignments: effectiveAssignments,
-        includeExcerpt: (_excerpt, assignments) =>
-          assignments.some((assignment) => assignment.status !== 'superseded'),
-      }),
-    [allExcerpts, effectiveAssignments, resolved],
-  );
+        /*
+          An excerpt counts if something still stands on it: a code, or a note.
 
-  /** Every note in play, seeded and from this session. */
-  const allNotes = useMemo(() => [...seedNotes, ...savedNotes], [savedNotes, seedNotes]);
+          The note half is what paints the passage a note is about. Without it
+          the reader got an icon on the turn and no way to tell which words it
+          concerned — and the derivation decides which characters are painted,
+          so this is where that has to be said.
+        */
+        includeExcerpt: (excerpt, assignments) =>
+          assignments.some((assignment) => assignment.status !== 'superseded') ||
+          allNotes.some((note) => note.relatedExcerptId === excerpt.excerptId),
+      }),
+    [allExcerpts, allNotes, effectiveAssignments, resolved],
+  );
 
   /**
    * What each turn carries, for the code rail and the turn's accessible

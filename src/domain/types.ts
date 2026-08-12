@@ -229,7 +229,15 @@ export type SegmentDisplayState =
   | 'in-pending-excerpt'
   | 'in-confirmed-excerpt'
   | 'coded'
-  | 'coded-multiple';
+  | 'coded-multiple'
+  /**
+   * Inside a saved excerpt that carries a note and no standing code.
+   *
+   * Its own state rather than `coded`, because this is the sentence-granularity
+   * fact R-1 compares at: calling an uncoded sentence coded would put a
+   * falsehood into the thing the comparison reads.
+   */
+  | 'noted';
 
 export interface PendingAssignment {
   excerptId: Id | null;

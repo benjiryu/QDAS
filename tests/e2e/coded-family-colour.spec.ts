@@ -68,9 +68,19 @@ async function codeAnUncodedTurn(
   for (const codeId of codeIds) {
     await page.locator(`[role="dialog"] [data-code-id="${codeId}"]`).check();
   }
+
+  // No codes means a note instead: a note alone is enough to save, and it is
+  // the case the noted treatment exists for.
+  if (codeIds.length === 0) {
+    const note = page.locator('[data-region="note"]');
+    await note.getByRole('button').click();
+    await note.locator('textarea').fill('A note with no code on it.');
+  }
+
   await page.getByRole('button', { name: 'Save & Close' }).click();
   await expect(page.getByRole('dialog', { name: /code assignment/i })).toBeHidden();
   await expect(page.locator(`[data-turn-id="${turnId}"] [data-coded-run]`).first()).toBeVisible();
+
 
   return turnId;
 }
@@ -133,6 +143,46 @@ test('text and the focus ring stay legible on every wash', async ({ page }) => {
     expect(text, `black text on ${wash}`).toBeGreaterThanOrEqual(4.5);
     expect(ring, `focus ring on ${wash}`).toBeGreaterThanOrEqual(3);
   }
+});
+
+test('a note-only excerpt draws the mixed-family grey, dotted', async ({ page }) => {
+  // Grey by the same fallback the mixed-family case uses, because neither has a
+  // single family hue to show. Dotted is what keeps it from claiming to be
+  // coded, and what stops it being a state carried by colour alone.
+  const turnId = await codeAnUncodedTurn(page, []);
+
+  const run = await page
+    .locator(`[data-turn-id="${turnId}"] [data-coded-run="noted"]`)
+    .first()
+    .evaluate((node) => {
+      const style = getComputedStyle(node);
+      return {
+        background: style.backgroundColor,
+        line: style.textDecorationStyle,
+        colour: style.textDecorationColor,
+      };
+    });
+
+  expect(run.background).toBe(MIXED_WASH);
+  expect(run.line).toBe('dotted');
+  // Grey-750, which measures 6.96:1 on that wash.
+  expect(run.colour).toBe('rgb(77, 77, 77)');
+});
+
+test('the three run treatments are distinguishable without colour', async ({ page }) => {
+  // Solid, double, dotted. The assertion that keeps a reader who cannot
+  // separate the hues able to tell the three states apart.
+  const notedTurn = await codeAnUncodedTurn(page, []);
+  const codedTurn = await codeAnUncodedTurn(page, [MOSS.codeId]);
+
+  const styleOf = (turnId: string, state: string) =>
+    page
+      .locator(`[data-turn-id="${turnId}"] [data-coded-run="${state}"]`)
+      .first()
+      .evaluate((node) => getComputedStyle(node).textDecorationStyle);
+
+  expect(await styleOf(notedTurn, 'noted')).toBe('dotted');
+  expect(await styleOf(codedTurn, 'coded')).toBe('solid');
 });
 
 test('an in-progress capture never shares a wash with a coded run', async ({ page }) => {

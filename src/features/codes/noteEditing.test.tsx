@@ -149,8 +149,8 @@ describe('2: a note alone is enough to save', () => {
   });
 });
 
-describe('3: a note-only excerpt is visible on its turn', () => {
-  it('shows the note icon, no coded run, and says so in the description', async () => {
+describe('3: a note-only excerpt is visible on its turn and its own words', () => {
+  it('paints a noted run, shows the note icon, and says so in the description', async () => {
     renderWorkspace();
     captureFirstTurn();
     fireEvent.change(noteField(), { target: { value: 'A thought with no code.' } });
@@ -159,12 +159,47 @@ describe('3: a note-only excerpt is visible on its turn', () => {
 
     const turn = document.querySelector<HTMLElement>('[data-turn-id]')!;
     expect(turn.querySelector('.transcript-turn__note')).not.toBeNull();
-    // No code, so no pill and no highlight.
+    // No code, so no pill and no family hue on the run.
     expect(turn.querySelector('.transcript-turn__pill')).toBeNull();
-    expect(turn.querySelector('[data-coded-run]')).toBeNull();
+
+    // The passage the note is about is painted, so the reader can see which
+    // words it concerns rather than only that the turn carries one.
+    const run = turn.querySelector('[data-coded-run]')!;
+    expect(run).toHaveAttribute('data-coded-run', 'noted');
+    expect(run).not.toHaveAttribute('data-color-token');
+    expect(turn.querySelector('[data-segment-id]')).toHaveAttribute(
+      'data-display-state',
+      'noted',
+    );
 
     const describedBy = turn.getAttribute('aria-describedby')!;
     expect(document.getElementById(describedBy)?.textContent).toBe('1 excerpt, 0 codes, note');
+  });
+});
+
+describe('3b: codes win over a note', () => {
+  it('turns the run coded when a code is added, and back when it is removed', async () => {
+    // Precedence, and the round trip: a note never masks coding, and losing the
+    // last code does not lose the note's own highlight.
+    renderWorkspace();
+    captureFirstTurn();
+    fireEvent.change(noteField(), { target: { value: 'Only a note for now.' } });
+    fireEvent.click(saveButton());
+    await waitFor(() => expect(panelIsOpen()).toBe(false));
+
+    const runState = () =>
+      document.querySelector('[data-turn-id] [data-coded-run]')?.getAttribute('data-coded-run');
+    expect(runState()).toBe('noted');
+
+    await reopenFirstTurn();
+    fireEvent.click(panel().querySelector(`[data-code-id="${FIRST.codeId}"]`)!);
+    fireEvent.click(saveButton());
+    await waitFor(() => expect(panelIsOpen()).toBe(false));
+
+    expect(runState()).toBe('coded');
+    expect(
+      document.querySelector('[data-turn-id] [data-coded-run]'),
+    ).toHaveAttribute('data-color-token', FIRST.colorToken);
   });
 });
 

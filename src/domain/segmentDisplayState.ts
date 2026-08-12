@@ -24,7 +24,7 @@ import type { CodeAssignment, Excerpt, Id, SegmentDisplayState } from './types';
 /** The states this module can produce. */
 export type CodedDisplayState = Extract<
   SegmentDisplayState,
-  'inactive' | 'coded' | 'coded-multiple'
+  'inactive' | 'coded' | 'coded-multiple' | 'noted'
 >;
 
 /**
@@ -178,9 +178,19 @@ function spansFrom(intervals: Interval[]): CodedSpan[] {
     spans.push({
       start,
       end,
-      // Two or more excerpts over these characters, matching how the
-      // segment-level state counts excerpts rather than codes.
-      state: covering.length > 1 ? 'coded-multiple' : 'coded',
+      /*
+        Two or more excerpts over these characters, matching how the
+        segment-level state counts excerpts rather than codes — unless none of
+        them carries a code at all, which is a note and not coding.
+
+        Asked of `covering` rather than of `codeIds`, which is built after the
+        merge check above.
+      */
+      state: !covering.some((interval) => interval.codeIds.length > 0)
+        ? 'noted'
+        : covering.length > 1
+          ? 'coded-multiple'
+          : 'coded',
       excerptIds,
       codeIds,
     });
@@ -191,6 +201,10 @@ function spansFrom(intervals: Interval[]): CodedSpan[] {
 
 /**
  * By default an excerpt counts only if it carries a code assignment.
+ *
+ * The workspace overrides this to admit an excerpt carrying only a note, which
+ * is what paints the note's own passage rather than leaving the reader with an
+ * icon on the turn and no way to tell which words it concerns.
  *
  * Section 3 states the condition on `coded` and not on `coded-multiple`, which
  * reads as shorthand rather than as a difference: excerpt-selection.md section
@@ -270,7 +284,20 @@ export function deriveSegmentDisplayStates(
       // This stays a fact about the whole sentence even where the excerpts
       // cover different parts of it: D-036 section 5 keeps comparison at
       // sentence granularity, and the spans below carry the exact truth.
-      coding.state = coding.excerptIds.length > 1 ? 'coded-multiple' : 'coded';
+      /*
+        Codes win over a note. A sentence covered by a coded excerpt and a
+        note-only one is coded, so a note never masks coding; `noted` describes
+        only a sentence where nothing standing carries a code.
+
+        Read off the accumulated codes, which the loop above has just added to,
+        so the precedence needs no second pass.
+      */
+      coding.state =
+        coding.codeIds.length === 0
+          ? 'noted'
+          : coding.excerptIds.length > 1
+            ? 'coded-multiple'
+            : 'coded';
 
       const interval = coveredInterval(excerpt, segment.segmentId, segment.text.length);
       if (!interval) continue;

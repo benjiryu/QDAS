@@ -254,8 +254,30 @@
   text-underline-offset: 0.3em;
 }
 
+/*
+ * A note and no code.
+ *
+ * Grey by the same route the mixed-family case takes: no code on the run means
+ * no `data-color-token`, so `--code-wash` is unset and this lands on
+ * `--coded-bg`. There is no hue to show because there is no family.
+ *
+ * Dotted, and that is the point of giving it a rule at all. A grey wash on its
+ * own would make this the only highlight in the transcript carried by colour
+ * with no shape beside it, which contract 2.5 rules out. Dotted also keeps it
+ * from claiming to be coded: solid is one excerpt, double is two, and this is
+ * neither.
+ */
+.transcript-segment__run[data-coded-run='noted'] {
+  background: var(--code-wash, var(--coded-bg));
+  text-decoration: underline dotted var(--coded-line) 3px;
+  text-underline-offset: 0.25em;
+}
+
 :root {
-  /* Grey-100: what a run washes when its codes span more than one family. */
+  /*
+     Grey-100: what a run washes when its codes span more than one family, and
+     when it has a note and no code at all. Neither has one hue to show.
+  */
   --coded-bg: var(--row-bg);
   /*
      One colour for every family, not each family's own shade-1.
@@ -272,7 +294,8 @@
 @media (forced-colors: active) {
   /* Backgrounds are discarded here; the underline is the whole signal. */
   .transcript-segment__run[data-coded-run='coded'],
-  .transcript-segment__run[data-coded-run='coded-multiple'] {
+  .transcript-segment__run[data-coded-run='coded-multiple'],
+  .transcript-segment__run[data-coded-run='noted'] {
     text-decoration-color: currentColor;
   }
 }
