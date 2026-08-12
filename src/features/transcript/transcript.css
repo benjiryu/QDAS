@@ -225,93 +225,38 @@
 
 /* ---------- Toolbar ---------- */
 
-/* ---------- The command strip ---------- */
-
-/*
- * Two containers, one strip. The orientation group and the excerpt section stay
- * separate elements so each keeps its own label and stays findable in browse
- * mode; visually they share one surface and one outline, which is the single
- * strip D-038 describes.
- */
 .transcript-toolbar {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  padding: 0.5rem 0.75rem 0;
-  background: var(--surface);
-  border: var(--border-thin) solid var(--border);
-  border-bottom: 0;
-  border-radius: var(--radius-medium) var(--radius-medium) 0 0;
+  margin-bottom: 1rem;
 }
 
-/*
- * One button treatment for every control on the strip, whichever container it
- * sits in. Level comes from the command, so the mapping is legible in one
- * place rather than inferred from which stylesheet a rule happens to be in.
- */
-.transcript-toolbar__button,
-.excerpt-toolbar__button {
+.transcript-toolbar__button {
   display: inline-flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 0.15rem;
-  padding: 0.4rem 0.9rem;
+  padding: 0.4rem 0.6rem;
   font: inherit;
+  color: inherit;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-small);
   cursor: pointer;
-  border-radius: var(--radius-pill);
-  border: var(--border-thick) solid var(--button-secondary-border);
-  background: var(--button-secondary-bg);
-  color: var(--button-secondary-text);
-  transition: box-shadow 120ms ease-out;
 }
 
-/* The one action the surface exists for. */
-.transcript-toolbar__button[data-command='excerpt.code'],
-.excerpt-toolbar__button[data-command='excerpt.code'] {
-  background: var(--button-primary-bg);
-  border-color: var(--button-primary-border);
-  color: var(--button-primary-text);
-  font-weight: var(--font-weight-bold);
-}
-
-.transcript-toolbar__button:hover,
-.excerpt-toolbar__button:hover {
-  box-shadow: var(--shadow-hover);
-}
-
-/*
- * Contract 2.5: no animation is required to understand a state change. The
- * shadow still appears; only the animating between states goes.
- */
-@media (prefers-reduced-motion: reduce) {
-  .transcript-toolbar__button,
-  .excerpt-toolbar__button {
-    transition: none;
-  }
-}
-
-.transcript-toolbar__chord,
-.excerpt-toolbar__chord {
+.transcript-toolbar__chord {
   font-size: 0.75em;
-  /* Inherits the button's own colour, so it stays legible on the primary fill
-     rather than being muted grey on dark blue. */
-  opacity: 0.85;
+  color: var(--text-muted);
 }
 
 /*
  * Unavailable, not removed. The control keeps its place, stays reachable, and
- * says why when invoked, per contract 2.6.
- *
- * The dashed border stays alongside the token colours. The token file's own
- * audit records the disabled pair at 3.17:1 and calls it "genuinely faint", so
- * the shape channel is what carries the state where the colour cannot.
+ * says why when invoked, per contract 2.6. Opacity alone would be colour-only,
+ * so the state is also carried by the border style.
  */
-.transcript-toolbar__button[aria-disabled='true'],
-.excerpt-toolbar__button[aria-disabled='true'] {
-  background: var(--button-disabled-bg);
-  border-color: var(--button-disabled-border);
+.transcript-toolbar__button[aria-disabled='true'] {
   border-style: dashed;
-  color: var(--button-disabled-text);
-  font-weight: var(--font-weight-regular);
-  box-shadow: none;
+  opacity: 0.7;
 }

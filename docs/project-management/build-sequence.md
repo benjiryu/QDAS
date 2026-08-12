@@ -858,6 +858,15 @@ with the exposed reason unchanged, chord labels, hover shadow, and menu
 item treatment. Respect prefers-reduced-motion for any transition.
 ```
 
+**Only the context menu half of this task applies.** The strip is prototype
+scaffolding, not a product surface: it exists so a sighted observer can see
+which keyboard chords are available and what the screen reader can do during a
+session, and it will not ship. It was styled and then reverted; leave it in its
+plain treatment. What has to hold is that every control still carries its chord
+label, which `orientation.test.tsx` covers.
+
+The context menu is product, per D-037, and stays styled.
+
 ### Task 25. Select Code panel
 
 ```
@@ -878,6 +887,10 @@ pass, since interactions between surfaces (focus ring against new banner
 color, highlight against new row background) only show when everything is
 styled.
 ```
+
+**"Any remaining unstyled surface" excludes the command strip.** It is
+scaffolding rather than product, per the note on Task 24, and is unstyled on
+purpose. Verify it like any other surface; do not restyle it.
 
 ## Failure modes to watch for
 
