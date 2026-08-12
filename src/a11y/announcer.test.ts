@@ -243,3 +243,108 @@ describe('reset', () => {
     expect(spokenFrom(polite, 500)).toEqual([]);
   });
 });
+
+/**
+ * The two classes, per D-050.
+ *
+ * The queue rule was written for discrete acts, so that rapid boundary changes
+ * would not lose announcements. Applied to search-as-you-type it faithfully
+ * queued every prefix, reporting counts that had already stopped being true.
+ */
+describe('continuous announcements, per D-050', () => {
+  const CONTINUOUS_MS = 600;
+
+  function withDelay() {
+    return createAnnouncer({
+      intervalMs: INTERVAL_MS,
+      clearGapMs: CLEAR_GAP_MS,
+      continuousDelayMs: CONTINUOUS_MS,
+    });
+  }
+
+  it('speaks once, with the value that was true when typing stopped', () => {
+    const service = withDelay();
+    service.attachRegion('polite', polite);
+
+    // Five keystrokes, faster than the pause.
+    for (const count of [12, 9, 8, 8, 3]) {
+      service.announce(`${count} results.`, 'polite', 'continuous');
+      vi.advanceTimersByTime(50);
+    }
+
+    expect(spokenFrom(polite)).toEqual(['3 results.']);
+  });
+
+  it('leaves discrete announcements queueing exactly as they did', () => {
+    // The half D-050 says is unchanged, asserted beside the half that changed
+    // so the difference is visible in one place.
+    const service = withDelay();
+    service.attachRegion('polite', polite);
+
+    // Queued together and then sampled: advancing between them would let the
+    // early ones speak and clear before the sampling started, which is a
+    // property of the harness rather than of the queue.
+    for (const name of ['Waiting list', 'Mutual aid', 'Water access', 'Compost', 'Tools']) {
+      service.announce(`${name} added.`);
+    }
+
+    expect(spokenFrom(polite)).toEqual([
+      'Waiting list added.',
+      'Mutual aid added.',
+      'Water access added.',
+      'Compost added.',
+      'Tools added.',
+    ]);
+  });
+
+  it('keeps an intermediate out of history, so a repeat says the settled one', () => {
+    // What makes "repeat the last announcement" mean the last one spoken
+    // without a second notion of spoken: an intermediate never arrives at all.
+    const service = withDelay();
+    service.attachRegion('polite', polite);
+
+    service.announce('12 results.', 'polite', 'continuous');
+    vi.advanceTimersByTime(50);
+    service.announce('3 results.', 'polite', 'continuous');
+
+    expect(service.getLast()).toBeNull();
+
+    vi.advanceTimersByTime(CONTINUOUS_MS);
+    expect(service.getLast()?.message).toBe('3 results.');
+    expect(service.getHistory().map((entry) => entry.message)).toEqual(['3 results.']);
+  });
+
+  it('does not make a discrete announcement wait behind a pending one', () => {
+    // A save failure must not be delayed by a count still settling.
+    const service = withDelay();
+    service.attachRegion('polite', polite);
+
+    service.announce('12 results.', 'polite', 'continuous');
+    service.announce('Two codes applied.');
+
+    // Before the continuous pause has elapsed, the discrete one has spoken.
+    expect(spokenFrom(polite, CONTINUOUS_MS - 100)).toEqual(['Two codes applied.']);
+  });
+
+  it('drops a pending announcement on reset rather than firing it later', () => {
+    const service = withDelay();
+    service.attachRegion('polite', polite);
+
+    service.announce('12 results.', 'polite', 'continuous');
+    service.reset();
+
+    expect(spokenFrom(polite)).toEqual([]);
+    expect(service.getLast()).toBeNull();
+  });
+
+  it('records which rule applied, so the log shows it', () => {
+    const service = withDelay();
+    service.attachRegion('polite', polite);
+
+    service.announce('Waiting list added.');
+    service.announce('3 results.', 'polite', 'continuous');
+    vi.advanceTimersByTime(CONTINUOUS_MS);
+
+    expect(service.getHistory().map((entry) => entry.kind)).toEqual(['discrete', 'continuous']);
+  });
+});

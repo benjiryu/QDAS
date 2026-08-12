@@ -1,4 +1,5 @@
-import { useEffect, useId, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useAnnouncer } from '../../a11y';
 import { readCodebookQuery, readProvisionalCodes, writeCodebookQuery } from '../../data/codingSessionStore';
 import { createSeedFixture } from '../../data/seed';
 import type { Code, Id } from '../../domain';
@@ -43,6 +44,7 @@ interface CodebookContentProps {
 }
 
 export function CodebookContent({ projectId, headingLevel, searchRef }: CodebookContentProps) {
+  const announcer = useAnnouncer();
   const searchId = useId();
   const resultsId = useId();
   const provisionalId = useId();
@@ -78,6 +80,37 @@ export function CodebookContent({ projectId, headingLevel, searchRef }: Codebook
   */
   const provisional = readProvisionalCodes(projectId);
   const results = useMemo(() => (view ? searchCodebook(view.tree, query) : []), [query, view]);
+
+  /*
+    The result count, spoken as well as shown.
+    
+    Contract 2.6: a dynamic state carries visible and programmatic feedback
+    alike, and a results region that changes as the coder types is one. The
+    panel has said this since D-005; this surface had nothing, so a screen
+    reader user searching here learned the count only by navigating to the
+    region and counting.
+
+    Continuous from the start, per D-050, so it never has the queued-prefix
+    problem the panel's had. New behaviour that section 1 does not specify;
+    raised in the task report.
+  */
+  const announcedFor = useRef<string | null>(null);
+  const trimmedQuery = query.trim();
+
+  useEffect(() => {
+    if (trimmedQuery === '') {
+      announcedFor.current = null;
+      return;
+    }
+    if (announcedFor.current === trimmedQuery) return;
+    announcedFor.current = trimmedQuery;
+
+    announcer.announce(
+      `${results.length} ${results.length === 1 ? 'result' : 'results'} for ${trimmedQuery}.`,
+      'polite',
+      'continuous',
+    );
+  }, [announcer, results.length, trimmedQuery]);
 
   if (!view) return null;
 

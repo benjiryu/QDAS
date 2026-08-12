@@ -321,10 +321,19 @@ export function useCodePanel({
     if (trimmed === '' || announcedFor.current === trimmed) return;
     announcedFor.current = trimmed;
 
-    // Section 10: the result count is automatic; the list is on request, which
-    // is the region itself.
+    /*
+      Section 10: the result count is automatic; the list is on request, which
+      is the region itself.
+
+      Continuous, per D-050. Queued, this spoke every prefix a coder typed —
+      "12 results for m, 8 results for mo, 8 results for mot" — reporting three
+      counts of which only the last was still true. The intermediates are drafts
+      of one fact, so they coalesce and the settled count is spoken once.
+    */
     announcer.announce(
       `${results.length} ${results.length === 1 ? 'result' : 'results'} for ${trimmed}.`,
+      'polite',
+      'continuous',
     );
   }, [announcer, isOpen, query, results.length]);
 

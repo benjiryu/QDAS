@@ -22,6 +22,7 @@ This boundary exists so that effort goes into the workflow behaviors the researc
 - One `h1` per page, naming the page. Heading levels descend without skipping.
 - Landmarks: one `banner`, one `navigation` for application-level navigation, a second labeled `navigation` for project-level navigation, one `main`, and labeled `region` elements for the transcript, the code panel, and the review workspace.
 - Reading order in the DOM matches the intended workflow order at every viewport width. Regions may stack or unstack; they may not reorder.
+- Per D-051: form controls and their visible labels are natively associated, one stop, one announcement, label activates control. Every list carrying workflow content has an accessible name, because structural navigation arrives without context; a list's identity must never depend on reading order.
 
 ### 2.2 Keyboard
 

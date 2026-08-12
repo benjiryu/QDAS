@@ -35,11 +35,28 @@ export type Politeness = 'polite' | 'assertive';
  */
 export type AssertiveReason = 'saveFailure' | 'destructiveConfirmation';
 
+/**
+ * What kind of thing an announcement reports, per D-050.
+ *
+ * `discrete` — a completed act: a capture, a save, a code checked, a failure.
+ * Every one is its own fact, so they queue in order and none is dropped. This
+ * is the rule contract 2.3 was written for and it is unchanged.
+ *
+ * `continuous` — feedback on input still being given, currently a search result
+ * count. Here the intermediates are not facts but drafts of one: "12 results
+ * for m, 8 for mo, 8 for mot" reports three truths of which only the last is
+ * true by the time anyone hears it. So these debounce until the input pauses
+ * and coalesce, the newest replacing any still waiting.
+ */
+export type AnnouncementKind = 'discrete' | 'continuous';
+
 export interface Announcement {
   message: string;
   politeness: Politeness;
   /** Present only on assertive announcements. */
   reason?: AssertiveReason;
+  /** Discrete unless stated. Recorded so the log shows which rule applied. */
+  kind: AnnouncementKind;
   /** Monotonic, assigned on enqueue. Ordering that does not depend on the clock. */
   sequence: number;
   /** Epoch milliseconds. For the development announcement log. */
@@ -64,20 +81,35 @@ export interface AnnouncerOptions {
   clearGapMs?: number;
   /** Announcements retained for repeat and for the development log. */
   historyLimit?: number;
+  /**
+   * How long a continuous announcement waits for the input to stop, per D-050.
+   *
+   * Long enough that an ordinary typing rhythm does not punctuate it, short
+   * enough that the count arrives while the query is still the reason the user
+   * is waiting.
+   */
+  continuousDelayMs?: number;
 }
 
 export const DEFAULT_INTERVAL_MS = 1000;
 export const DEFAULT_CLEAR_GAP_MS = 60;
 export const DEFAULT_HISTORY_LIMIT = 50;
+export const DEFAULT_CONTINUOUS_DELAY_MS = 600;
 
 export interface Announcer {
   /**
-   * Queue a message. Polite by default.
+   * Queue a message. Polite and discrete by default.
    *
    * Assertive requires a reason, because assertive is reserved for save failure
    * and destructive confirmation and nothing else interrupts.
+   *
+   * The third argument means different things under the two overloads, which is
+   * deliberate rather than an oversight: `reason` exists only for assertive, and
+   * a continuous announcement is feedback on in-progress input and is therefore
+   * never assertive. They cannot co-occur, so they share the slot and the
+   * compiler still refuses assertive without a reason.
    */
-  announce(message: string, politeness?: 'polite'): void;
+  announce(message: string, politeness?: 'polite', kind?: AnnouncementKind): void;
   announce(message: string, politeness: 'assertive', reason: AssertiveReason): void;
 
   /**
@@ -110,6 +142,7 @@ export function createAnnouncer(options: AnnouncerOptions = {}): Announcer {
   const intervalMs = options.intervalMs ?? DEFAULT_INTERVAL_MS;
   const clearGapMs = options.clearGapMs ?? DEFAULT_CLEAR_GAP_MS;
   const historyLimit = options.historyLimit ?? DEFAULT_HISTORY_LIMIT;
+  const continuousDelayMs = options.continuousDelayMs ?? DEFAULT_CONTINUOUS_DELAY_MS;
 
   const queues: Record<Politeness, Announcement[]> = { polite: [], assertive: [] };
   const regions: Record<Politeness, HTMLElement | null> = { polite: null, assertive: null };
@@ -117,6 +150,16 @@ export function createAnnouncer(options: AnnouncerOptions = {}): Announcer {
     polite: null,
     assertive: null,
   };
+
+  /**
+   * The one continuous announcement waiting to be spoken, per politeness.
+   *
+   * A slot rather than a queue: that single fact is the whole mechanism. A
+   * newer one overwrites it, so what eventually speaks is whatever was true
+   * when the user stopped typing.
+   */
+  const pending: Record<Politeness, { announcement: Announcement; timer: ReturnType<typeof setTimeout> } | null> =
+    { polite: null, assertive: null };
 
   const history: Announcement[] = [];
   const listeners = new Set<(announcement: Announcement) => void>();
@@ -173,9 +216,12 @@ export function createAnnouncer(options: AnnouncerOptions = {}): Announcer {
   function announce(
     message: string,
     politeness: Politeness = 'polite',
-    reason?: AssertiveReason,
+    third?: AssertiveReason | AnnouncementKind,
   ): void {
     if (message === '') return;
+
+    const kind: AnnouncementKind = third === 'continuous' ? 'continuous' : 'discrete';
+    const reason = third === 'discrete' || third === 'continuous' ? undefined : third;
 
     if (politeness === 'assertive' && reason === undefined && import.meta.env.DEV) {
       // Announced anyway. A message spoken with the wrong politeness is a
@@ -186,13 +232,37 @@ export function createAnnouncer(options: AnnouncerOptions = {}): Announcer {
       );
     }
 
-    enqueue({
+    const announcement: Announcement = {
       message,
       politeness,
       ...(reason ? { reason } : {}),
+      kind,
       sequence: sequence++,
       timestamp: Date.now(),
-    });
+    };
+
+    if (kind === 'discrete') {
+      enqueue(announcement);
+      return;
+    }
+
+    /*
+      Continuous: replace whatever was waiting and restart the clock. Nothing
+      reaches history, the log, or the region until the pause, which is what
+      makes "repeat the last announcement" mean the last one actually spoken
+      without needing a second notion of spoken.
+    */
+    const waiting = pending[politeness];
+    if (waiting) clearTimeout(waiting.timer);
+
+    pending[politeness] = {
+      announcement,
+      timer: setTimeout(() => {
+        const settled = pending[politeness];
+        pending[politeness] = null;
+        if (settled) enqueue(settled.announcement);
+      }, continuousDelayMs),
+    };
   }
 
   return {
@@ -220,6 +290,9 @@ export function createAnnouncer(options: AnnouncerOptions = {}): Announcer {
       enqueue({
         message: last.message,
         politeness: 'polite',
+        // A repeat is an act the user just performed, whatever the original
+        // reported. It queues like anything else.
+        kind: 'discrete',
         sequence: sequence++,
         timestamp: Date.now(),
       });
@@ -243,6 +316,13 @@ export function createAnnouncer(options: AnnouncerOptions = {}): Announcer {
         if (timer !== null) clearTimeout(timer);
         timers[politeness] = null;
         queues[politeness] = [];
+
+        // A continuous announcement still waiting would otherwise fire into
+        // whatever comes next, which in tests is the following test.
+        const waiting = pending[politeness];
+        if (waiting) clearTimeout(waiting.timer);
+        pending[politeness] = null;
+
         const node = regions[politeness];
         if (node) node.textContent = '';
       }

@@ -205,6 +205,64 @@ test('the panel reflows at 320px without scrolling sideways', async ({ page }) =
   expect(overflows).toBe(false);
 });
 
+/**
+ * Panel-open focus, per Task 31's second finding.
+ *
+ * Asserted in a browser and not only in jsdom, because the report came from
+ * manual VoiceOver testing and jsdom is where a focus defect of this kind would
+ * hide: it has no real focus management competing with React Aria's.
+ *
+ * The automated criterion is that the search input itself holds focus and that
+ * a keystroke reaches it. The *real* criterion is the manual check — typing
+ * under VoiceOver with no interact-into-group step first — and no test here
+ * replaces it.
+ */
+test('focus lands on the search input itself, and typing reaches it', async ({ page }) => {
+  const focused = await page.evaluate(() => {
+    const active = document.activeElement;
+    return {
+      isTheInput: active === document.querySelector('.code-panel__search'),
+      tag: active?.tagName.toLowerCase() ?? 'none',
+      // The element itself, not an ancestor that happens to contain it.
+      role: active?.getAttribute('role'),
+    };
+  });
+
+  expect(focused.isTheInput).toBe(true);
+  expect(focused.tag).toBe('input');
+  expect(focused.role).toBeNull();
+
+  // No click, no tab: straight from opening to typing.
+  await page.keyboard.type('water');
+  await expect(page.locator('.code-panel__search')).toHaveValue('water');
+});
+
+test('nothing between the input and the dialog is a group to interact into', async ({ page }) => {
+  // The structural half of the same finding. A wrapper carrying a role, or a
+  // name that makes it a region, is what turns a focused field into something
+  // VoiceOver asks you to enter first.
+  const chain = await page.evaluate(() => {
+    const wrappers: { tag: string; role: string | null; label: string | null }[] = [];
+    let node = document.querySelector('.code-panel__search')?.parentElement ?? null;
+
+    while (node && node.getAttribute('role') !== 'dialog') {
+      wrappers.push({
+        tag: node.tagName.toLowerCase(),
+        role: node.getAttribute('role'),
+        label: node.getAttribute('aria-label') ?? node.getAttribute('aria-labelledby'),
+      });
+      node = node.parentElement;
+    }
+    return wrappers;
+  });
+
+  expect(chain.length).toBeGreaterThan(0);
+  for (const wrapper of chain) {
+    expect(wrapper.role, `${wrapper.tag} carries a role`).toBeNull();
+    expect(wrapper.label, `${wrapper.tag} is named, making it a region`).toBeNull();
+  }
+});
+
 test('the create form asks for a name and nothing else', async ({ page }) => {
   // D-046: proposing a code mid-coding costs one field. Scanned expanded,
   // because the form only exists while the disclosure is open.

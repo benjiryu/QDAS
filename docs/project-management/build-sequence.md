@@ -4,7 +4,7 @@
 - Version: 0.3
 - Last updated: 2026-08-05
 
-Progress: v0.1 complete and tagged. Phase 4 defines v0.2. Tasks 18 through 29 have landed, including 27r, 28r and 28a; Task 30, the Notes page, is next and is the last in the sequence. Open findings, none blocking: the D-033 narrow-width sidebar disclosure is still unbuilt, and more visible now that the sidebar is solid blue (Tasks 27 and 27r); the sidebar holds its place with `sticky` rather than `fixed`, which keeps it in the flex row (Task 27r); search behaves differently in the panel and on the Codebook page, deliberately and per section 1 (Task 28); the fixture's colour tokens no longer describe their hues, so a name map in `familyHues.ts` carries what the swatch is called, guarded by a drift test (Task 28r); the panel's codebook region no longer has a heading, since D-048 made it the Open Codebook button (Task 28a); D-049 does not say which view a reviewer gets during independent coding, resolved conservatively to own work (Task 29); and the unnamed dialog on the context menu popover is still open (Task 26). D-048 closed the Task 27 finding about the D-044 journey: the companion removes its necessity.
+Progress: v0.1 complete and tagged. Phase 4 defines v0.2. Tasks 18 through 29 have landed, including 27r, 28r and 28a, and Task 31 has landed out of order; Task 30, the Notes page, is next and is the last in the sequence. Open findings, none blocking: the D-033 narrow-width sidebar disclosure is still unbuilt, and more visible now that the sidebar is solid blue (Tasks 27 and 27r); the sidebar holds its place with `sticky` rather than `fixed`, which keeps it in the flex row (Task 27r); search behaves differently in the panel and on the Codebook page, deliberately and per section 1 (Task 28); the fixture's colour tokens no longer describe their hues, so a name map in `familyHues.ts` carries what the swatch is called, guarded by a drift test (Task 28r); the panel's codebook region no longer has a heading, since D-048 made it the Open Codebook button (Task 28a); D-049 does not say which view a reviewer gets during independent coding, resolved conservatively to own work (Task 29); the Codebook search now announces its result count, which is new behaviour destinations.md section 1 does not specify (Task 31); panel-open focus could not be reproduced as a defect in Chromium, so the manual VoiceOver finding needs a re-check by whoever found it (Task 31); and the unnamed dialog on the context menu popover is still open (Task 26). D-048 closed the Task 27 finding about the D-044 journey: the companion removes its necessity.
 
 Update this line when a task lands. An agent reading a stale progress line will rebuild finished work.
 
@@ -1074,6 +1074,32 @@ criterion is the manual VoiceOver typing check.
 Done when: typing "motivation" into panel search under VoiceOver yields one
 count announcement after the pause, and typing works the moment the panel
 opens with no VO interaction step.
+
+### Task 32. Label association and list naming
+
+```
+Implement D-051 across the application.
+
+1. In the code panel and everywhere a checkbox pairs with a code pill, make
+   the pill the checkbox's label element, natively associated. One screen
+   reader stop announcing name, state, and role; clicking the pill toggles.
+   Remove any duplicate text stop the old structure produced.
+
+2. Name every workflow list: the panel's code list (labeled by the Open
+   Codebook button per the Task 28a finding), search results with their
+   count, recent codes, the sidebar source and destination lists (source list
+   already labeled, verify), the codebook page's family card lists, and the
+   Coded data and Notes filter, results, and notes lists. aria-labelledby
+   where a visible heading or control exists, aria-label otherwise.
+
+Tests: each checkbox's accessible name is its code name; toggling via a click
+on the label text works; every named list exposes its name in the
+accessibility tree, asserted with Testing Library role queries with the name
+option.
+```
+
+Done when: in VoiceOver's rotor list menu, every list reads as what it is, and
+arrowing through the code list yields one stop per code.
 
 ## Failure modes to watch for
 
