@@ -921,12 +921,17 @@ regression test and the most important thing in this task.
 ### Task 28. Codebook page
 
 ```
-Implement the Codebook page per docs/pages/destinations.md section 1.
+Implement the Codebook page per docs/pages/destinations.md section 1 and
+decision D-047. Visual language from Figma frame 247:357, content region only;
+its toolbar, progress label, and player are superseded chrome.
 
-Full records inline in canonical order, nested lists, stable fragment ids,
-search with results above the unchanged canonical list, provisional codes in
-their own section. Read-only. Acceptance criteria as written, including the
-D-044 round trip.
+Family cards in canonical order, code names as nested headings (h2/h3/h4 by
+depth) with definition paragraphs, read-only "Color: [name]" value with swatch
+rendered as static text and never as a control, card borders from family
+shade-1 tokens, stable fragment ids, search retained with results above the
+unchanged cards, provisional codes in their own section. Read-only throughout.
+Acceptance criteria as written, including the D-044 round trip and the
+heading-level and static-color criteria.
 ```
 
 ### Task 29. Coded data page

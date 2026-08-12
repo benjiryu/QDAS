@@ -779,3 +779,15 @@ Reason, on the writing side: proposing a code happens mid-coding, in the middle 
 **Search narrows with the display.** The Codebook page's search drops the short definition and both criteria, keeping name, parent path, and the definition. The rule set when that search was widened was that this page may match more than the panel *because it displays what it matches*; once three of those fields left the page, matching them would put a code in front of a coder with the reason nowhere on screen. That is the same failure the panel was narrowed to avoid, and the rule holds in both directions.
 
 Status stops being displayed anywhere. It is still set to `provisional` on created codes and still separates the Provisional codes section from the canonical list, so nothing depends on the removed display.
+
+## D-047 Codebook page follows the family-card design; color is read-only; Themes stays out
+
+Date: 2026-08 | Workflow: codebook | Status: approved. Confirms D-017 and D-043 against the updated Figma; visual reference is frame 247:357
+
+The Codebook page renders one card per top-level code family, in canonical order. Within a card: the parent code's name and definition, children indented beneath, grandchildren beneath them — which is the D-046 record shape, so design and specification agree on content. Code names are nested headings with definition paragraphs, giving screen reader users jump-by-heading through the codebook.
+
+**The Color selector is rendered as a read-only labeled value**, "Color: Blue" with its swatch, not as the dropdown the frame draws. A control that looks operable and is not is a trap, and worse over a screen reader, where a collapsed combobox invites interaction it will not honor. Color assignment is a codebook-formation privilege belonging to the project administrator or qualitative lead, recorded here for the roles specification and the MSE handoff; no coder-facing surface edits it.
+
+**Overarching Themes stays out**, per D-017 and A-5, reconfirmed. The team is removing it from the Figma sidebar, which retires the last standing design-spec contradiction on navigation.
+
+Card borders use the family's shade-1 token; the four low-contrast hues annotated in tokens.css apply to card outlines as they do to pills. The frame's surrounding chrome — Code, Write Note, Import file, Progress 10%, the audio player — is superseded by D-032, D-012, D-009, and A-4 and is not carried into the specification.

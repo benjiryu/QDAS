@@ -5,7 +5,8 @@
 - Status: Draft for team review
 - Version: 0.1
 - Last updated: 2026-08
-- Decisions: D-043 (scope and sidebar), D-044 (state survives navigation), D-045 (own counts), with D-013, D-017, D-035, D-041, R-4 in force
+- Decisions: D-043 (scope and sidebar), D-044 (state survives navigation), D-045 (own counts), D-047 (codebook family cards), with D-013, D-017, D-035, D-041, D-046, R-4 in force
+- Codebook visual reference: Figma frame 247:357, content region only; its chrome is superseded
 - The Figma wireframe decides visual language; this document decides structure and behavior
 
 ## Shared rules, all three pages
@@ -28,15 +29,19 @@ The destination D-035 pointed definition lookup at. Its job: let a coder read an
 
 **Regions, fixed order:** heading and count, search field, search results (only while a query is active), the codebook.
 
-- The codebook renders in canonical order from `canonicalOrderIndex`, as nested lists, hierarchy by indentation, tag pill treatment per tokens with the pill decorative and the code name as text.
-- ~~Every code shows its full record inline: name, short definition, full definition, inclusion criteria, exclusion criteria, status, codebook version.~~ **Amended by D-046:** a record shows its name and one open-ended definition. The short definition, both criteria, and the status are still on the `Code` record and in the seed; they are no longer displayed. The codebook version is stated once beside the count rather than per record, since every code here shares one. The rest of this bullet stands: this page is where the detail lives, so no disclosure per row; the page is long and that is fine. Deep-linkable: each code has a stable fragment id so future surfaces can link to one code.
-- Search matches name, parent path, and the definition — what the page displays, per D-046, which is narrower than "name, definitions, and criteria" and no longer the panel's semantics either, since the panel matches name and parent path only. Results in their own region above the unchanged canonical list; query persists within the session.
+- The codebook renders as one card per top-level family, in canonical order from `canonicalOrderIndex`, per D-047 and frame 247:357. Within a card, the parent's name and definition, children indented beneath, grandchildren beneath them.
+- Code names are headings, nested by level: family cards begin at `h2`, children `h3`, grandchildren `h4`, each followed by its definition paragraph. This is the structure that makes a long page navigable: a screen reader user jumps by heading; a sighted user scans indentation. Record content per D-046: name and one open-ended definition. The codebook version is stated once beside the count.
+- Each card carries its family color as a read-only labeled value, "Color: [name]" with the swatch — not a control, per D-047. Card borders use the family shade-1 token; the four low-contrast hues noted in tokens.css apply here too, mitigated by the color name being text.
+- Deep-linkable: each code has a stable fragment id.
+- Search is retained per the standing structure rule even though the frame omits it: matches name, parent path, and definition; results in their own region above the unchanged canonical cards; query persists within the session.
 - Provisional codes appear in a separate labeled section after the canonical list, never interleaved.
 
 **Acceptance criteria.**
 Given a captured excerpt with two codes checked, when the coder visits the Codebook and returns, then the capture, the checked codes, and any draft note are exactly as left (D-044).
 Given a query, when results render, then the canonical list below is present and unreordered.
-Given the page at 400 percent zoom, when the coder reads a code record, then no horizontal panning is required.
+Given the page at 400 percent zoom, when the coder reads a code record, then no horizontal panning is required, and the color value sits in the reading order rather than requiring a pan to the card's far edge.
+Given a screen reader listing headings, when the codebook renders, then every code name appears at the heading level matching its depth.
+Given the color value, when a screen reader reaches it, then it reads as a labeled static value and not as a collapsed control.
 
 ## 2. Coded data page
 

@@ -34,7 +34,7 @@ Assumption until answered: real data is not deployed to an unauthenticated publi
 
 **V-2. Is turn-level capture too coarse as the screen reader mainline?** Owner: session evidence, v0.2. Where browse-mode selection never reaches the DOM, the fallback is the route, at turn granularity. If NVDA and JAWS participants live on it and fight it, that is evidence for restoring minimal boundary adjustment.
 
-**F-9. Figma frame hygiene.** Owner: Benji. The frame named `Project` contains the login form, the frame named `Log in` holds only the wordmark, and three hidden `Home` frames carry conflicting taxonomies from different generations. Not behavioral. Resolution: clean before the MSE handoff.
+**F-9. Figma frame hygiene.** Owner: Benji. The frame named `Project` contains the login form, the frame named `Log in` holds only the wordmark, and hidden `Home` frames carry conflicting taxonomies from different generations. Additionally, the QDAS 1.x Karma wireframe frames embed what appears to be real interview content with named speakers in a transcript-preview text layer; replace with synthetic text before the file is shared further. The team is also removing the Themes sidebar entry per D-047. Not behavioral. Resolution: clean before the MSE handoff.
 
 ## Resolved
 
