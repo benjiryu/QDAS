@@ -4,7 +4,7 @@
 
 Every way out of the panel commits. Escape, the close control, and clicking outside all do what Save & Close does: the pending codes are written, the draft note is attached, and the panel closes. The discard confirmation is removed, because there is no longer anything for it to guard.
 
-Where no code is checked, save is still unavailable, so closing writes nothing and the capture is discarded. That is the only remaining route to leaving without a record, and it is what keeps a panel opened by mistake from becoming a trap. On a reopened excerpt it leaves the saved assignments standing, so unchecking everything and closing is not a back route to the deletion D-030 keeps a separate explicit action.
+Where no code is checked and no note is drafted, closing writes nothing and the capture is discarded; with a note drafted, closing persists a note-only excerpt, per the build fix codified in D-055. Discard-on-close is what keeps a panel opened by mistake from becoming a trap. On a reopened excerpt it leaves the saved assignments standing, so unchecking everything and closing is not a back route to the deletion D-030 keeps a separate explicit action.
 
 The close control is named "Close", not "Cancel". The command is `codes.close`, not `codes.cancel`; the Escape chord is unchanged.
 

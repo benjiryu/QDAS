@@ -129,6 +129,8 @@ If a criterion fails, quote the criterion back to the agent rather than describi
 
 **Watch for silent resolution.** `CLAUDE.md` rule 8 requires the agent to stop and surface specification conflicts rather than choosing. When it makes a decision instead of raising it, say so and ask it to record the conflict in the decision log. This behavior degrades over long sessions and needs reinforcing.
 
+**Log decisions made during fix sessions.** A behavior change negotiated with the agent mid-fix is a decision. If it changes a rule a specification states, it needs a decision entry, or the stale text will cause the question to be re-litigated in good faith later. This happened with note-only excerpts.
+
 **Stop and ask when a task touches an open question.** The register in `unresolved-questions.md` contains methodological decisions belonging to the research team. If the agent proposes an answer to one, that is not progress.
 
 ## Phase 1. Foundation
@@ -1182,8 +1184,9 @@ Implement D-055 and the amended excerpt-selection.md sections 3 and 4.
 - Close commits: text saves, emptied existing note deletes, fresh capture with
   nothing discards. Announce loaded versus new distinctly, the D-036 honesty
   idiom
-- Note-only excerpts persist and render with the note-marker treatment,
-  distinct from coded highlights, and D-052 mark semantics
+- Note-only excerpts already persist and render with the existing gray
+  highlight and underline treatment; verify rather than build, and confirm
+  D-052 mark semantics cover them
 
 Tests: capture then note then close persists a note-only excerpt; note.open
 round trip with focus return; emptied note deletes; disambiguation on a turn

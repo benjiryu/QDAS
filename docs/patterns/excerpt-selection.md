@@ -79,6 +79,7 @@ Boundaries are exact characters: `startSegmentId` + `startOffset` through `endSe
 - The application highlight is the only selection visual after capture; native selection is cleared.
 - A captured range may begin or end mid-sentence. The highlight shows exactly what will be coded.
 - Highlight state is not conveyed by color alone.
+- Note-only ranges render with the gray highlight and underline treatment, distinct from coded highlights; the underline is the non-color channel. Per D-055's codification of the existing build behavior.
 - The panel, strip, and reflow behavior are unchanged from D-027, D-031, and D-033.
 
 ## 7. Acceptance criteria
