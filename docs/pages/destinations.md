@@ -77,8 +77,8 @@ The coder's notes across all three scopes, per D-058: excerpt notes, file-wide n
 
 **The notes list.** Under All notes: a Project notes section first, then one section per source, `h2` headings, matching the filter order. Entries newest last within a section, by excerpt position where there is one.
 
-- **Excerpt note entry:** the note text in full in the card, above it the excerpt context — speaker, truncated excerpt text with full text by disclosure — the source title, and assigned codes as D-041 compact text with pills aria-hidden. Note-only excerpts show no codes line, per D-055. Activating the entry's link lands focus on the turn containing the excerpt start, where `note.open` and `excerpt.open` apply.
-- **File-wide note entry:** the note text and its source title. No excerpt context, no codes line.
+- **Excerpt note entry:** the note text in full in the card, above it the excerpt context — speaker, truncated excerpt text with full text by disclosure — and the assigned codes as pills, aria-hidden, with the compact "Codes:" text programmatic-only, per the D-058 addendum. One channel per fact: the source appears visually only as the section heading, programmatically only in the entry link's accessible name ("Note on [speaker], [source]"); no visible per-entry source line. Note-only excerpts show no codes in either channel, per D-055. Activating the entry's link lands focus on the turn containing the excerpt start, where `note.open` and `excerpt.open` apply.
+- **File-wide note entry:** the note text; the source is the section heading visually and the entry's accessible name programmatically. No excerpt context, no codes.
 - **Project note entry:** the note text alone.
 - Non-excerpt entries have no turn to land on: activating one opens the isolated note panel loaded with that note. This is the edit route and stays consistent with the read-surface rule — the page itself edits nothing, the panel does.
 
@@ -90,7 +90,8 @@ The coder's notes across all three scopes, per D-058: excerpt notes, file-wide n
 Given an excerpt note entry, when activated, then the transcript opens with focus on the turn containing the noted excerpt.
 Given a project note entry, when activated, then the note panel opens loaded with that note, and closing it returns focus to the entry.
 Given the New note button with the filter on a source, when the panel opens, then the scope field shows that source, and saving attaches the note there.
-Given a note-only excerpt's entry, when it renders, then no codes line appears.
+Given a note-only excerpt's entry, when it renders, then no codes appear in either channel.
+Given an excerpt note entry, when a screen reader reads its link outside any heading context, then the accessible name carries speaker and source; and when the codes are reached, then they are one compact stop, not one stop per pill.
 Given no notes anywhere, when the page renders, then the empty state names both routes: noting an excerpt in the transcript, and the New note button.
 Given 320 pixel width, when the page renders, then the filter list precedes the notes list in one column.
 

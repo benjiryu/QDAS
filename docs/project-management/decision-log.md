@@ -991,3 +991,12 @@ N-4 said file-wide notes might arrive as a later page. The Notes page is that pa
 **The read-surface rule survives restated** rather than excepted: destination pages edit nothing themselves; all editing routes through a panel. Excerpt notes reopen through `note.open` as before. Non-excerpt notes reopen into the note panel by activating the entry, since they have no turn to land on.
 
 **R-4 unchanged.** Own notes only during independent coding, all scopes. The Figma's cross-coder attribution ("Alyssa" under Arielle's excerpt) renders only when the phase lifts.
+
+## D-058 addendum: one channel per fact on the Notes page
+
+Date: 2026-08 | Status: approved
+
+The first build rendered the per-entry source title and both code channels visibly, duplicating what the section heading and the pills already say. Corrected by finishing the D-041 split: every fact renders once per channel, never twice in one.
+
+- The source is the section heading visually; programmatically it lives in each entry link's accessible name ("Note on [speaker], [source]"), so link-by-link navigation across sections keeps context. No visible per-entry source line.
+- The codes are the pills visually, aria-hidden as the transcript rail already does; the compact "Codes:" text is programmatic-only. The pills carry code names as text, so the visual channel is not color alone.
