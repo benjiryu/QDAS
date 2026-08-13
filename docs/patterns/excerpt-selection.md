@@ -55,7 +55,7 @@ Requirements carried from D-028: the menu adds no capability, every item exists 
 | `confirmed` | A range is captured and the panel is open |
 | `saved` | Range persisted with at least one code assignment |
 
-Transitions: `idle` → `confirmed` on capture. `confirmed` → `saved` on save with a non-empty pending assignment. `confirmed` → `idle` on closing the panel with an empty assignment, which discards the capture and creates nothing; with codes checked, closing commits instead and the transition is `confirmed` → `saved`, per D-042. `saved` → `confirmed` via `excerpt.open` per D-030, range locked, assignments preloaded.
+Transitions: `idle` → `confirmed` on capture. `confirmed` → `saved` on save with a non-empty pending assignment, or per D-055 with a saved note: an excerpt persists with at least one code or a note. `confirmed` → `idle` on closing with neither, which discards the capture; with codes checked, closing commits, per D-042; in the note panel, closing with text commits the note. `saved` → `confirmed` via `excerpt.open` per D-030, range locked, assignments preloaded. Note-only excerpts reopen through `note.open` into the note panel.
 
 There is no adjustment phase. Fixing a wrong range means cancelling and reselecting, which native selection makes cheap. If sessions show that cancel-and-reselect is not cheap for screen reader users, that is D-036's reopening evidence.
 
@@ -64,8 +64,9 @@ There is no adjustment phase. Fixing a wrong range means cancelling and reselect
 | Command | Available | Result |
 |---|---|---|
 | `excerpt.code` | Always | Capture per 1.1, open panel, focus in search |
-| `excerpt.note` | Always | Capture per 1.1, open panel, focus in note field |
+| `excerpt.note` | Always | Capture per 1.1, open the isolated note panel per D-055; if the code panel is already open, focus its note region instead |
 | `excerpt.open` | `idle`, focused turn intersects a saved excerpt | Reopen per D-030, list disambiguation when several intersect |
+| `note.open` | `idle`, focused turn intersects an excerpt carrying a note | Open the isolated note panel loaded with the note, list disambiguation when several intersect. Pointer twin: clicking the rail's note icon |
 
 Each has a visible strip control showing its chord. The strip otherwise carries only navigation and position controls; the v0.1 boundary controls are gone.
 

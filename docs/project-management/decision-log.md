@@ -919,3 +919,19 @@ The D-051 test amends accordingly: the accessible name is exactly the code name;
 Resolution: **typing a printable character while focus is anywhere in the code list moves focus to the search field with that character beginning the query**, announced by the existing continuous search count per D-050. Type-ahead in spirit, the search machinery in fact, no ARIA recreation. Browse-mode users are unaffected, their letter keys belong to their screen reader, and they retain search and `codes.focusSearch`. Space and Enter keep their native checkbox meanings; only printable characters redirect.
 
 Classified per the contract's taxonomy: both were workflow findings, not access blockers. Participants completed tasks; the structure under-communicated and an expectation went unmet.
+
+## D-055 The isolated note panel, and note-only excerpts become legal
+
+Date: 2026-08 | Workflow: notes | Status: approved. Driven by screen reader session evidence: reaching the note field through the full code panel was too costly
+
+**The note panel** is a dedicated small panel in the code panel's container style: a heading naming the excerpt, one paragraph text field, Save and Close. Nothing else. It opens with focus in the field.
+
+**Add note** (`excerpt.note`, existing chord) changes destination: it captures per the standard capture rule and opens the note panel, not the code panel. The code panel's own note region stays for the combined flow, and when the code panel is already open, `excerpt.note` focuses that region as before. The context menu's Add note item follows the new destination.
+
+**Open note** (`note.open`, new command, suggested Ctrl+Alt+M and Ctrl+Shift+M, collision-guard verified) opens the same panel loaded with the existing note. Available when the focused turn intersects an excerpt carrying a note; several notes in one turn present a list identified by excerpt range, the excerpt.open disambiguation pattern reused. The pointer twin: the note icon in the rail becomes clickable, mirroring click-a-coded-sentence from D-030. The icon stays `aria-hidden` per D-041; the command is the non-visual route and the icon is the pointer route, twins as usual.
+
+**Close semantics, the D-042 idiom applied to notes:** every way out commits. Closing with text saves the note; closing an existing note with the field emptied deletes it; closing a fresh capture with no text and no codes discards the capture. Focus returns to the invoking turn or control per contract 2.4.
+
+**Note-only excerpts are legal.** An excerpt persists with at least one code assignment or a note. This amends the D-042-era rule that an uncoded excerpt is always discarded, and it is what the request implies: annotate a passage without coding it, the "strong quotation" and "return to this" acts the co-design workshop listed. The excerpt state model reads accordingly: `saved` means persisted with a code or a note. Note-only ranges take the note-marker treatment the transcript grid design already carries, distinct from coded highlights, not color alone; D-052's mark applies to them as well.
+
+One panel at a time: the note panel and code panel do not stack. The isolated panel serves the direct routes from the transcript; the code panel's note region serves the combined coding flow. Editing via either surface edits the same note.

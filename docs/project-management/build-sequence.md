@@ -1164,6 +1164,36 @@ Done when: a screen reader on any grandchild hears its name, its state, and
 then its family, and typing "wa" from inside the list yields the search field
 with "wa" and one settled count announcement.
 
+### Task 36. Isolated note panel
+
+```
+Implement D-055 and the amended excerpt-selection.md sections 3 and 4.
+
+- A dedicated note panel in the code panel's container style: heading naming
+  the excerpt, one paragraph text field, Save and Close. Focus opens in the
+  field; close returns focus to the invoking turn or control
+- excerpt.note routes here on a fresh capture; with the code panel open it
+  focuses that panel's note region as before. The context menu Add note item
+  follows
+- note.open, new command, Ctrl+Alt+M and Ctrl+Shift+M, added to both tables
+  with the collision guard green: opens the panel loaded with the focused
+  turn's note, list disambiguation for several. The rail note icon becomes
+  clickable as the pointer twin, staying aria-hidden
+- Close commits: text saves, emptied existing note deletes, fresh capture with
+  nothing discards. Announce loaded versus new distinctly, the D-036 honesty
+  idiom
+- Note-only excerpts persist and render with the note-marker treatment,
+  distinct from coded highlights, and D-052 mark semantics
+
+Tests: capture then note then close persists a note-only excerpt; note.open
+round trip with focus return; emptied note deletes; disambiguation on a turn
+with two noted excerpts; chord guard green; the code panel's note region
+still edits the same note.
+```
+
+Done when: from a focused turn, one chord opens the note, editing and closing
+lands you back on the turn, and a passage can carry a note with no codes.
+
 ## Failure modes to watch for
 
 **The agent builds something simulated.** Point it at `prototype-scope.md`. File import, authentication, and IRR are not gaps to fill.
