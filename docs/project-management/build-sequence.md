@@ -1246,3 +1246,20 @@ excerpt at another.
 **Focus return drifts.** The most common regression and the least visible one, since it looks fine with a mouse. It is why the acceptance criteria name a destination for every transition.
 
 **Tasks grow.** If a diff touches more than a few files, stop and split it.
+
+### Task 38. Sidebar refinement and the Project overview page
+
+```
+Implement decision D-059 per docs/pages/destinations.md: the sidebar shared
+rules and the new section 0.
+
+Sidebar flush to the viewport top and left, unrounded, no white gap.
+Underlines replaced by the hover treatment: white pill, dark blue text.
+Current-state semantics unchanged: aria-current, active pill, edge bar,
+visible focus ring. "Project 1 Files" becomes a link to the new Project
+overview page while remaining the source list's aria-labelledby target.
+The page: h1 project name with entry focus, plain-text summary line (phase,
+source count, codebook version), linked source list, read-only, explicit
+empty state. When tests pass, commit and update the progress line in the
+same commit. Do not push.
+```

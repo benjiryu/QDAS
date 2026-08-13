@@ -1000,3 +1000,11 @@ The first build rendered the per-entry source title and both code channels visib
 
 - The source is the section heading visually; programmatically it lives in each entry link's accessible name ("Note on [speaker], [source]"), so link-by-link navigation across sections keeps context. No visible per-entry source line.
 - The codes are the pills visually, aria-hidden as the transcript rail already does; the compact "Codes:" text is programmatic-only. The pills carry code names as text, so the visual channel is not color alone.
+
+## D-059 Sidebar visual refinement, and the project files label becomes a destination
+
+Date: 2026-08 | Workflow: navigation | Status: approved. Amends D-043's sidebar rules
+
+**Visual, per the Figma:** the sidebar is flush to the viewport's top and left edges, unrounded, no white gap. Item underlines are replaced by the hover treatment: white pill, dark blue text (the text moves from black to the dark blue token). A hovered item and the current destination wear the same pill; this is acceptable because hover is transient and pointer-tied — keyboard and screen reader users never encounter it, and `aria-current` plus the visible focus ring carry current state. Do not diverge from the Figma to disambiguate hover.
+
+**Structural:** "Project 1 Files" ceases to be a non-focusable group label and becomes a link to a new Project overview page, reversing that part of the sidebar spec. It remains the nested source list's `aria-labelledby` target — one element, both jobs. The Project overview page is Slice 1 getting its first real surface: project name as `h1` with focus on entry, a plain-text summary line (phase, source count, codebook version — data the domain model already holds), then the sources as a linked list, each landing on that source's transcript view. Read surface, own counts, explicit empty state. Richer summary content is an open extension point owned by the team.

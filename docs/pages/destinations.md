@@ -11,9 +11,9 @@
 
 ## Shared rules, all three pages
 
-**Sidebar.** One project navigation landmark, solid blue (`--color-blue-100`), fixed full-height at wide layout with its own internal scroll; collapses to a disclosure at narrow width and high zoom per D-033, never fixed there, with identical reading order in both layouts.
+**Sidebar.** One project navigation landmark, solid blue (`--color-blue-100`), flush to the viewport's top and left edges with no rounding or white gap per D-059, fixed full-height at wide layout with its own internal scroll; collapses to a disclosure at narrow width and high zoom per D-033, never fixed there, with identical reading order in both layouts.
 
-Content order: a **project files group**, then Code book, Coded data, Notes. No Themes. The group's header ("Project 1 Files") matches the destination links in visual weight but is a non-focusable group label, not a link: the nested source list is `aria-labelledby` it, and a screen reader hears it as the list's name rather than a destination. Sources render as a nested list within the group; the current source carries `aria-current="page"` with the design's edge-bar indicator. The current destination carries `aria-current="page"` and the white active pill, shape plus color. The focus ring must be visible against the blue background; the default ring color is not assumed sufficient.
+Content order: a **project files group**, then Code book, Coded data, Notes. No Themes. The group's header ("Project 1 Files") is a link to the Project overview page per D-059, and remains the nested source list's `aria-labelledby` target — one element, both jobs. Sources render as a nested list within the group; the current source carries `aria-current="page"` with the design's edge-bar indicator. The current destination carries `aria-current="page"` and the white active pill, shape plus color. Hover uses the same white pill with dark blue text, replacing underlines, per D-059; hover being visually identical to current is accepted there. The focus ring must be visible against the blue background; the default ring color is not assumed sufficient.
 
 **Entry.** Each page has one `h1` naming it; focus lands on the `h1` on navigation, per the Task 5a precedent and contract 2.4. Each page states its count in plain text near the `h1` ("34 codes", "12 coded excerpts", "5 notes"), which doubles as the screen reader's orientation on arrival.
 
@@ -24,6 +24,21 @@ Content order: a **project files group**, then Code book, Coded data, Notes. No 
 **Read surfaces, restated per D-058.** These pages edit nothing themselves; all editing routes through a panel — the coding panel via `excerpt.open`, or the isolated note panel via `note.open`, a note entry, or the Notes page's New note button. Codebook editing remains out of scope per prototype-scope.
 
 **Empty, loading, and error states** are explicit: an empty Coded data page says the coder has not coded anything in this project yet and names the route to start; it is never a blank region.
+
+## 0. Project overview page
+
+Slice 1's first real surface, per D-059: where the project files link lands, and where a researcher orients before opening a source.
+
+**Regions, fixed order:** heading and summary, source list.
+
+- The `h1` is the project name; focus lands on it on navigation per the shared entry rule. The summary line beneath is plain text from data the domain model already holds: phase, source count, codebook version ("Independent coding. 2 sources. Codebook v3."). Richer summary content is an open extension point owned by the team.
+- Sources render as a linked list in source order, each entry the source title, landing focus on that source's transcript per the shared entry behavior.
+- Read surface: nothing here edits anything.
+
+**Acceptance criteria.**
+Given the "Project 1 Files" sidebar link, when activated, then this page opens with focus on the `h1`, and a screen reader still hears the sidebar's nested source list named by that same element.
+Given a source entry, when activated, then that source opens with its entry focus behavior.
+Given a project with no sources, when the page renders, then an explicit empty state names how a source arrives rather than showing a blank region.
 
 ## 1. Codebook page
 
