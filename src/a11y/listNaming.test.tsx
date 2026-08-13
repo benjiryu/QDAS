@@ -200,16 +200,25 @@ describe('no list anywhere is left unnamed', () => {
 });
 
 describe('a checkbox and its code pill are one control, per D-051', () => {
-  it('takes the code name as its accessible name', () => {
+  it('takes the code name as its accessible name, and only that', () => {
+    /*
+      Amended for D-054, which puts each code's lineage into its accessible
+      description. The name has to stay exactly the code name — search, sorting
+      and the type-ahead redirect all operate on it, and a coder checking a box
+      should hear the code rather than a path.
+
+      So this asserts the name twice over: that the row is findable by its name,
+      as before, and with `toHaveAccessibleName`, which is exact. The first on
+      its own would keep passing while the name grew a suffix.
+    */
     renderAt(`/projects/${project.projectId}/sources/${source.sourceId}`);
     openPanel();
 
     const codebook = document.querySelector<HTMLElement>('[data-region="codebook"]')!;
     for (const code of fixture.codes.slice(0, 5)) {
-      expect(
-        within(codebook).getByRole('checkbox', { name: code.name }),
-        `${code.name} has no accessible name of its own`,
-      ).toBeInTheDocument();
+      const box = within(codebook).getByRole('checkbox', { name: code.name });
+      expect(box, `${code.name} has no accessible name of its own`).toBeInTheDocument();
+      expect(box, `${code.name} carries more than its name`).toHaveAccessibleName(code.name);
     }
   });
 

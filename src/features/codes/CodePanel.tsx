@@ -1,6 +1,11 @@
 import { useId, useMemo } from 'react';
 import { Dialog, Modal, ModalOverlay } from 'react-aria-components';
-import { bindingsFor, describeChord, detectPlatform } from '../../config/keybindings';
+import {
+  bindingsFor,
+  describeChord,
+  detectPlatform,
+  isTypeAheadCharacter,
+} from '../../config/keybindings';
 import type { PrototypeFlags } from '../../config/flags';
 import type { Code } from '../../domain';
 import { CodebookContent } from '../codebook/CodebookContent';
@@ -103,8 +108,34 @@ export function CodePanel({ panel, flags, excerptText }: CodePanelProps) {
     companionOpen,
     openCompanion,
     closeCompanion,
+    focusSearch,
     projectId,
   } = panel;
+
+  /*
+    Type-ahead in spirit, the search machinery in fact, per D-054.
+
+    Participants expected first-letter navigation and did not find it. It is a
+    property of widget roles — listbox, menu, tree — which D-004 declined to
+    imitate, and label association could not give the list something its role
+    never had. But the need underneath it, jump-by-typing from where you are
+    standing, is what the search field already does, so the letter goes there
+    rather than a tree being built to receive it.
+
+    The character starts the query rather than being swallowed, so the first
+    keystroke counts and typing carries on uninterrupted in the field. The count
+    is spoken by the existing continuous search announcement — nothing new
+    announces here, which is what keeps it one settled count rather than two.
+
+    Which keys qualify lives in the binding module. Space and Enter keep their
+    checkbox meanings, and every modified key is left for the chords.
+  */
+  function handleTypeAhead(event: React.KeyboardEvent<HTMLUListElement>) {
+    if (!isTypeAheadCharacter(event.nativeEvent)) return;
+    event.preventDefault();
+    setQuery(event.key);
+    focusSearch();
+  }
 
   return (
     <ModalOverlay
@@ -221,11 +252,21 @@ export function CodePanel({ panel, flags, excerptText }: CodePanelProps) {
             <ul className="code-panel__list" aria-labelledby={resultsId}>
               {results.map((result) => (
                 <li key={result.code.codeId}>
-                  <CodeCheckbox code={result.code} panel={panel} />
+                  <CodeCheckbox code={result.code} panel={panel} lineage={result.parentPath} />
                   {/* The parent path, so a matched child code is identifiable
-                      without expanding the hierarchy. Section 5. */}
+                      without expanding the hierarchy. Section 5.
+
+                      Out of the accessibility tree since D-054: the same
+                      lineage is the checkbox's description now, and left
+                      readable it would be said twice — once as the row's
+                      description and again as loose text after it, which is
+                      the second stop D-051 removed from these rows. The eye
+                      keeps it; the ear gets it from the description. */}
                   {result.parentPath.length > 0 ? (
-                    <span className="code-panel__path"> in {result.parentPath.join(' › ')}</span>
+                    <span className="code-panel__path" aria-hidden="true">
+                      {' '}
+                      in {result.parentPath.join(' › ')}
+                    </span>
                   ) : null}
                 </li>
               ))}
@@ -277,7 +318,12 @@ export function CodePanel({ panel, flags, excerptText }: CodePanelProps) {
         </button>
         {/* The specific gap the Task 28a finding left: this list lost its name
             when its heading became the button. The button names it now. */}
-        <CodeList nodes={tree} panel={panel} labelledBy={toggleId} />
+        <CodeList
+          nodes={tree}
+          panel={panel}
+          labelledBy={toggleId}
+          onTypeAhead={handleTypeAhead}
+        />
       </div>
 
       {/* 5. Proposed codes. D-039's region order does not name this one, and
@@ -466,6 +512,7 @@ function CodeList({
   panel,
   labelledBy,
   label,
+  onTypeAhead,
 }: {
   nodes: CodeNode[];
   panel: CodePanelApi;
@@ -473,21 +520,38 @@ function CodeList({
   labelledBy?: string;
   /** A nested list, named by the code it hangs from. */
   label?: string;
+  /**
+   * D-054's redirect, passed only by the root call. Keystrokes bubble out of
+   * the nested lists to here, so one handler covers the whole tree and no
+   * nested list runs it a second time on the way past.
+   */
+  onTypeAhead?: (event: React.KeyboardEvent<HTMLUListElement>) => void;
 }) {
   return (
     <ul
       className="code-panel__list code-panel__tree"
       aria-labelledby={labelledBy}
       aria-label={label}
+      onKeyDown={onTypeAhead}
     >
       {nodes.map((node) => (
         <li key={node.code.codeId} data-depth={node.depth}>
-          <CodeCheckbox code={node.code} panel={panel} depth={node.depth} />
+          <CodeCheckbox
+            code={node.code}
+            panel={panel}
+            depth={node.depth}
+            lineage={node.parentPath}
+          />
           {node.children.length > 0 ? (
             <ul className="code-panel__list code-panel__tree" aria-label={node.code.name}>
               {node.children.map((child) => (
                 <li key={child.code.codeId} data-depth={child.depth}>
-                  <CodeCheckbox code={child.code} panel={panel} depth={child.depth} />
+                  <CodeCheckbox
+                    code={child.code}
+                    panel={panel}
+                    depth={child.depth}
+                    lineage={child.parentPath}
+                  />
                   {child.children.length > 0 ? (
                     /* Named like the level above it: every list a rotor can
                        land on says which code it belongs to. D-051. */
@@ -507,42 +571,82 @@ function CodeCheckbox({
   code,
   panel,
   depth = 0,
+  lineage = [],
 }: {
   code: Code;
   panel: CodePanelApi;
   depth?: number;
+  /** The ancestors, outermost first. Empty for a top-level code. D-054. */
+  lineage?: readonly string[];
 }) {
+  const describedById = useId();
+
+  /*
+    The lineage, per D-054: the D-041 twin pattern applied to hierarchy.
+
+    Nesting and indentation carry the family tree to the eye. They do not reach
+    the ear — screen readers flatten nested lists in form contexts — so a
+    participant standing on a grandchild heard its name and nothing about where
+    it came from. This says it, in the channel that was silent.
+
+    Not in the name. The name stays exactly the code name, so search, sorting,
+    and the type-ahead redirect all keep operating on clean names, and so a
+    coder checking a box hears what they are checking rather than a path.
+    Verbosity is then the user's own screen reader setting, which is the right
+    owner for it: this is context, not identity.
+
+    Outermost first — "in Water access, Rules" for a grandchild — so the path
+    reads general to specific while the row as a whole reads specific to
+    general: the code, then its family. Speech cannot be skimmed, so the thing
+    being named comes first.
+  */
+  const describedBy = lineage.length > 0 ? `in ${lineage.join(', ')}` : null;
+
+  /*
+    The label wraps the control, per D-051.
+
+    Associated by `for` and sitting beside it, the pill named the checkbox
+    correctly and *also* stayed in the accessibility tree as loose text: one
+    row, two stops, the code name read twice. Wrapping consumes the text into
+    the control's name, which is what makes the row one stop.
+
+    The description sits outside the label rather than inside it. Inside, its
+    text would join the label's contents and land in the name, which is the one
+    thing D-054 rules out. `aria-hidden` would exclude it from the name
+    computation, but resting name purity on that is resting it on a subtlety;
+    outside, the name cannot pick it up however the rules are read.
+  */
   return (
-    /*
-      The label wraps the control, per D-051.
-
-      Associated by `for` and sitting beside it, the pill named the checkbox
-      correctly and *also* stayed in the accessibility tree as loose text: one
-      row, two stops, the code name read twice. Wrapping consumes the text into
-      the control's name, which is what makes the row one stop.
-    */
-    <label className="code-panel__code" data-depth={depth}>
-      <input
-        type="checkbox"
-        checked={panel.isPending(code.codeId)}
-        onChange={(event) => panel.toggle(code.codeId, event.target.checked)}
-        data-code-id={code.codeId}
-      />
-      <span className="code-panel__code-body">
-        <span className="code-panel__code-name">{code.name}</span>
-        {/* Colour is a redundant channel only, never carrying meaning that is
-            not also in text. Section 4. D-039 removed the visible level label;
-            the nested lists still expose depth programmatically.
-
-            No definition text: a list scanned by name does not need a second
-            line of prose against every row. Definitions are read at the
-            Codebook destination, per D-035. */}
-        <span
-          className="code-panel__swatch"
-          data-color-token={code.colorToken}
-          aria-hidden="true"
+    <>
+      <label className="code-panel__code" data-depth={depth}>
+        <input
+          type="checkbox"
+          checked={panel.isPending(code.codeId)}
+          onChange={(event) => panel.toggle(code.codeId, event.target.checked)}
+          data-code-id={code.codeId}
+          aria-describedby={describedBy ? describedById : undefined}
         />
-      </span>
-    </label>
+        <span className="code-panel__code-body">
+          <span className="code-panel__code-name">{code.name}</span>
+          {/* Colour is a redundant channel only, never carrying meaning that is
+              not also in text. Section 4. D-039 removed the visible level label;
+              the nested lists still expose depth programmatically.
+
+              No definition text: a list scanned by name does not need a second
+              line of prose against every row. Definitions are read at the
+              Codebook destination, per D-035. */}
+          <span
+            className="code-panel__swatch"
+            data-color-token={code.colorToken}
+            aria-hidden="true"
+          />
+        </span>
+      </label>
+      {describedBy ? (
+        <span id={describedById} className="visually-hidden">
+          {describedBy}
+        </span>
+      ) : null}
+    </>
   );
 }

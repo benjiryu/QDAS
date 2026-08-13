@@ -135,6 +135,33 @@ export function resolveEscape(panelOpen: boolean): Command | null {
   return panelOpen ? 'codes.close' : null;
 }
 
+/**
+ * Whether a keypress is a character that should redirect into search, per D-054.
+ *
+ * Not a chord, and here anyway. It is knowledge about keys, and the exclusions
+ * are the whole content of it — a component with `event.key === ' '` buried in a
+ * handler is exactly what `CLAUDE.md`'s failure-mode list says to grep for, and
+ * the reason is that the exclusions have to be reviewable beside the chords they
+ * sit next to rather than found by reading components.
+ *
+ * What is excluded and why:
+ *
+ * - **Space**, which is printable and is the one that has to be named. It
+ *   toggles the checkbox the user is standing on, and D-054 keeps it.
+ * - **Any modified key.** `Ctrl+Alt+F` is `codes.focusSearch`; redirecting on
+ *   it would swallow every chord that happens to carry a letter.
+ * - **Named keys** — Enter, Tab, arrows, Escape — which report a multi-character
+ *   `key` and are excluded by the length test rather than by a list to maintain.
+ *
+ * Browse-mode users never reach this: their letter keys belong to their screen
+ * reader and are consumed before the page sees them. That is not a gap here.
+ * It is why the visible search field and `codes.focusSearch` both still exist.
+ */
+export function isTypeAheadCharacter(event: KeyboardEvent): boolean {
+  if (event.ctrlKey || event.altKey || event.metaKey) return false;
+  return event.key.length === 1 && event.key !== ' ';
+}
+
 export function matches(event: KeyboardEvent, chord: Chord): boolean {
   return (
     event.key.toLowerCase() === chord.key.toLowerCase() &&
