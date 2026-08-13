@@ -299,6 +299,128 @@ describe('an excerpt note entry, per section 3', () => {
   });
 });
 
+describe('one channel per fact, per the D-058 addendum', () => {
+  /**
+   * Codes a fresh turn and writes a note on it in one save.
+   *
+   * The code panel rather than the isolated one, because this needs an excerpt
+   * carrying both — which is the entry that has codes to render, and the route
+   * a coder actually takes to produce one.
+   */
+  async function codeAndNoteFreshTurn(text: string) {
+    const turn = Array.from(document.querySelectorAll<HTMLElement>('[data-turn-id]')).find(
+      (candidate) => candidate.querySelector('[data-coded-run]') === null,
+    )!;
+    act(() => turn.focus());
+    chord('excerpt.code');
+
+    const panel = await screen.findByRole('dialog', { name: /code assignment/i });
+    fireEvent.click(panel.querySelector(`[data-code-id="${fixture.codes[0].codeId}"]`)!);
+    fireEvent.click(within(panel).getByRole('button', { name: /add note/i }));
+    fireEvent.change(
+      within(panel).getByRole('textbox', { name: /note about this excerpt/i }),
+      { target: { value: text } },
+    );
+    fireEvent.click(within(panel).getByRole('button', { name: 'Save & Close' }));
+    await waitFor(() =>
+      expect(screen.queryAllByRole('dialog', { name: /code assignment/i })).toHaveLength(0),
+    );
+
+    const speaker = turn.querySelector('.transcript-turn__speaker')!.textContent!;
+    return { turnId: turn.dataset.turnId!, speaker };
+  }
+
+  const excerptCard = () =>
+    document.querySelector('[data-scope="excerpt"]')!.closest('[data-note-id]') as HTMLElement;
+
+  it('names the entry link by speaker and source, so links carry their context', async () => {
+    /*
+      Section 3's new criterion. A screen reader running down the links hears
+      which passage and which file each belongs to; the heading above is not
+      available to link-by-link navigation, which is the whole reason the name
+      carries the source rather than the card showing it again.
+    */
+    const { unmount } = renderAt(`/projects/${project.projectId}/sources/${sourceA.sourceId}`);
+    const { speaker } = await codeAndNoteFreshTurn('Coded and noted.');
+    unmount();
+
+    renderAt(notesUrl);
+    const link = within(excerptCard()).getByRole('link');
+
+    expect(link).toHaveAccessibleName(`Note on ${speaker}, ${sourceA.title}`);
+    // The visible label is a prefix of the name rather than replaced by it,
+    // which is what keeps a speech-input user able to say what they see.
+    expect(link.textContent).toContain(`Note on ${speaker}`);
+  });
+
+  it('shows the source once on screen, as the section heading', async () => {
+    // The duplication the addendum removes: the title on the heading and again
+    // on every card beneath it.
+    const { unmount } = renderAt(`/projects/${project.projectId}/sources/${sourceA.sourceId}`);
+    await codeAndNoteFreshTurn('Coded and noted.');
+    unmount();
+
+    renderAt(notesUrl);
+
+    /*
+      Scoped to the notes list. The sidebar links every source and the filter
+      names every source, both legitimately — the duplication the addendum
+      removes is within the list, where the heading already says it.
+    */
+    const list = document.querySelector('[data-region="notes"]')!;
+    const onScreen = Array.from(list.querySelectorAll('*')).filter(
+      (element) =>
+        element.children.length === 0 &&
+        element.textContent === sourceA.title &&
+        !element.classList.contains('visually-hidden'),
+    );
+    expect(onScreen, 'the heading, and nothing else').toHaveLength(1);
+    expect(onScreen[0].tagName.toLowerCase()).toBe('h2');
+  });
+
+  it('gives the codes one channel each: pills seen, compact text heard', async () => {
+    /*
+      The transcript rail's treatment. Both channels name the codes, so neither
+      rests on colour, and neither is in the other's channel — read straight
+      through this is one stop carrying every code rather than one per pill.
+    */
+    const { unmount } = renderAt(`/projects/${project.projectId}/sources/${sourceA.sourceId}`);
+    await codeAndNoteFreshTurn('Coded and noted.');
+    unmount();
+
+    renderAt(notesUrl);
+    const codes = excerptCard().querySelector('.notes__codes')!;
+
+    const pills = codes.querySelector('.notes__pills')!;
+    expect(pills, 'the pills are the visual channel').toHaveAttribute('aria-hidden', 'true');
+    expect(pills.textContent, 'and name their codes, never colour alone').toContain(
+      fixture.codes[0].name,
+    );
+
+    const compact = Array.from(codes.querySelectorAll('span')).find((span) =>
+      span.textContent?.startsWith('Codes:'),
+    )!;
+    expect(compact, 'the compact line is the programmatic channel').toHaveClass(
+      'visually-hidden',
+    );
+    expect(compact.textContent).toContain(fixture.codes[0].name);
+  });
+
+  it('puts a file-wide note’s source in its name, not on the card', () => {
+    renderAt(notesUrl);
+    const card = cardFor(seededSourceNote.noteId)!;
+    const entry = within(card).getByRole('button');
+
+    expect(entry).toHaveAccessibleName(`${seededSourceNote.noteText}, ${sourceA.title}`);
+    expect(
+      Array.from(card.querySelectorAll(':not(.visually-hidden)')).some(
+        (element) => element.children.length === 0 && element.textContent === sourceA.title,
+      ),
+      'nothing on the card repeats the heading',
+    ).toBe(false);
+  });
+});
+
 describe('the empty state names both routes', () => {
   it('says how to note a passage and how to write a project note', async () => {
     /*

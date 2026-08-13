@@ -390,32 +390,54 @@ function NoteCard({
       {entry.excerpt ? (
         <>
           {/*
-            The excerpt context, above the note, per section 3. Truncated on
-            screen with the whole of it behind a disclosure: a note about a long
-            passage should not make the reader scroll past the passage to reach
-            the note.
-          */}
-          <details className="notes__excerpt">
-            <summary id={excerptId}>
-              {entry.excerpt.speakerLabel}: {truncate(entry.excerpt.text)}
-            </summary>
-            <p className="notes__excerpt-full">{entry.excerpt.text}</p>
-          </details>
+            The route to the passage, and the entry's whole context in one
+            control, per the D-058 addendum.
 
-          <p className="notes__meta">
+            The accessible name is "Note on [speaker], [source]", so a screen
+            reader running down the page's links hears which passage and which
+            file each belongs to without the heading above it — which is what
+            link-by-link navigation across sections loses.
+
+            The source is visually hidden rather than supplied by `aria-label`.
+            A label replacing the visible text would break the requirement that
+            the visible label be contained in the accessible name, so the
+            visible part is a prefix of it instead. The section heading is where
+            the source renders visibly, once for the whole section.
+          */}
+          <p className="notes__link">
             <Link
               to={`/projects/${projectId}/sources/${entry.sourceId}?turn=${entry.excerpt.turnId}`}
             >
-              {entry.sourceTitle}
+              Note on {entry.excerpt.speakerLabel}
+              <span className="visually-hidden">, {entry.sourceTitle}</span>
             </Link>
           </p>
 
           {/*
-            Codes as D-041 does them: pills out of the accessibility tree, the
-            names as text, so a screen reader hears them once.
+            The passage itself. Truncated on screen with the whole of it behind
+            a disclosure: a note about a long passage should not make the reader
+            scroll past the passage to reach the note.
 
-            Absent entirely on a note-only excerpt, per D-055 — an empty "Codes:"
-            line would say there are codes and then name none.
+            The speaker is not repeated here. It is in the link above, and one
+            fact rendering twice in the same channel is the defect the D-058
+            addendum removes.
+          */}
+          <details className="notes__excerpt">
+            <summary id={excerptId}>{truncate(entry.excerpt.text)}</summary>
+            <p className="notes__excerpt-full">{entry.excerpt.text}</p>
+          </details>
+
+          {/*
+            One channel each, the treatment the transcript rail already carries.
+
+            The pills are the visual channel and stay out of the accessibility
+            tree; they name their codes as text, so the visual channel is never
+            colour alone. The compact line is the programmatic channel and is off
+            the screen. Read straight through, that is one stop carrying every
+            code rather than one stop per pill.
+
+            Nothing in either channel on a note-only excerpt, per D-055: an
+            empty "Codes:" would announce codes and then name none.
           */}
           {entry.excerpt.codes.length > 0 ? (
             <p className="notes__codes">
@@ -430,7 +452,9 @@ function NoteCard({
                   </span>
                 ))}
               </span>
-              <span>Codes: {entry.excerpt.codes.map((code) => code.name).join(', ')}</span>
+              <span className="visually-hidden">
+                Codes: {entry.excerpt.codes.map((code) => code.name).join(', ')}
+              </span>
             </p>
           ) : null}
 
@@ -450,8 +474,14 @@ function NoteCard({
             onClick={() => onOpen(entry)}
           >
             <span className="notes__text">{entry.text}</span>
+            {/*
+              The source in the name only, per the D-058 addendum. On screen it
+              is the section heading above, once for the whole section; here it
+              tells a screen reader user which file this note belongs to when
+              they reach it by control rather than by reading down.
+            */}
             {entry.sourceTitle ? (
-              <span className="notes__meta">{entry.sourceTitle}</span>
+              <span className="visually-hidden">, {entry.sourceTitle}</span>
             ) : null}
           </button>
         </>

@@ -44,9 +44,12 @@
   white-space: pre-wrap;
 }
 
-.notes__meta {
-  margin: 0.25rem 0 0;
-  color: var(--text-muted);
+/*
+ * The link to the passage. The source is inside it and visually hidden, per the
+ * D-058 addendum, so this line shows only the speaker.
+ */
+.notes__link {
+  margin: 0;
   font-size: 0.9em;
 }
 
