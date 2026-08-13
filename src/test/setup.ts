@@ -3,6 +3,7 @@ import { cleanup } from '@testing-library/react';
 import { afterEach } from 'vitest';
 import { clearCodingSession } from '../data/codingSessionStore';
 import { clearSimulatedSession } from '../data/simulatedSession';
+import { clearTextSizes } from '../data/textSizeStore';
 
 afterEach(() => {
   cleanup();
@@ -17,4 +18,7 @@ afterEach(() => {
   // the Coded data view from these, so a test that switched them would
   // otherwise decide the next one's view.
   clearSimulatedSession();
+  // A reading preference in `localStorage`, so unlike the in-memory stores it
+  // would otherwise survive into the next test and resize its transcript.
+  clearTextSizes();
 });

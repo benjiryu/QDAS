@@ -195,3 +195,24 @@ h1:focus {
   /* Grey, because a proposed code has no family to take a hue from yet. */
   --code-wash: var(--row-bg);
 }
+
+/*
+ * Available to a screen reader and not shown.
+ *
+ * Global, because three features now use it: the code panel's lineage
+ * descriptions per D-054, and the text size control's button names per D-056.
+ * It lived in `codePanel.css` while only that panel needed it, which left every
+ * other user of it depending on an unrelated feature's stylesheet being
+ * imported first.
+ */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

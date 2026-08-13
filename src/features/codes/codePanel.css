@@ -564,22 +564,6 @@ label:has(+ .code-panel__search) {
 
 /* ---------- Shared utilities ---------- */
 
-/*
- * Available to a screen reader and not shown, so the visible word stays short
- * while the accessible name still says which code it belongs to.
- */
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  border: 0;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
 .code-panel__create button {
   font: inherit;
   color: inherit;

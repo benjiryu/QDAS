@@ -77,6 +77,8 @@ Confirm the real material meets these before session one. Where it falls short, 
 
 Session data resets to a known state between participants, through a single command. A participant must never encounter the previous participant's codes. This is a smoke test item.
 
+The reset covers the two browser-local preferences as well as the coding session: the reading position, and since D-056 the transcript text size. A participant who opens a transcript already at 250 percent because the last one set it there has been handed someone else's reading conditions, which is a confound rather than an inconvenience.
+
 ## 6. Unresolved questions
 
 **Does the existing agreement between AFB and the UCI team cover using this data for prototype development, for exposure to an LLM coding agent, and for display to research participants who are not the original interviewees?**

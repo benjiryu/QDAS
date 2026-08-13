@@ -68,7 +68,7 @@ There is no adjustment phase. Fixing a wrong range means cancelling and reselect
 | `excerpt.open` | `idle`, focused turn intersects a saved excerpt | Reopen per D-030, list disambiguation when several intersect |
 | `note.open` | `idle`, focused turn intersects an excerpt carrying a note | Open the isolated note panel loaded with the note, list disambiguation when several intersect. Pointer twin: clicking the rail's note icon |
 
-Each has a visible strip control showing its chord. The strip otherwise carries only navigation and position controls; the v0.1 boundary controls are gone.
+`excerpt.code` and `excerpt.note` have strip controls showing their chords. `excerpt.open` and `note.open` are context commands per D-057: discoverable through the shortcuts help and the turn's status description, with the clickable coded sentence and note icon as pointer twins. The strip stays at D-038's five controls.
 
 ## 5. Storage
 

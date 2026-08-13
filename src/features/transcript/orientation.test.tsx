@@ -247,12 +247,26 @@ describe('what the movement commands left behind', () => {
 
 describe('what the strip holds afterwards', () => {
   it('carries exactly the five controls D-038 names, in order', () => {
+    /*
+      Scoped to the two strip groups since D-056, which put a text size control
+      in the transcript header. Unscoped this collected every button on the
+      page, so what it actually pinned was "the workspace has five buttons" —
+      a stronger claim than D-038 makes and one that fails the first time
+      anything else legitimately appears.
+
+      D-038 is about the strip. The header is not the strip, and the D-056
+      addendum is explicit that the size control belongs there.
+    */
     renderWorkspace();
 
-    const labels = screen
-      .getAllByRole('button')
+    const strips = [
+      screen.getByRole('group', { name: 'Orientation' }),
+      screen.getByRole('group', { name: 'Excerpt' }),
+    ];
+    const labels = strips
+      .flatMap((strip) => within(strip).getAllByRole('button'))
       .map((button) => (button.textContent ?? '').replace(/(Control|Shift|Alt).*$/, '').trim())
-      .filter((label) => label !== '' && label !== 'Skip to main content');
+      .filter((label) => label !== '');
 
     expect(labels).toEqual([
       'Speaker',
@@ -261,6 +275,19 @@ describe('what the strip holds afterwards', () => {
       'Code selection',
       'Add note',
     ]);
+  });
+
+  it('keeps the text size control out of the strip, per the D-056 addendum', () => {
+    // Product features are never homed in a strip D-038 pins, nor in the
+    // prototype-support surface that carries the role and phase controls.
+    renderWorkspace();
+
+    const orientation = screen.getByRole('group', { name: 'Orientation' });
+    const excerpt = screen.getByRole('group', { name: 'Excerpt' });
+    const size = screen.getByRole('group', { name: 'Transcript text size' });
+
+    expect(orientation.contains(size)).toBe(false);
+    expect(excerpt.contains(size)).toBe(false);
   });
 });
 

@@ -7,14 +7,94 @@
  * horizontal scrolling, per accessibility contract 2.5.
  */
 
+/* ---------- The transcript header, per D-056 ---------- */
+
+/*
+ * Where the reader is, and how big the text is. Wraps rather than compressing,
+ * so at 320px and at high zoom the two stack instead of the size control being
+ * squeezed to nothing.
+ */
+.transcript-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.transcript-header .position-ribbon {
+  flex: 1 1 20rem;
+}
+
+.text-size {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-medium);
+  margin-bottom: 0.75rem;
+}
+
+.text-size__label {
+  color: var(--text-muted);
+}
+
+.text-size__value {
+  font-variant-numeric: tabular-nums;
+  /* Room for "100%" through "250%" so the buttons do not shift as it changes. */
+  min-width: 4ch;
+  text-align: center;
+}
+
+/*
+ * 2.25rem square, past the 24 by 24 pointer minimum with room to spare. These
+ * are chrome, so they stay in `rem` and do not grow with the transcript they
+ * size — the whole point of D-056 is that the reading surface moves and the
+ * furniture does not.
+ */
+.text-size__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  font: inherit;
+  font-size: 1.1em;
+  line-height: 1;
+  color: inherit;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-small);
+  cursor: pointer;
+}
+
+/*
+ * Unavailable, not removed, per contract 2.6. Opacity alone would be
+ * colour-only, so the border style carries it too — the same treatment the
+ * command strip's controls use.
+ */
+.text-size__button[aria-disabled='true'] {
+  border-style: dashed;
+  opacity: 0.7;
+}
+
 /*
  * The three column widths, named so the crossover below can be written as their
  * sum rather than as a number nobody can check.
+ *
+ * In `em` since D-056, not `rem`. The transcript's font size is now a user
+ * preference, and a column fixed to the root size would keep its width while
+ * the speaker name inside it grew — at 250 percent the name overflows a column
+ * that never moved. `em` resolves against this element's own font size, which
+ * is the one being scaled, so the whole grid grows together and the rail stays
+ * aligned with the prose, which is what D-056 asks for.
  */
 .transcript__turns {
-  --speaker-column: 9rem;
+  --speaker-column: 9em;
   --measure: 70ch;
-  --rail-column: 14rem;
+  --rail-column: 14em;
 
   list-style: none;
   margin: 0;
@@ -24,6 +104,30 @@
    * text, so the list's own width is the prose measure.
    */
   max-width: var(--measure);
+}
+
+/*
+ * The query container for both layout crossovers below, established here rather
+ * than inside a width media query since D-056.
+ *
+ * Both crossovers ask the same question — can this row hold the columns — and
+ * the answer now depends on the text size as well as the width, because the
+ * columns are `em`. A viewport media query can see neither: it does not know
+ * that the sidebar and the shell padding sit between the viewport and this row,
+ * and it does not know the reader has set the transcript to 250 percent.
+ *
+ * On the wrapper and not on the list, which is the trap here. A container
+ * cannot be queried about a width its own rules constrain: with
+ * `max-width: 70ch` on the list, `min-width: calc(70ch + …)` can never be true,
+ * so the query that exists to lift that cap could never fire. The wrapper takes
+ * the full width, the list inside it keeps the cap, and the cycle is broken.
+ *
+ * It also carries the text size, so the font-relative units in both conditions
+ * resolve against the size the reader actually chose.
+ */
+[data-transcript] {
+  container-type: inline-size;
+  container-name: transcript-row;
 }
 
 .transcript-turn {
@@ -52,7 +156,19 @@
  * Narrow first. Speaker and timestamp are inline leading text, in the same
  * flow as the prose, so nothing has to be panned to sideways.
  */
+/*
+ * Wraps internally.
+ *
+ * Speaker, timestamp and separator are adjacent elements with no whitespace
+ * between them, so inline flow had nowhere to break: at 320px and 250 percent
+ * text the pair simply ran off the side. `inline-flex` keeps the meta in the
+ * prose's line while letting its own parts wrap.
+ */
 .transcript-turn__meta {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  max-width: 100%;
   font-weight: var(--font-weight-bold);
 }
 
@@ -68,22 +184,30 @@
  * that reads as leading text at narrow width is not needed once the speaker has
  * a column of its own.
  */
-@media (min-width: 48rem) {
+/*
+ * Two columns: speaker beside prose.
+ *
+ * A container query since D-056, where this was a `min-width: 48rem` viewport
+ * media query. Two things were wrong with that and text sizing exposed both:
+ * the viewport is not the row, since the sidebar and shell padding sit between
+ * them, and a viewport cannot see the text size at all. At 250 percent on a
+ * 900px screen this grid put a 360px speaker column beside a prose track with
+ * nothing left, and the words ran off the side.
+ *
+ * The threshold is what the layout needs: the speaker column, one gap, and the
+ * measure. Written in the same units the tracks use, so it scales with the text
+ * exactly as they do and the row falls back to the narrow stack when the two no
+ * longer fit — which is the correct answer at large text, not a compromise.
+ */
+@container transcript-row (min-width: calc(70ch + 9em + 1rem)) {
   /*
    * The measure moves off the list and onto the prose column, so the row itself
    * fills `main`. Capping the list capped the whole grid, which meant the
    * speaker column, the rail, and the gaps all came out of the 70ch and the
    * prose was left with about a third of it.
-   *
-   * The crossover below depends on how wide this row is, not how wide the
-   * viewport is — the sidebar and the shell padding sit in between — so the row
-   * is made a query container rather than answered with a viewport breakpoint
-   * that would go quietly wrong the next time `.project-nav` changes width.
    */
   .transcript__turns {
     max-width: none;
-    container-type: inline-size;
-    container-name: transcript-row;
   }
 
   /*
@@ -116,6 +240,24 @@
   .transcript-turn__separator {
     display: none;
   }
+}
+
+/*
+ * A long word breaks rather than running off the side.
+ *
+ * At 320px and 250 percent text a single long word is wider than the whole
+ * viewport, and with nowhere to break it overflowed — the horizontal panning
+ * contract 2.5 prohibits, produced by the two requirements it sets meeting each
+ * other. `break-word` breaks only words that cannot otherwise fit, so ordinary
+ * prose is unaffected.
+ *
+ * Safe for the research objects, and D-002 is why: it rejected the line as a
+ * unit precisely because wrapping is not stable, so nothing depends on where a
+ * break lands. Excerpt boundaries are character offsets and a visual break is
+ * not a character.
+ */
+.transcript-turn__prose {
+  overflow-wrap: break-word;
 }
 
 /* ---------- The code rail, per D-041 ---------- */
@@ -167,9 +309,11 @@
      count, which is what contract 2.5 asks of everything that has to survive
      400 percent zoom.
   */
-  width: 2rem;
-  height: 2rem;
-  padding: 0.25rem;
+  /* `em`, so it grows with the transcript's text rather than staying put while
+     the rail around it scales. D-056. */
+  width: 2em;
+  height: 2em;
+  padding: 0.25em;
   color: var(--text-muted);
   background: none;
   border: 0;
@@ -196,6 +340,12 @@
  * shell padding sit between the two. The threshold is the sum of the three
  * columns and the two 1rem gaps, written out rather than as `var(--measure)`
  * because a query condition cannot read a custom property.
+
+ * The two columns are `em` since D-056 and the two gaps are still `rem`, so the
+ * sum is written as both. Font-relative units in a container condition resolve
+ * against the query container's own font size, which is the one text sizing
+ * moves — measured rather than assumed, since that resolution is the sort of
+ * rule it is easy to be confidently wrong about.
  *
  * It sits here, after the rail's own rules, rather than up with the rest of the
  * layout: it has to override `margin-top`, and at equal specificity the cascade
@@ -210,7 +360,7 @@
  * to its growth limit before the `1fr` takes the remainder — so this is the
  * plainer spelling of the same layout rather than a defence against anything.
  */
-@container transcript-row (min-width: calc(70ch + 25rem)) {
+@container transcript-row (min-width: calc(70ch + 23em + 2rem)) {
   .transcript-turn {
     grid-template-columns:
       var(--speaker-column)

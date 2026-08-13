@@ -119,10 +119,14 @@ Poor:
 
 The first produces a fix aimed at the specified behavior. The second produces a guess. If the caption panel is on, paste the announcement text verbatim as well; the exact wording is often the fastest route to the cause.
 
-## 6. Recording
+## 6. Record the text size with the flag preset
+
+Per D-056, note the transcript text size a participant ended up using, alongside the flag preset. It changes what a magnification participant actually experienced — how much text was on screen, how often they scrolled, whether the speaker column was beside the prose or above it — and a session written up without it cannot be compared with one run at a different size.
+
+## 7. Recording
 
 Screen recording with audio, through QuickTime, captures VoiceOver speech alongside the screen. Useful for showing the team a defect rather than describing it, and for keeping a record of a behavior before it is changed.
 
-## 7. Before every participant session
+## 8. Before every participant session
 
 The per-task checks above are not the session gate. Run the full thirteen-item smoke test in `docs/accessibility-contract.md` section 4, on the participant's own browser and screen reader combination, with test data reset to a known state.

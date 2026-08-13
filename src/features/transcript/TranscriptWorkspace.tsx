@@ -38,6 +38,8 @@ import type {
 import { NotePanel } from '../notes/NotePanel';
 import { useNotePanel } from '../notes/useNotePanel';
 import type { NoteCommit } from '../notes/useNotePanel';
+import { TextSizeControl } from './TextSizeControl';
+import { useTextSize } from './useTextSize';
 import { CodePanel } from '../codes/CodePanel';
 import { useCodePanel } from '../codes/useCodePanel';
 import type { SaveOutcome } from '../codes/useCodePanel';
@@ -225,6 +227,9 @@ export function TranscriptWorkspace({
   const codeById = useMemo(() => new Map(codes.map((code) => [code.codeId, code])), [codes]);
 
   const orientation = useTranscriptOrientation({ resolved, userId, flags });
+
+  /* The reading surface's text size, per D-056. Chrome is unaffected. */
+  const textSize = useTextSize(userId);
 
   /**
    * Whether code selection is open. Held here because Escape resolves against
@@ -938,7 +943,15 @@ export function TranscriptWorkspace({
         data-saved-notes={savedSummary.notes}
         hidden
       />
-      <PositionRibbon orientation={orientation} />
+      {/*
+        The transcript header: where the reader is, and how big the text is.
+        D-056 puts the size control here rather than on the command strip,
+        which D-038 pins at five controls.
+      */}
+      <div className="transcript-header">
+        <PositionRibbon orientation={orientation} />
+        <TextSizeControl textSize={textSize} />
+      </div>
       <TranscriptToolbar orientation={orientation} />
       <ExcerptToolbar excerpt={excerpt} resolved={resolved} />
       {/* Section 2: opens over the transcript on a selection, and nowhere
@@ -950,6 +963,7 @@ export function TranscriptWorkspace({
         flags={flags}
         onOpenSavedAt={openSavedAt}
         onOpenNote={openNoteAt}
+        textSizePercent={textSize.percent}
         containerRef={orientation.containerRef}
         segmentsInRange={excerpt.segmentsInRange}
         excerptStartSegmentId={excerpt.startSegmentId}

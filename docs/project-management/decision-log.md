@@ -957,3 +957,23 @@ Constraints:
 - No chords. Browser zoom owns Ctrl+plus and Ctrl+minus and they are not intercepted.
 - The 400 percent reflow smoke test item runs once at maximum text size as well; the combination must not scroll horizontally.
 - The setting is recorded in session notes like the flag preset, since it changes what a magnification participant experienced.
+
+## D-057 The blanket visible-control rule is retired
+
+Date: 2026-08 | Workflow: all commands | Status: approved. Decided by Benji directly, including the CLAUDE.md edit; recorded here so the change carries its author and rationale
+
+The rule "every keyboard command has a visible control" is removed from CLAUDE.md, the accessibility contract, and the pattern specifications. Rationale: as the command set grew context-dependent commands, `excerpt.open`, `note.open`, the rule generated more exceptions than protection, and D-038's five-control strip left them no home. A rule that is mostly exceptions is not a rule.
+
+What replaces it, the discoverability floor:
+
+- `help.shortcuts` lists every command with its platform-correct chord. This is now the canonical visible surface for the command vocabulary.
+- Context commands are taught where their context is: the turn's D-041 description may name the chord where an action applies, and pointer twins, the clickable coded sentence and note icon, remain.
+- Commands that initiate primary work keep their strip controls as designed, five per D-038 plus the panel's own controls; nothing built is removed.
+
+Reconciled in the same change: contract section 2.2 and excerpt-selection.md section 4 no longer assert the blanket rule.
+
+Process note: this and the note-only fix were both legitimate team decisions that reached the record late, one from a fix session and one from a direct edit. The lesson is the same and is not about authority: an unrecorded change reads identically whether the author was the team or the agent, so decisions carry their author by being logged.
+
+## D-056 addendum: placement principle
+
+The text size control lives in the transcript header per D-056, and explicitly never in the prototype-support surface that carries the role switcher, phase control, and flag presets. That surface is scaffolding for running the research, not product; participants should never need it, and product features must never be homed there. Recorded as a general rule for future controls.

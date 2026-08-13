@@ -105,7 +105,7 @@ Run before every participant session. A failure here invalidates workflow findin
 5. Announcements fire, queue correctly, and are repeatable
 6. No keyboard traps
 7. Every state identifiable without color
-8. Reflow at 400% with no horizontal scrolling
+8. Reflow at 400% with no horizontal scrolling, run once more at maximum transcript text size per D-056
 9. Every task completable in a single panel
 10. Simulated save failure preserves all work
 11. Chords verified against the participant's screen reader and browser

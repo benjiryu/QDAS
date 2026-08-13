@@ -432,3 +432,88 @@ test('coded state carries a shape channel, not colour alone', async ({ page }) =
   // And the two coded states differ by shape, not only by colour.
   expect(one.style).not.toBe(many.style);
 });
+
+/* ---------- Transcript text sizing, per D-056 ---------- */
+
+/** Steps the control to its maximum and returns the percent it reports. */
+async function maximiseTextSize(page: import('@playwright/test').Page): Promise<number> {
+  const increase = page.getByRole('button', { name: 'Increase text size' });
+  // Six presses from 100 covers the 25-point steps to 250; the last few are
+  // no-ops if the step ever changes, which keeps this from pinning the step.
+  for (let press = 0; press < 8; press += 1) {
+    if ((await increase.getAttribute('aria-disabled')) === 'true') break;
+    await increase.click();
+  }
+  return Number(await page.locator('[data-transcript]').getAttribute('data-text-size'));
+}
+
+test('the transcript grows and the chrome does not', async ({ page }) => {
+  /*
+    The whole point of D-056: browser zoom scales everything, this scales only
+    the reading surface, and the two compose. A magnification participant runs
+    moderate zoom with large transcript text and keeps the chrome compact.
+  */
+  const sizeOf = (selector: string) =>
+    page.locator(selector).first().evaluate((node) => getComputedStyle(node).fontSize);
+
+  const before = {
+    prose: await sizeOf('.transcript-turn__prose'),
+    sidebar: await sizeOf('.project-nav'),
+    strip: await sizeOf('.excerpt-toolbar'),
+    ribbon: await sizeOf('.position-ribbon'),
+  };
+
+  const percent = await maximiseTextSize(page);
+  expect(percent).toBe(250);
+
+  const after = {
+    prose: await sizeOf('.transcript-turn__prose'),
+    sidebar: await sizeOf('.project-nav'),
+    strip: await sizeOf('.excerpt-toolbar'),
+    ribbon: await sizeOf('.position-ribbon'),
+  };
+
+  expect(parseFloat(after.prose)).toBeGreaterThan(parseFloat(before.prose) * 2);
+  expect(after.sidebar, 'the sidebar is chrome').toBe(before.sidebar);
+  expect(after.strip, 'and so is the strip').toBe(before.strip);
+  expect(after.ribbon, 'and the ribbon').toBe(before.ribbon);
+});
+
+test('the rail scales with the prose rather than staying behind', async ({ page }) => {
+  // D-056 asks for the rail's alignment to move with the text. Its widths were
+  // in `rem`, which is root-relative and would have left the speaker column and
+  // the rail fixed while the words inside them grew.
+  const pillWidth = () =>
+    page
+      .locator('.transcript-turn__pill')
+      .first()
+      .evaluate((node) => node.getBoundingClientRect().width);
+  const speakerWidth = () =>
+    page
+      .locator('.transcript-turn__speaker')
+      .first()
+      .evaluate((node) => node.getBoundingClientRect().width);
+
+  const before = { pill: await pillWidth(), speaker: await speakerWidth() };
+  await maximiseTextSize(page);
+
+  expect(await pillWidth()).toBeGreaterThan(before.pill * 1.5);
+  expect(await speakerWidth()).toBeGreaterThan(before.speaker * 1.5);
+});
+
+test('nothing scrolls sideways at maximum text size, down to 320px', async ({ page }) => {
+  /*
+    The combination Task 37 names, and the one `transform: scale()` would fail:
+    a transform zooms without reflowing, so the text would run off the side and
+    have to be panned to. `font-size` reflows, so it does not.
+  */
+  await maximiseTextSize(page);
+
+  for (const width of [1920, 1280, 900, 768, 600, 480, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    const overflows = await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+    );
+    expect(overflows, `overflow at ${width}px at maximum text size`).toBe(false);
+  }
+});
