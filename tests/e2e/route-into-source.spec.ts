@@ -71,7 +71,14 @@ test('focus lands on the heading of each route entered', async ({ page }) => {
     .toEqual({ tag: 'H1', text: project.name });
 });
 
-test('the project route lists assigned sources with kind and size', async ({ page }) => {
+test('the project route lists assigned sources, and summarises the project', async ({ page }) => {
+  /*
+    Rewritten for D-059 and destinations.md section 0, which fix this page's
+    regions as heading and summary, then the source list. The kind, the sentence
+    count and the coding round line this asserted are not among them: an entry
+    is its source title, and the summary carries phase, count and codebook
+    version in one line.
+  */
   await page.goto(`/projects/${project.projectId}`);
 
   // Scoped to the page body: since D-043 the sidebar lists the same sources,
@@ -81,7 +88,7 @@ test('the project route lists assigned sources with kind and size', async ({ pag
     .getByRole('listitem')
     .filter({ has: page.getByRole('link', { name: assignedSource.title }) });
 
-  await expect(item).toContainText('Transcript');
-  await expect(item).toContainText(`${assignedSource.segmentCount} sentences`);
-  await expect(page.getByText(fixture.codingRound.label)).toBeVisible();
+  await expect(item).toHaveText(assignedSource.title);
+  await expect(page.getByText(/Independent coding\./)).toBeVisible();
+  await expect(page.getByText(fixture.codebookVersion.versionLabel)).toBeVisible();
 });

@@ -66,12 +66,50 @@
   padding: 0;
 }
 
-.app-body {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 1rem;
+/*
+ * The shell, per D-059: the sidebar flush to the viewport's top and left.
+ *
+ * A grid rather than the flex row it was, because flush-to-the-top cannot hold
+ * with a full-width banner above it. The sidebar takes a full-height column on
+ * the left and the banner sits in the right column over `main`.
+ *
+ * DOM order is untouched — banner, project navigation, main — so the skip link,
+ * the reading order and contract 2.1's landmark structure are exactly as they
+ * were. Only the painting moved. Both surfaces are already `--color-blue-100`,
+ * so the two read as one continuous edge rather than as two blues meeting.
+ *
+ * Narrow width is the stack, per D-033: one column, same order, nothing fixed.
+ */
+.app-shell {
+  display: grid;
+  grid-template-areas: 'banner' 'nav' 'main';
+}
+
+.app-banner {
+  grid-area: banner;
+}
+
+.project-nav {
+  grid-area: nav;
+}
+
+main {
+  grid-area: main;
+  /* The padding the body used to carry. On `main` rather than around
+     everything, so the sidebar can reach the edges while the prose does not. */
   padding: 1rem;
+}
+
+@media (min-width: 48rem) {
+  .app-shell {
+    grid-template-areas:
+      'nav banner'
+      'nav main';
+    /* The sidebar's column, and everything else takes what is left. */
+    grid-template-columns: 16rem minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    min-height: 100vh;
+  }
 }
 
 /*
@@ -87,11 +125,38 @@
   --link: var(--color-white);
   --text: var(--color-white);
 
-  flex: 1 1 14rem;
   min-width: 0;
   padding: 0.75rem;
   background: var(--color-blue-100);
   color: var(--text);
+}
+
+/*
+ * No underlines anywhere in here, per D-059. The hover treatment below replaces
+ * them, and the current item carries `aria-current` and a pill of its own.
+ */
+.project-nav a {
+  text-decoration: none;
+}
+
+/*
+ * Hover: the white pill with dark blue text, exactly as the Figma draws it.
+ *
+ * Visually identical to the current destination, which D-059 accepts and tells
+ * the build not to diverge from the Figma to disambiguate. It holds because
+ * hover is transient and pointer-tied: a keyboard or screen reader user never
+ * meets it, and `aria-current` and the focus ring are what carry current state
+ * for everyone. A pointer user watching a pill follow their cursor is not going
+ * to mistake it for where they are.
+ *
+ * `:hover` only, deliberately not `:focus`. Focus has its own ring, and giving
+ * it the pill as well would make the two states indistinguishable for the one
+ * user who does rely on telling them apart.
+ */
+.project-nav a:hover {
+  background: var(--color-white);
+  /* 8.6:1 against white, measured. */
+  color: var(--color-blue-100);
 }
 
 /*
@@ -110,14 +175,15 @@
 @media (min-width: 48rem) {
   .project-nav {
     position: sticky;
-    top: 1rem;
+    /* Flush to the top since D-059, where this sat 1rem down with rounded
+       corners and a white gap around it. */
+    top: 0;
     /* Full height, as the rule asks: the blue runs the viewport rather than
        stopping under the last link. Both bounds, so a long source list scrolls
        inside it instead of growing the page. */
-    min-height: calc(100vh - 2rem);
-    max-height: calc(100vh - 2rem);
+    min-height: 100vh;
+    max-height: 100vh;
     overflow-y: auto;
-    border-radius: var(--radius-medium);
   }
 }
 
@@ -136,14 +202,21 @@
 }
 
 /*
- * The group's label. Matches the destination links in weight, per the rule, so
- * it reads as a peer of theirs rather than as a caption — while being neither
- * focusable nor activatable.
+ * The group's label, and since D-059 the link to the Project overview page.
+ * Matches the destination links in weight, per the rule, so it reads as a peer
+ * of theirs rather than as a caption.
  */
 .project-nav__group-label {
   display: block;
-  padding: 0.35rem 0.5rem;
   font-weight: var(--font-weight-bold);
+}
+
+/* The same pill the destinations wear, for the same reason: it is one of them
+   now. */
+.project-nav__group-label[aria-current='page'] {
+  background: var(--color-white);
+  color: var(--color-blue-100);
+  border-radius: var(--radius-pill);
 }
 
 /*
@@ -199,10 +272,13 @@
  * Shape and colour together, per the rule and contract 2.5 — the fill inverts
  * and the weight thickens, so a reader with a colour vision difference still
  * has the pill's shape and the bolder text.
+ *
+ * Dark blue text since D-059, where this was black. Same pill as hover, which
+ * that decision accepts for the reason given on the hover rule above.
  */
 .project-nav__destination[aria-current='page'] {
   background: var(--color-white);
-  color: var(--color-black);
+  color: var(--color-blue-100);
   border-radius: var(--radius-pill);
 }
 

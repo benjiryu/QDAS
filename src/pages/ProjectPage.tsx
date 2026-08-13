@@ -2,40 +2,31 @@ import { useMemo } from 'react';
 import { Link, useParams } from 'react-router';
 import { createSeedFixture } from '../data/seed';
 import { CURRENT_CODER_ID } from '../data/seed/project';
-import type { Source, UserRole } from '../domain';
+import { PHASE_LABELS } from '../domain';
+import { assignedSources } from '../features/navigation/assignedSources';
 
 /**
- * Route /projects/:projectId.
+ * Route /projects/:projectId — the Project overview page.
  *
- * The sources this coder is assigned, and enough context to know which round
- * they are working in. Per task 5a this is a functional route rather than the
- * designed project home.
+ * Specification: docs/pages/destinations.md section 0, decision D-059.
  *
- * Two constraints shape what is absent:
+ * Slice 1's first real surface: where the sidebar's project files link lands,
+ * and where a researcher orients before opening a source. It was a functional
+ * route standing in for the designed project home until D-059 gave it one.
  *
- * - D-010 keeps code frequencies off any coder-facing surface, so no counts of
- *   coding appear here.
- * - R-4 hides coder identities until independent coding closes, so only this
- *   user's own assignments are listed. The seeded second and third coders have
- *   work in this project and none of it is visible here.
+ * Regions in the fixed order section 0 gives: heading and summary, then the
+ * source list. The coding round and role lines the functional version carried
+ * are not in that order and are gone — the round is implicit in the phase, and
+ * the role belongs to the simulated session control on the Coded data page.
  *
- * The current user is the fixture's designated coder. Authentication is
- * simulated through a role switcher that does not exist yet, per
- * prototype-scope.md, and inventing one here would build a simulated feature
- * this task does not need.
+ * Read surface: nothing here edits anything.
+ *
+ * Two constraints still shape what is absent. D-010 keeps code frequencies off
+ * any coder-facing surface, so no counts of coding appear. R-4 hides other
+ * coders until independent coding closes, so the sources are this coder's own
+ * assignments — the seeded second and third coders have work here and none of
+ * it shows.
  */
-
-const ROLE_LABELS: Record<UserRole, string> = {
-  coder: 'Coder',
-  reviewer: 'Reviewer',
-  qualitativeLead: 'Qualitative lead',
-};
-
-const KIND_LABELS: Record<Source['kind'], string> = {
-  transcript: 'Transcript',
-  survey: 'Survey',
-};
-
 export function ProjectPage() {
   const { projectId } = useParams();
 
@@ -43,19 +34,16 @@ export function ProjectPage() {
     const fixture = createSeedFixture();
     if (fixture.project.projectId !== projectId) return null;
 
-    const sourceById = new Map(fixture.sources.map((source) => [source.sourceId, source]));
-    const sources = fixture.workAssignments
-      .filter(
-        (assignment) =>
-          assignment.userId === CURRENT_CODER_ID &&
-          assignment.codingRoundId === fixture.project.activeCodingRoundId,
-      )
-      .map((assignment) => sourceById.get(assignment.sourceId))
-      .filter((source): source is Source => source !== undefined);
-
-    const user = fixture.users.find((candidate) => candidate.userId === CURRENT_CODER_ID);
-
-    return { project: fixture.project, round: fixture.codingRound, sources, user };
+    return {
+      project: fixture.project,
+      codebookVersion: fixture.codebookVersion,
+      sources: assignedSources(
+        fixture.sources,
+        fixture.workAssignments,
+        CURRENT_CODER_ID,
+        fixture.project.activeCodingRoundId,
+      ),
+    };
   }, [projectId]);
 
   if (!view) {
@@ -70,29 +58,46 @@ export function ProjectPage() {
     );
   }
 
+  const count = view.sources.length;
+
   return (
     <>
       <h1 tabIndex={-1}>{view.project.name}</h1>
 
-      <p>Coding round: {view.round.label}</p>
-      <p>Your role: {view.user ? ROLE_LABELS[view.user.role] : 'Unknown'}</p>
+      {/*
+        Plain text, from data the domain already holds, per section 0. It is
+        also the orientation a screen reader hears on arrival, which is why it
+        sits immediately under the `h1` and states the count in words rather
+        than leaving it to be inferred from the list below.
+
+        Richer summary content is an open extension point owned by the team, per
+        D-059; this is the three facts that decision names and no more.
+      */}
+      <p className="project-overview__summary">
+        {PHASE_LABELS[view.project.phase]}. {count} {count === 1 ? 'source' : 'sources'}.
+        Codebook {view.codebookVersion.versionLabel}.
+      </p>
 
       <h2 id="your-sources">Your sources</h2>
 
-      {view.sources.length === 0 ? (
-        <p>No sources are assigned to you in this round.</p>
+      {count === 0 ? (
+        /*
+          Named route in, never a blank region, per the shared rules. A coder
+          with no sources cannot fix that themselves, so this says where they
+          come from rather than offering an action that does not exist.
+        */
+        <p>
+          No sources are assigned to you in this round. Sources are assigned by the qualitative
+          lead when a coding round opens. <Link to="/projects">Back to projects</Link>
+        </p>
       ) : (
+        /* Named by its heading, so a list-jump lands on "Your sources". D-051. */
         <ul className="route-list" aria-labelledby="your-sources">
           {view.sources.map((source) => (
             <li key={source.sourceId}>
               <Link to={`/projects/${view.project.projectId}/sources/${source.sourceId}`}>
                 {source.title}
-              </Link>{' '}
-              {/* Kind and size sit beside the link rather than inside it, so a
-                  list of links read on its own stays a list of source titles. */}
-              <span className="route-meta">
-                {KIND_LABELS[source.kind]}, {source.segmentCount} sentences
-              </span>
+              </Link>
             </li>
           ))}
         </ul>

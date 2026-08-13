@@ -48,7 +48,16 @@ export function AppShell() {
   }, [pathname]);
 
   return (
-    <>
+    /*
+      One grid since D-059, where the banner sat above a flex row holding the
+      navigation and `main`. The sidebar has to reach the viewport's top and
+      left, which it cannot do underneath a full-width banner, so the three
+      become siblings and the stylesheet places them.
+
+      Order here is unchanged and is the reading order: banner, project
+      navigation, main. Only where they paint moved.
+    */
+    <div className="app-shell">
       <a className="skip-link" href={`#${MAIN_CONTENT_ID}`}>
         Skip to main content
       </a>
@@ -74,8 +83,7 @@ export function AppShell() {
         </nav>
       </header>
 
-      <div className="app-body">
-        {/*
+      {/*
           Project-level navigation, per D-043 and docs/pages/destinations.md.
           Renders on every route, including /projects where no project is in
           context and it says so.
@@ -85,12 +93,11 @@ export function AppShell() {
           no item here owns transcript coding. The items are the coder's sources
           and the three read surfaces.
         */}
-        <ProjectNav />
+      <ProjectNav />
 
-        <main id={MAIN_CONTENT_ID} ref={mainRef} tabIndex={-1}>
-          <Outlet />
-        </main>
-      </div>
-    </>
+      <main id={MAIN_CONTENT_ID} ref={mainRef} tabIndex={-1}>
+        <Outlet />
+      </main>
+    </div>
   );
 }

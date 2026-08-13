@@ -76,7 +76,9 @@ test('the current destination draws a white pill and the current source a white 
     });
 
   expect(pill.background).toBe(WHITE);
-  expect(pill.text).toBe('rgb(0, 0, 0)');
+  // Dark blue since D-059, where this was black: the pill took the Figma's
+  // hover treatment and the two are deliberately the same.
+  expect(pill.text).toBe('rgb(31, 71, 131)');
   expect(parseFloat(pill.radius)).toBeGreaterThan(4);
 
   await page.goto(`${projectUrl}/sources/${source.sourceId}`);
@@ -384,4 +386,84 @@ test('the notes page has no accessibility violations, panel open and closed', as
   await expect(page.locator('[data-region="note-panel"]')).toBeVisible();
 
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+});
+
+/* ---------- The sidebar's visual refinement, per D-059 ---------- */
+
+test('the sidebar is flush to the viewport top and left, unrounded', async ({ page }) => {
+  /*
+    D-059 replaced D-043's inset, rounded sidebar. Measured rather than read off
+    the stylesheet: the white gap it removes came from the shell's padding
+    rather than from any rule on the sidebar itself, so a test that checked the
+    sidebar's own declarations would have passed while the gap was still there.
+  */
+  await page.goto(`${projectUrl}/codebook`);
+  await expect(page.getByRole('navigation', { name: 'Project' })).toBeVisible();
+
+  const nav = page.getByRole('navigation', { name: 'Project' });
+  const box = (await nav.boundingBox())!;
+
+  expect(box.x, 'flush left').toBe(0);
+  expect(box.y, 'flush top').toBe(0);
+
+  const radius = await nav.evaluate((node) => getComputedStyle(node).borderRadius);
+  expect(radius).toBe('0px');
+
+  // And it reaches the bottom, so the blue runs the viewport rather than
+  // stopping under the last link.
+  const viewport = page.viewportSize()!;
+  expect(box.height).toBeGreaterThanOrEqual(viewport.height - 1);
+});
+
+test('sidebar links wear the pill rather than an underline', async ({ page }) => {
+  /*
+    D-059 replaces underlines with the hover treatment the Figma draws, and
+    accepts that hover and current look the same — hover is transient and
+    pointer-tied, so only a pointer user ever sees it, and `aria-current` and
+    the focus ring carry current state for everyone.
+
+    What is checked is that both wear the same pill and that its text clears
+    4.5:1 on white, since the text moved from black to the dark blue token.
+  */
+  await page.goto(`${projectUrl}/codebook`);
+  const current = page.locator('.project-nav__destination[aria-current="page"]');
+  await expect(current).toBeVisible();
+
+  const noUnderline = await page
+    .locator('.project-nav a')
+    .evaluateAll((nodes) => nodes.every((node) => getComputedStyle(node).textDecorationLine === 'none'));
+  expect(noUnderline, 'no underlines anywhere in the sidebar').toBe(true);
+
+  const currentStyle = await current.evaluate((node) => ({
+    background: getComputedStyle(node).backgroundColor,
+    color: getComputedStyle(node).color,
+  }));
+  expect(currentStyle.background).toBe('rgb(255, 255, 255)');
+  expect(currentStyle.color, 'the dark blue token, not black').toBe('rgb(31, 71, 131)');
+
+  // The same pill on hover, on an item that is not current.
+  const other = page.getByRole('link', { name: 'Notes' });
+  await other.hover();
+  const hovered = await other.evaluate((node) => ({
+    background: getComputedStyle(node).backgroundColor,
+    color: getComputedStyle(node).color,
+  }));
+  expect(hovered).toEqual(currentStyle);
+
+  // 8.59:1, measured off the rendered page rather than asserted from a table.
+  const contrast = await page.evaluate(
+    ([a, b]) => {
+      const lum = (c: string) => {
+        const [r, g, bl] = c.match(/\d+/g)!.slice(0, 3).map((v) => {
+          const s = Number(v) / 255;
+          return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+        });
+        return 0.2126 * r + 0.7152 * g + 0.0722 * bl;
+      };
+      const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
+      return (hi + 0.05) / (lo + 0.05);
+    },
+    [currentStyle.color, currentStyle.background],
+  );
+  expect(contrast).toBeGreaterThanOrEqual(4.5);
 });

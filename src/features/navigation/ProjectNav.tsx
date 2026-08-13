@@ -18,10 +18,12 @@ import { assignedSources } from './assignedSources';
  * and thickens the weight; `aria-current` is what a screen reader reads. Both
  * channels, per contract 2.6.
  *
- * The files group's header is a label, not a destination. It names the nested
- * source list through `aria-labelledby`, so a screen reader hears "Project 1
- * Files, list" rather than a fifth place to go. A link or a button there would
- * be worse than nothing: a stop in the tab order that leads nowhere.
+ * The files group's header is a link since D-059, and still names the nested
+ * source list through `aria-labelledby` — one element, both jobs. It was a
+ * plain label until the Project overview page existed, on the argument that a
+ * control there would be "a stop in the tab order that leads nowhere". It leads
+ * somewhere now, which is exactly what changed; the argument was about the
+ * missing destination rather than about the element.
  *
  * The narrow-width disclosure `destinations.md` names from D-033 is still not
  * built. Neither Task 27's brief nor 27r's lists it, and 27r says the narrow
@@ -79,14 +81,25 @@ export function ProjectNav() {
           */}
           <div className="project-nav__group">
             {/*
-              A span, not a heading and not a link. `aria-labelledby` makes it
-              the source list's name, which is the whole job; a heading would
-              add a stop to the document outline for something that labels a
-              list rather than opening a section.
+              A link, and the source list's name, per D-059. Still not a
+              heading: it labels a list rather than opening a section, and a
+              heading would add a stop to the outline for something that is not
+              one.
+
+              `end` matters. The project route is a prefix of every other route
+              in this sidebar, so without it this would report itself the
+              current page from the transcript, the Codebook and everywhere
+              else — `aria-current` on four items at once, which is worse than
+              none.
             */}
-            <span id={filesId} className="project-nav__group-label">
+            <NavLink
+              id={filesId}
+              end
+              className="project-nav__link project-nav__group-label"
+              to={`/projects/${view.projectId}`}
+            >
               Project 1 Files
-            </span>
+            </NavLink>
 
             <ul className="project-nav__sources" aria-labelledby={filesId}>
               {view.sources.map((source) => (

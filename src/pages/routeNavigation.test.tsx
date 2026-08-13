@@ -106,21 +106,70 @@ describe('the project route', () => {
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(project.name);
   });
 
-  it('states the coding round and the role in plain text', () => {
+  it('summarises the project in one plain-text line', () => {
+    /*
+      Rewritten for D-059 and section 0, which fix the page's regions as heading
+      and summary, then the source list. The coding round and role lines this
+      asserted are not among them: the round is implicit in the phase, and the
+      role belongs to the simulated session control on the Coded data page.
+
+      One line rather than three, and it doubles as the orientation a screen
+      reader hears on arrival.
+    */
     renderAt(`/projects/${project.projectId}`);
 
-    expect(screen.getByText(new RegExp(fixture.codingRound.label))).toBeInTheDocument();
-    expect(screen.getByText(/your role:\s*coder/i)).toBeInTheDocument();
+    const summary = screen.getByText(/Independent coding\./);
+    expect(summary).toHaveTextContent(`${assignedSourceIds.length} sources`);
+    expect(summary).toHaveTextContent(fixture.codebookVersion.versionLabel);
   });
 
-  it('shows title, kind, and segment count for each source', () => {
+  it('lists each source as its title alone', () => {
+    /*
+      Section 0 asks for "the source title" and nothing else. The kind and
+      sentence count this used to assert were the functional route's, and they
+      put two facts beside every link that the summary line above already
+      covers at the level a reader orienting actually needs.
+    */
     renderAt(`/projects/${project.projectId}`);
 
     const source = fixture.sources.find((candidate) => candidate.sourceId === assignedSourceIds[0])!;
     const item = inMain().getByRole('link', { name: source.title }).closest('li')!;
 
-    expect(within(item).getByText(/transcript/i)).toBeInTheDocument();
-    expect(within(item).getByText(new RegExp(`${source.segmentCount} sentences`))).toBeInTheDocument();
+    expect(item.textContent?.trim()).toBe(source.title);
+  });
+
+  it('opens from the sidebar files link, with focus on the h1', async () => {
+    /*
+      Section 0's first criterion, and both halves of it: the link goes here and
+      lands focus on the heading, and the sidebar's nested source list is still
+      named by that same element. One element, both jobs — which is what D-059
+      asks for and the thing most likely to be lost by making a label a link.
+    */
+    const user = userEvent.setup();
+    renderAt(`/projects/${project.projectId}/codebook`);
+
+    const sidebar = within(screen.getByRole('navigation', { name: 'Project' }));
+    await user.click(sidebar.getByRole('link', { name: 'Project 1 Files' }));
+
+    const heading = screen.getByRole('heading', { level: 1 });
+    expect(heading).toHaveTextContent(project.name);
+    expect(heading).toHaveFocus();
+
+    expect(sidebar.getByRole('list', { name: 'Project 1 Files' })).toBeInTheDocument();
+  });
+
+  it('opens a source with its own entry focus from here', async () => {
+    // Section 0's second criterion. The same landing every other route into a
+    // source uses, so the overview is not a special case.
+    const user = userEvent.setup();
+    renderAt(`/projects/${project.projectId}`);
+
+    const source = fixture.sources.find((candidate) => candidate.sourceId === assignedSourceIds[0])!;
+    await user.click(inMain().getByRole('link', { name: source.title }));
+
+    const heading = screen.getByRole('heading', { level: 1 });
+    expect(heading).toHaveTextContent(source.title);
+    expect(heading).toHaveFocus();
   });
 
   it('lists no other coder\'s work, per R-4', () => {

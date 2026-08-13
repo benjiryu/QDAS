@@ -54,18 +54,44 @@ describe('the files group label', () => {
     }
   });
 
-  it('is neither a link nor a button, and carries no tabindex', () => {
+  it('is a link to the Project overview page, and still names the list', () => {
+    /*
+      Reversed by D-059, and the reversal is the task. This asserted that the
+      label was a span with no tabindex, on the argument that a control there
+      would be a tab stop leading nowhere. The Project overview page is where it
+      leads now, so the argument no longer applies — but the second half of the
+      old rule does, and is asserted alongside it: one element, both jobs.
+    */
     renderAt(`/projects/${project.projectId}`);
 
     const label = groupLabel();
-    expect(label.tagName.toLowerCase()).toBe('span');
+    expect(label.tagName.toLowerCase()).toBe('a');
+    expect(label).toHaveAttribute('href', `/projects/${project.projectId}`);
     expect(label).not.toHaveAttribute('tabindex');
-    expect(label.closest('a, button')).toBeNull();
+
+    const list = sidebar().getByRole('list', { name: 'Project 1 Files' });
+    expect(list.getAttribute('aria-labelledby')).toBe(label.id);
   });
 
-  it('is never a tab stop, however far you tab', async () => {
-    // The task's done-when. Walked rather than reasoned about: tab through the
-    // whole sidebar and check where focus actually lands.
+  it('reports itself current only on the overview route', () => {
+    /*
+      The project route is a prefix of every other route in this sidebar, so
+      without `end` this would claim to be the current page from the transcript,
+      the Codebook and everywhere else — four items carrying `aria-current` at
+      once, which is worse than none carrying it.
+    */
+    const { unmount } = renderAt(`/projects/${project.projectId}`);
+    expect(groupLabel()).toHaveAttribute('aria-current', 'page');
+    unmount();
+
+    renderAt(`/projects/${project.projectId}/codebook`);
+    expect(groupLabel()).not.toHaveAttribute('aria-current');
+  });
+
+  it('is one tab stop among the links, reached by tabbing', async () => {
+    // Walked rather than reasoned about, as before: tab through the whole
+    // sidebar and check where focus actually lands. What changed is the
+    // expectation — D-059 made this a destination, so it is reachable.
     const user = userEvent.setup();
     renderAt(`/projects/${project.projectId}`);
 
@@ -78,8 +104,11 @@ describe('the files group label', () => {
       if (document.activeElement) visited.push(document.activeElement);
     }
 
-    expect(visited).not.toContain(groupLabel());
-    // And the links themselves were reachable, so this did not pass by never
+    expect(visited).toContain(groupLabel());
+    // And it is one stop rather than two: the element that names the list is
+    // the same element that links to the page, per D-059.
+    expect(visited.filter((element) => element === groupLabel())).toHaveLength(1);
+    // The other links were reachable too, so this did not pass by never
     // arriving in the sidebar at all.
     expect(visited.some((element) => links.includes(element as HTMLElement))).toBe(true);
   });
@@ -118,7 +147,10 @@ describe('the content order the rule fixes', () => {
   it('puts the files group first, then the three destinations', () => {
     renderAt(`/projects/${project.projectId}`);
 
+    // The files link heads the list since D-059, where it was a label the link
+    // roll-call did not see.
     expect(sidebar().getAllByRole('link').map((link) => link.textContent)).toEqual([
+      'Project 1 Files',
       ...sources.map((source) => source.title),
       'Code book',
       'Coded data',
@@ -126,8 +158,8 @@ describe('the content order the rule fixes', () => {
     ]);
 
     // The label precedes them all, which is what makes the group read as one.
-    const first = sidebar().getAllByRole('link')[0];
-    expect(groupLabel().compareDocumentPosition(first) & Node.DOCUMENT_POSITION_FOLLOWING)
+    const sourceLink = sidebar().getByRole('link', { name: sources[0].title });
+    expect(groupLabel().compareDocumentPosition(sourceLink) & Node.DOCUMENT_POSITION_FOLLOWING)
       .toBeTruthy();
   });
 

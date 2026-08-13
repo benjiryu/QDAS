@@ -304,7 +304,15 @@ describe('the sidebar, per D-043', () => {
           fixture.sources.find((candidate) => candidate.sourceId === assignment.sourceId)!.title,
       );
 
-    expect(labels).toEqual([...assignedTitles, 'Code book', 'Coded data', 'Notes']);
+    // The files link heads them since D-059, where it was a label the link
+    // roll-call did not see.
+    expect(labels).toEqual([
+      'Project 1 Files',
+      ...assignedTitles,
+      'Code book',
+      'Coded data',
+      'Notes',
+    ]);
   });
 
   it('offers no Themes destination, per D-017', () => {

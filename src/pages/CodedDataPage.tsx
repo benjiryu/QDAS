@@ -4,6 +4,7 @@ import { readCodedDataFilter, readSavedWork, writeCodedDataFilter } from '../dat
 import { createSeedFixture } from '../data/seed';
 import { CURRENT_CODER_ID } from '../data/seed/project';
 import { readSimulatedSession, writeSimulatedSession } from '../data/simulatedSession';
+import { PHASE_LABELS } from '../domain';
 import type { ProjectPhase, UserRole } from '../domain';
 import { buildCodedData } from '../features/codedData/codedDataView';
 import type { CodedResult } from '../features/codedData/codedDataView';
@@ -36,16 +37,6 @@ const ROLE_LABELS: Record<UserRole, string> = {
   coder: 'Coder',
   reviewer: 'Reviewer',
   qualitativeLead: 'Qualitative lead',
-};
-
-const PHASE_LABELS: Record<ProjectPhase, string> = {
-  setup: 'Setup',
-  pilot: 'Pilot',
-  independentCoding: 'Independent coding',
-  review: 'Review',
-  reflexivity: 'Reflexivity',
-  recoding: 'Recoding',
-  closed: 'Closed',
 };
 
 export function CodedDataPage() {

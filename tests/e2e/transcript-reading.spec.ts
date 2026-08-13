@@ -292,7 +292,21 @@ test('the prose holds its measure, and the row fills the width around it', async
 
   const widths = await page.evaluate(() => ({
     list: document.querySelector('.transcript__turns')!.getBoundingClientRect().width,
-    main: document.querySelector('main')!.getBoundingClientRect().width,
+    /*
+      `main`'s content box, not its border box. Since D-059 the shell's padding
+      lives on `main` rather than around the whole body, so the border box is
+      wider than the space the row can actually fill — and "fills `main`" was
+      always a claim about the content box.
+    */
+    main: (() => {
+      const element = document.querySelector('main')!;
+      const style = getComputedStyle(element);
+      return (
+        element.getBoundingClientRect().width -
+        parseFloat(style.paddingLeft) -
+        parseFloat(style.paddingRight)
+      );
+    })(),
     prose: Math.max(
       ...Array.from(document.querySelectorAll('.transcript-turn__prose')).map(
         (prose) => prose.getBoundingClientRect().width,
