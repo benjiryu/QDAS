@@ -21,7 +21,7 @@ Content order: a **project files group**, then Code book, Coded data, Notes. No 
 
 **Own work only.** Coded data and Notes show the current coder's work. Other coders' assignments and notes stay invisible during independent coding per R-4; the seeded second coder's material does not appear on these pages.
 
-**Read surfaces.** Nothing on these pages edits anything. All editing routes through the coding panel via `excerpt.open`. Codebook editing remains out of scope per prototype-scope.
+**Read surfaces, restated per D-058.** These pages edit nothing themselves; all editing routes through a panel — the coding panel via `excerpt.open`, or the isolated note panel via `note.open`, a note entry, or the Notes page's New note button. Codebook editing remains out of scope per prototype-scope.
 
 **Empty, loading, and error states** are explicit: an empty Coded data page says the coder has not coded anything in this project yet and names the route to start; it is never a blank region.
 
@@ -69,17 +69,30 @@ Given 320 pixel width, when the page renders, then the filter list precedes the 
 
 ## 3. Notes page
 
-A directory of the coder's excerpt notes, per the scope decision: excerpt notes only, file-wide notes stay deferred under D-017.
+The coder's notes across all three scopes, per D-058: excerpt notes, file-wide notes on a source (`relatedSourceId`, reserved by D-011), and project-wide notes. The Figma frame's visual language holds — the note card with its edge bar, excerpt context above, pills below — but its left column of codes is wrong and is not followed.
 
-**Regions, fixed order:** heading and count, notes list.
+**Regions, fixed order:** heading and count, the New note button, source filter list, notes list. At narrow width and 400 percent zoom the filter stacks above the list per D-033.
 
-- Notes group by source, in source order, then by excerpt position. Each entry: the note text in full, the excerpt text truncated with full text available by disclosure, the source title, and the assigned codes as compact text.
-- Each entry links to the transcript with the same focus behavior as Coded data: focus lands on the turn containing the excerpt start.
-- Editing a note routes through `excerpt.open` on that turn; this page does not edit.
+**The filter list.** The Coded Data pattern, reused: "All notes" heads the list as default, then Project notes, then each source in source order. Counts are own-note counts, fused into the accessible name ("Transcript 1, 4 notes"). Selected state is border plus bolded count, never color alone. Selection persists within the session.
+
+**The notes list.** Under All notes: a Project notes section first, then one section per source, `h2` headings, matching the filter order. Entries newest last within a section, by excerpt position where there is one.
+
+- **Excerpt note entry:** the note text in full in the card, above it the excerpt context — speaker, truncated excerpt text with full text by disclosure — the source title, and assigned codes as D-041 compact text with pills aria-hidden. Note-only excerpts show no codes line, per D-055. Activating the entry's link lands focus on the turn containing the excerpt start, where `note.open` and `excerpt.open` apply.
+- **File-wide note entry:** the note text and its source title. No excerpt context, no codes line.
+- **Project note entry:** the note text alone.
+- Non-excerpt entries have no turn to land on: activating one opens the isolated note panel loaded with that note. This is the edit route and stays consistent with the read-surface rule — the page itself edits nothing, the panel does.
+
+**New note.** The button opens the D-055 note panel with a scope field defaulting to the active filter (a source filter attaches there; All notes or Project notes attaches to the project). Focus lands in the text field; the scope field precedes it in reading order. Close semantics are D-042's: every way out commits, empty discards.
+
+**Own work only,** all scopes, during independent coding, per R-4.
 
 **Acceptance criteria.**
-Given a note entry, when activated, then the transcript opens with focus on the turn containing the noted excerpt.
-Given no notes, when the page renders, then the empty state names how a note is created rather than showing a blank region.
+Given an excerpt note entry, when activated, then the transcript opens with focus on the turn containing the noted excerpt.
+Given a project note entry, when activated, then the note panel opens loaded with that note, and closing it returns focus to the entry.
+Given the New note button with the filter on a source, when the panel opens, then the scope field shows that source, and saving attaches the note there.
+Given a note-only excerpt's entry, when it renders, then no codes line appears.
+Given no notes anywhere, when the page renders, then the empty state names both routes: noting an excerpt in the transcript, and the New note button.
+Given 320 pixel width, when the page renders, then the filter list precedes the notes list in one column.
 
 ## Unresolved questions
 

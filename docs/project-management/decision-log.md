@@ -977,3 +977,17 @@ Process note: this and the note-only fix were both legitimate team decisions tha
 ## D-056 addendum: placement principle
 
 The text size control lives in the transcript header per D-056, and explicitly never in the prototype-support surface that carries the role switcher, phase control, and flag presets. That surface is scaffolding for running the research, not product; participants should never need it, and product features must never be homed there. Recorded as a general rule for future controls.
+
+## D-058 File-wide and project-wide notes return; the Notes page is their home
+
+Date: 2026-08 | Workflow: notes | Status: approved. Partially supersedes D-017's deferral and the destinations.md scope decision
+
+N-4 said file-wide notes might arrive as a later page. The Notes page is that page. Two non-excerpt tiers exist: notes attached to a source file, which D-011 reserved `relatedSourceId` for, and notes attached to the project, which is new. A note's scope is derived, not stored: excerpt if `relatedExcerptId` is set, else source if `relatedSourceId` is set, else project.
+
+**The page.** Left column is a filter list mirroring the Coded Data pattern exactly: "All notes" default, then Project notes, then each source in source order, own-note counts fused into each control's accessible name, selection shown by border and bolded count, stacking above the list at narrow width per D-033. The Figma frame's code-list column is wrong and is not followed; recorded against F-12 along with its other stale chrome, the Overarching Themes destination, Import file, and the Write Note toolbar.
+
+**Creation.** A "New note" button on the page opens the D-055 isolated note panel with a scope field, defaulting to the active filter: filtered to a source, the note attaches there; All notes or Project notes, it attaches to the project. Focus still lands in the text field; the scope field precedes it in reading order. D-042 close semantics unchanged: every way out commits, empty discards.
+
+**The read-surface rule survives restated** rather than excepted: destination pages edit nothing themselves; all editing routes through a panel. Excerpt notes reopen through `note.open` as before. Non-excerpt notes reopen into the note panel by activating the entry, since they have no turn to land on.
+
+**R-4 unchanged.** Own notes only during independent coding, all scopes. The Figma's cross-coder attribution ("Alyssa" under Arielle's excerpt) renders only when the phase lifts.

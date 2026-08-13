@@ -164,7 +164,7 @@ Written so that later work does not require a migration.
 
 - `Excerpt.startOffset` and `endOffset`. Always the full segment bounds. Word-level precision is an open question.
 - `Note.relatedAssignmentId`, `relatedCodeId`, `relatedReviewItemId`. Per D-011, a note attaches to an excerpt when written during coding and to a source when written as a file-wide note. Assignment-level, code-level, and review-level attachment stay reserved.
-- `Note.relatedSourceId`. Defined so the field exists, but the file-level notes surface is out of scope for v0.1. See N-4.
+- `Note.relatedSourceId` was reserved here until D-058 activated it: the Notes page now surfaces file-wide and project-wide notes. Scope is derived, never stored: excerpt if `relatedExcerptId` is set, else source if `relatedSourceId` is set, else project.
 
 A speaker turn carrying a note indicator derives that state from the excerpts within it. A note is never stored against a turn, which is what the current Figma row components assume.
 - `SurveyResponse` in its entirety.

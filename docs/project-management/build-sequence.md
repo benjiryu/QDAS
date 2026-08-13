@@ -1043,11 +1043,20 @@ coder anywhere on the page.
 ### Task 30. Notes page
 
 ```
-Implement the Notes page per docs/pages/destinations.md section 3.
+Implement the Notes page per docs/pages/destinations.md section 3 and
+decision D-058.
 
-Excerpt notes only, grouped by source, full note text with the excerpt behind
-a disclosure, links landing focus on the noted turn. Read-only; editing routes
-through excerpt.open. Explicit empty state.
+Three note scopes: excerpt, file-wide (relatedSourceId), project-wide. Left
+column is the Coded Data filter pattern reused: All notes, Project notes,
+then sources, own-note counts in accessible names. Excerpt note entries land
+focus on the noted turn; non-excerpt entries open the isolated note panel
+loaded with the note, focus returning to the entry on close. New note button
+opens the note panel with a scope field defaulting to the active filter,
+focus in the text field. D-042 close semantics. Note-only excerpts show no
+codes line. Own notes only per R-4. Explicit empty state naming both
+creation routes. Extend the synthetic fixture with one file-wide and one
+project note. The Figma frame's code-list column, Themes destination, and
+toolbar are stale chrome; do not follow them.
 ```
 
 ### Task 31. Announcement classes and panel focus fix
