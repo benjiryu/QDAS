@@ -3,7 +3,13 @@ import { useAnnouncer } from '../../a11y';
 import { bindingsFor, commandFor, detectPlatform, resolveEscape } from '../../config/keybindings';
 import type { Command } from '../../config/keybindings';
 import { excerptSegments, excerptSize, turnOf } from '../../domain';
-import type { Id, ResolvedSource, SavedExcerptSummary, TranscriptSegment } from '../../domain';
+import type {
+  CapturedRange,
+  Id,
+  ResolvedSource,
+  SavedExcerptSummary,
+  TranscriptSegment,
+} from '../../domain';
 import { captureFromSelection, clearNativeSelection, resolveCapture } from './capture';
 import type { Capture, CaptureTarget } from './capture';
 import { captured, discarded, EXCERPT_UNAVAILABLE } from './excerptAnnouncements';
@@ -26,8 +32,12 @@ import type { ExcerptSelection } from './excerptMachine';
  */
 
 /** Section 4. Each carries a chord and a visible strip control. */
-const CHORD_COMMANDS = ['excerpt.code', 'excerpt.note', 'excerpt.open'] as const satisfies
-  readonly Command[];
+const CHORD_COMMANDS = [
+  'excerpt.code',
+  'excerpt.note',
+  'excerpt.open',
+  'note.open',
+] as const satisfies readonly Command[];
 
 /**
  * The context menu's keyboard route, per D-037.
@@ -67,6 +77,16 @@ export interface ExcerptMenuState {
   choose: (target: CaptureTarget) => void;
 }
 
+/**
+ * What choosing from the chooser will do, per D-055.
+ *
+ * The disambiguation is the same question either way — which of these overlapping
+ * excerpts do you mean — so it is the same list, the same focus rules, and one
+ * set of wording that follows the intent. A second chooser beside the first
+ * would be a second thing to keep in step for no difference the coder can see.
+ */
+export type ChoiceIntent = 'code' | 'note';
+
 export interface ExcerptSelectionApi {
   selection: ExcerptSelection;
   menu: ExcerptMenuState;
@@ -85,10 +105,14 @@ export interface ExcerptSelectionApi {
    * there is more than one. Empty when there is nothing to choose. D-030.
    */
   openChoices: SavedExcerptSummary[];
+  /** Which command is waiting on the choice. D-055. */
+  choiceIntent: ChoiceIntent;
   chooseSavedExcerpt: (excerptId: Id) => void;
   dismissChoices: () => void;
   /** Opens one, or offers a choice among several. Used by the command and by a click. */
   runOpenAt: (summaries: SavedExcerptSummary[]) => void;
+  /** The same, into the note panel. Used by `note.open` and by the rail icon. */
+  runNoteAt: (summaries: SavedExcerptSummary[]) => void;
 }
 
 interface Options {
@@ -101,8 +125,26 @@ interface Options {
   savedAt?: SavedExcerptSummary[];
   /** Opens the panel pre-populated with a saved excerpt's codes. */
   onReopen?: (summary: SavedExcerptSummary) => void;
-  /** Capture opens code selection, focused per the command. Section 4. */
-  onCapture?: (target: CaptureTarget) => void;
+  /** Opens the isolated note panel on a saved excerpt's note. D-055. */
+  onOpenNote?: (summary: SavedExcerptSummary) => void;
+  /**
+   * Excerpts the focused turn intersects that carry a note, for `note.open`.
+   * A subset of `savedAt`: an excerpt can be saved here and have no note.
+   */
+  notedAt?: SavedExcerptSummary[];
+  /**
+   * True while the code panel is open, so `excerpt.note` can focus its note
+   * region instead of refusing, per D-055.
+   */
+  codePanelOpen?: boolean;
+  /** Focuses the code panel's note region, for exactly that case. */
+  onFocusPanelNote?: () => void;
+  /**
+   * Capture opens code selection, or the note panel, per the command and
+   * D-055. The range comes with it: the reducer's dispatch is not readable
+   * until the next render, and the caller needs it now to name the excerpt.
+   */
+  onCapture?: (target: CaptureTarget, range: CapturedRange) => void;
   /** Discard closes the panel; pending codes go with it. */
   onClosePanel?: () => void;
   /**
@@ -121,9 +163,13 @@ export function useExcerptSelection({
   containerRef,
   panelOpen = false,
   savedAt = [],
+  notedAt = [],
   onReopen,
+  onOpenNote,
   onCapture,
   onClosePanel,
+  codePanelOpen = false,
+  onFocusPanelNote,
   initialSelection = IDLE,
 }: Options): ExcerptSelectionApi {
   const announcer = useAnnouncer();
@@ -131,6 +177,8 @@ export function useExcerptSelection({
 
   /** Overlapping saved excerpts awaiting a choice. D-030 does not guess. */
   const [openChoices, setOpenChoices] = useState<SavedExcerptSummary[]>([]);
+  /** Which command is waiting on that choice, so the list knows what it does. */
+  const [choiceIntent, setChoiceIntent] = useState<ChoiceIntent>('code');
 
   /** The open context menu, with the selection it opened on. */
   const [menuState, setMenuState] = useState<{ x: number; y: number; capture: Capture } | null>(
@@ -165,14 +213,28 @@ export function useExcerptSelection({
     // position to check first. The one gate is a capture already in progress.
     return {
       'excerpt.code': gate(captureable, EXCERPT_UNAVAILABLE.alreadyCapturing),
-      'excerpt.note': gate(captureable, EXCERPT_UNAVAILABLE.alreadyCapturing),
+      /*
+        Available while the code panel is open, per D-055, where every other
+        capture command is not: there it takes no new capture and focuses that
+        panel's note region instead. Without this the chord refused with
+        "already capturing" at exactly the moment a coder had the excerpt in
+        front of them and wanted to write about it.
+      */
+      'excerpt.note': gate(
+        captureable || codePanelOpen,
+        EXCERPT_UNAVAILABLE.alreadyCapturing,
+      ),
       'excerpt.open': gate(
         captureable && savedAt.length > 0,
         captureable ? EXCERPT_UNAVAILABLE.noSavedExcerptHere : EXCERPT_UNAVAILABLE.alreadyCapturing,
       ),
+      'note.open': gate(
+        captureable && notedAt.length > 0,
+        captureable ? EXCERPT_UNAVAILABLE.noNoteHere : EXCERPT_UNAVAILABLE.alreadyCapturing,
+      ),
       'excerpt.discard': gate(state === 'confirmed', EXCERPT_UNAVAILABLE.nothingToCapture),
     };
-  }, [savedAt.length, selection.state]);
+  }, [codePanelOpen, notedAt.length, savedAt.length, selection.state]);
 
   /* ---------- Focus helpers ---------- */
 
@@ -203,9 +265,26 @@ export function useExcerptSelection({
     [onReopen],
   );
 
+  /**
+   * Opens a saved excerpt's note in the isolated panel, per D-055.
+   *
+   * The range is not captured and the machine does not move: this edits a note
+   * on an excerpt that already exists, and putting the selection into
+   * `confirmed` would draw a capture highlight over saved work and make the
+   * excerpt commands refuse.
+   */
+  const openNote = useCallback(
+    (summary: SavedExcerptSummary) => {
+      setOpenChoices([]);
+      onOpenNote?.(summary);
+    },
+    [onOpenNote],
+  );
+
   const runOpenAt = useCallback(
     (summaries: SavedExcerptSummary[]) => {
       if (summaries.length === 0) return;
+      setChoiceIntent('code');
       if (summaries.length === 1) {
         reopen(summaries[0]);
         return;
@@ -218,12 +297,32 @@ export function useExcerptSelection({
     [announcer, reopen],
   );
 
+  /** The same shape for notes, per D-055: one opens, several are offered. */
+  const runNoteAt = useCallback(
+    (summaries: SavedExcerptSummary[]) => {
+      if (summaries.length === 0) return;
+      setChoiceIntent('note');
+      if (summaries.length === 1) {
+        openNote(summaries[0]);
+        return;
+      }
+      setOpenChoices(summaries);
+      announcer.announce(
+        `${summaries.length} notes on this speaker turn. Choose which one to open.`,
+      );
+    },
+    [announcer, openNote],
+  );
+
   const chooseSavedExcerpt = useCallback(
     (excerptId: Id) => {
       const summary = openChoices.find((choice) => choice.excerptId === excerptId);
-      if (summary) reopen(summary);
+      if (!summary) return;
+      // Which command was waiting decides what the choice does. D-055.
+      if (choiceIntent === 'note') openNote(summary);
+      else reopen(summary);
     },
-    [openChoices, reopen],
+    [choiceIntent, openChoices, openNote, reopen],
   );
 
   const dismissChoices = useCallback(() => {
@@ -246,7 +345,7 @@ export function useExcerptSelection({
       // Section 6: from here the application highlight is the only selection
       // visual, and it shows exactly what will be coded.
       clearNativeSelection();
-      onCapture?.(target);
+      onCapture?.(target, capture.range);
     },
     [announcer, onCapture, resolved],
   );
@@ -280,12 +379,24 @@ export function useExcerptSelection({
           return runCapture('search');
 
         case 'excerpt.note':
+          /*
+            With the code panel already open this is not a capture at all: the
+            excerpt is in front of the coder and the note region is where they
+            are going. D-055.
+          */
+          if (codePanelOpen) {
+            onFocusPanelNote?.();
+            return;
+          }
           return runCapture('note');
 
         case 'excerpt.open':
           // One opens; two or more, the `coded-multiple` case, are presented
           // for choice. Guessing would silently edit the wrong excerpt. D-030.
           return runOpenAt(savedAt);
+
+        case 'note.open':
+          return runNoteAt(notedAt);
 
         case 'excerpt.discard': {
           const origin = selection.range?.startSegmentId ?? null;
@@ -303,9 +414,13 @@ export function useExcerptSelection({
     [
       announcer,
       availability,
+      codePanelOpen,
       focusTurnOf,
+      notedAt,
       onClosePanel,
+      onFocusPanelNote,
       runCapture,
+      runNoteAt,
       runOpenAt,
       savedAt,
       selection.range,
@@ -444,8 +559,10 @@ export function useExcerptSelection({
     startOffset: selection.range?.startOffset ?? null,
     endOffset: selection.range?.endOffset ?? null,
     openChoices,
+    choiceIntent,
     chooseSavedExcerpt,
     dismissChoices,
     runOpenAt,
+    runNoteAt,
   };
 }

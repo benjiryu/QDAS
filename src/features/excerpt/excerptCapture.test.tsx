@@ -248,19 +248,24 @@ describe('the two capture commands', () => {
     expect(announced().join(' ')).toContain('Search field focused');
   });
 
-  it('opens the panel in the note field for excerpt.note', () => {
+  it('opens the isolated note panel for excerpt.note', () => {
+    /*
+      Amended for D-055. This command used to open code selection focused on its
+      note row; session evidence was that reaching the field through the whole
+      panel cost too much, so it now opens a panel holding the field alone.
+
+      The capture itself is unchanged, which the next test asserts: only where
+      it lands is different.
+    */
     renderWorkspace();
     focusTurn(multiSentenceTurn.turn.turnId);
 
     chord('excerpt.note');
 
-    expect(panelIsOpen()).toBe(true);
+    expect(document.querySelector('[data-region="note-panel"]')).not.toBeNull();
+    expect(panelIsOpen(), 'code selection stays out of it').toBe(false);
     expect(document.activeElement?.tagName).toBe('TEXTAREA');
-    expect(announced().join(' ')).toContain('Note field focused');
-    // The note row is collapsed by default, so this command has to open it.
-    expect(
-      document.querySelector('[data-region="note"] button[aria-expanded="true"]'),
-    ).not.toBeNull();
+    expect(announced().join(' ')).toContain('Field focused');
   });
 
   it('captures the same range whichever command was used', () => {

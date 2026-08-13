@@ -32,7 +32,6 @@ Point 8 is the one that matters most. Where a specification is ambiguous, stop a
 - Do not apply `role="application"` to the application or to the transcript.
 - Do not use positive `tabindex`.
 - Do not rely on color alone to convey state.
-- Every keyboard command has a visible control.
 - Every temporary view defines focus entry and focus return.
 - Every dynamic state has both visible and programmatic feedback.
 - Announcements go through the shared live region service in `src/a11y`. Components do not create their own live regions.

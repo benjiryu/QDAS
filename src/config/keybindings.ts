@@ -31,6 +31,7 @@ export type Command =
   | 'codes.close'
   | 'codes.focusSearch'
   | 'codes.codebook'
+  | 'note.open'
   | 'help.shortcuts';
 
 export interface Chord {
@@ -72,6 +73,10 @@ const windowsLinuxBindings: Record<Command, Chord> = {
   // The pair, per D-053: F always means the panel, B always means the codebook.
   'codes.codebook': { key: 'b', ctrl: true, alt: true },
 
+  // D-055. M for memo: N is already the chord that writes a new note, and this
+  // is the one that opens an existing one.
+  'note.open': { key: 'm', ctrl: true, alt: true },
+
   'help.shortcuts': { key: '/', ctrl: true, alt: true },
 };
 
@@ -93,6 +98,7 @@ const macBindings: Record<Command, Chord> = {
   'codes.close': { key: 'Escape' },
   'codes.focusSearch': { key: 'f', ctrl: true, shift: true },
   'codes.codebook': { key: 'b', ctrl: true, shift: true },
+  'note.open': { key: 'm', ctrl: true, shift: true },
 
   'help.shortcuts': { key: '/', ctrl: true, shift: true },
 };

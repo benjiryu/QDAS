@@ -1,0 +1,47 @@
+/*
+ * The isolated note panel, per D-055.
+ *
+ * Deliberately short. The container — overlay, centring, internal scrolling,
+ * and the sizing that keeps it usable at 400 percent zoom — is the code panel's
+ * and is reused rather than copied, so only what is different lives here.
+ */
+
+/*
+ * Narrower than the code panel, because it holds one field rather than a
+ * codebook. In `rem` for the same reason the code panel's width is: it grows
+ * with the user's text size instead of holding a pixel count.
+ */
+.note-panel {
+  width: min(32rem, 100%);
+}
+
+.note-panel__field {
+  display: flex;
+  flex-direction: column;
+  /* Enough to clear the label from the box: the same gap the panel's search
+     field needed for the same reason. */
+  gap: 0.35rem;
+}
+
+.note-panel__input {
+  font: inherit;
+  color: inherit;
+  padding: 0.4rem;
+  background: var(--surface);
+  border: var(--border-thin) solid var(--border);
+  border-radius: var(--radius-small);
+  /* Resizable, and vertically only: a field the user can drag wider than the
+     panel would put its own text off screen. */
+  resize: vertical;
+}
+
+/*
+ * The deletion warning. Grey-750 on the panel surface, which measures well
+ * clear of the 4.5:1 body-text threshold — not grey-500, which is this
+ * codebase's disabled treatment and would read as inactive help text.
+ */
+.note-panel__hint {
+  margin: 0;
+  font-size: 0.85em;
+  color: var(--color-grey-750);
+}

@@ -156,7 +156,10 @@ test('Add note captures the selection and lands in the note field', async ({ pag
   await page.getByRole('menuitem', { name: /Add note/ }).click();
 
   expect(squashed(await highlighted(page))).toBe(squashed(dragged));
-  await expect(page.getByLabel(/note about this excerpt/i)).toBeFocused();
+  // The item follows the command's destination, per D-055. The menu adds no
+  // capability, so it lands wherever the strip control lands.
+  await expect(page.locator('[data-region="note-panel"]')).toBeVisible();
+  await expect(page.getByLabel('Note', { exact: true })).toBeFocused();
 });
 
 test('the open menu has no accessibility violations', async ({ page }) => {

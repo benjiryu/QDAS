@@ -124,6 +124,16 @@ export interface CodePanelApi {
   /** Called by the workspace once records exist. Nothing clears before then. */
   clearAfterSave: () => void;
   focusSearch: () => void;
+  /**
+   * Expands the note region and lands focus in the field, per D-055.
+   *
+   * `excerpt.note` with this panel already open means "take me to the note",
+   * not "capture something". The disclosure owns whether it is expanded, so it
+   * registers how to open itself rather than that state being lifted up here
+   * and reset from an effect.
+   */
+  focusNote: () => void;
+  registerNoteOpener: (open: (() => void) | null) => void;
   /** Callback ref for the note field, which `excerpt.note` opens focused on. */
   setNoteElement: (node: HTMLTextAreaElement | null) => void;
   /**
@@ -359,6 +369,19 @@ export function useCodePanel({
     // Without clearing it, per section 2.1. Focus can legitimately be in the
     // transcript while the panel is open, which is why this command exists.
     searchRef.current?.focus?.();
+  }, []);
+
+  /* The disclosure's own opener, registered by it while it is mounted. */
+  const noteOpenerRef = useRef<(() => void) | null>(null);
+  const registerNoteOpener = useCallback((open: (() => void) | null) => {
+    noteOpenerRef.current = open;
+  }, []);
+
+  const focusNote = useCallback(() => {
+    // Expanding also focuses, so the collapsed and expanded cases are one
+    // route. With no disclosure mounted the field is the fallback.
+    if (noteOpenerRef.current) noteOpenerRef.current();
+    else noteRef.current?.focus?.();
   }, []);
 
   /* ---------- The companion codebook, D-048 ---------- */
@@ -778,6 +801,8 @@ export function useCodePanel({
     confirmDelete,
     keepExcerpt,
     close,
+    focusNote,
+    registerNoteOpener,
     companionOpen,
     openCompanion,
     closeCompanion,

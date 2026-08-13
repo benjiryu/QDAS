@@ -1,4 +1,4 @@
-import { useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { CodePanelApi } from './useCodePanel';
 
 /**
@@ -37,7 +37,7 @@ export function NoteDisclosure({
 
   const rowRef = useRef<HTMLButtonElement | null>(null);
 
-  const { noteText, setNoteText, setNoteElement } = panel;
+  const { noteText, setNoteText, setNoteElement, registerNoteOpener } = panel;
   const hasDraft = noteText.trim() !== '';
 
   function open() {
@@ -46,6 +46,21 @@ export function NoteDisclosure({
     // `excerpt.note` opened the panel; this covers every other route in.
     queueMicrotask(() => document.getElementById(fieldId)?.focus());
   }
+
+  /*
+    How `excerpt.note` reaches this region with the panel already open, per
+    D-055. Registered rather than lifted: whether the row is expanded is this
+    component's own state, and moving it up to the panel would mean resetting it
+    from an effect on every open, which is what `set-state-in-effect` forbids.
+
+    No dependency array on purpose. It re-registers after every render so the
+    closure stays current, which is the same bridge the workspace uses to reach
+    the panel's lookups.
+  */
+  useEffect(() => {
+    registerNoteOpener(open);
+    return () => registerNoteOpener(null);
+  });
 
   function close() {
     setIsOpen(false);

@@ -147,12 +147,35 @@
   font-size: 0.85em;
 }
 
+/*
+ * The note icon, a button since D-055 and drawn exactly as it was before.
+ * Padding rather than a bare icon so the pointer target clears the 24 by 24
+ * minimum, which matters more here than anywhere else in the rail: this is the
+ * only pointer route to a turn's note.
+ */
 .transcript-turn__note {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0.25rem;
+  margin-top: 0.05rem;
+  color: var(--text-muted);
+  background: none;
+  border: 0;
+  border-radius: var(--radius-small);
+  cursor: pointer;
+  flex: none;
+}
+
+.transcript-turn__note svg {
   width: 1em;
   height: 1em;
-  margin-top: 0.15rem;
-  color: var(--text-muted);
-  flex: none;
+}
+
+.transcript-turn__note:hover {
+  background: var(--row-bg);
 }
 
 /*

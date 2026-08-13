@@ -168,8 +168,19 @@ test('sentences are addressable but are not objects of their own', async ({ page
   const sentences = turn.locator('[data-segment-id]');
   await expect(sentences).toHaveCount(longTurn.segmentIds.length);
 
-  // And carrying nothing that would surface them separately.
-  await expect(turn.locator('[tabindex], [role], [aria-label], [aria-labelledby]')).toHaveCount(0);
+  /*
+    And carrying nothing that would surface them separately.
+
+    Scoped to the prose, which is what "sentences are not objects of their own"
+    is about. The rail beside it is a different claim — it is `aria-hidden`, and
+    since D-055 it holds a note button carrying `tabindex="-1"` to stay out of
+    the tab order. Left unscoped this passed only because the turn it happens to
+    read has no note, which is a trap for whoever next edits the fixture.
+  */
+  await expect(
+    turn.locator('.transcript-turn__prose')
+      .locator('[tabindex], [role], [aria-label], [aria-labelledby]'),
+  ).toHaveCount(0);
 });
 
 test('tab moves between turns, never into a sentence', async ({ page }) => {
@@ -196,10 +207,31 @@ test('every turn is one tab stop, and there are as many as there are turns', asy
   const listItems = page.getByRole('region', { name: 'Transcript' }).getByRole('listitem');
   await expect(listItems).toHaveCount(turns.length);
 
-  const focusableInside = await page
-    .locator('.transcript__turns [tabindex]:not([tabindex="0"])')
-    .count();
-  expect(focusableInside).toBe(0);
+  /*
+    Nothing inside a turn is tabbable.
+
+    Asserted as tabbability rather than as "carries a tabindex", which is what
+    this checked before D-055 put a note button in the rail. That button is
+    natively focusable and carries `tabindex="-1"` precisely to stay out of the
+    tab order — the old selector counted it as a defect while the property it
+    stood for still held.
+
+    So this asks the real question: anything with a non-negative tabindex, or
+    natively focusable and not opted out. The turn itself is excluded, being
+    the one tab stop this is about.
+  */
+  const tabbableInside = await page.evaluate(() => {
+    const NATIVE = 'a[href], button, input, select, textarea, summary, [contenteditable="true"]';
+    return Array.from(document.querySelectorAll('.transcript__turns [data-turn-id]'))
+      .flatMap((turn) => Array.from(turn.querySelectorAll<HTMLElement>('*')))
+      .filter((element) => {
+        const explicit = element.getAttribute('tabindex');
+        if (explicit !== null) return Number(explicit) >= 0;
+        return element.matches(NATIVE);
+      })
+      .map((element) => element.tagName.toLowerCase() + '.' + element.className);
+  });
+  expect(tabbableInside).toEqual([]);
 });
 
 test('speaker and timestamp collapse into the leading text at narrow width', async ({ page }) => {

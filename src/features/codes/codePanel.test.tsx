@@ -731,11 +731,16 @@ describe('the note disclosure', () => {
     expect(noteFieldOrNull()).toHaveValue('Kept through the collapse.');
   });
 
-  it('opens expanded and focused when excerpt.note opened the panel', async () => {
-    // That command exists to put the coder straight into this field, which is
-    // the whole difference between it and excerpt.code.
+  it('opens expanded and focused when excerpt.note is used with the panel open', async () => {
+    /*
+      Amended for D-055, which moved this command's destination: on a fresh
+      capture it now opens the isolated note panel, and only with the code panel
+      already open does it come here. That second case is what this asserts —
+      the coder has the excerpt in front of them and wants the note field,
+      which is the whole difference between this command and `excerpt.code`.
+    */
     renderWorkspace();
-    focusTurn();
+    openPanel();
     chord('excerpt.note');
     await act(async () => {});
 

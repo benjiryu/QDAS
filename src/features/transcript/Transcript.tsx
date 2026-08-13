@@ -21,6 +21,8 @@ interface TranscriptProps {
   flags?: PrototypeFlags;
   /** Clicking a coded sentence reopens its excerpt, per D-030. */
   onOpenSavedAt?: (segmentId: Id) => void;
+  /** Clicking the rail's note icon, the pointer twin of `note.open`. D-055. */
+  onOpenNote?: (turnId: Id) => void;
   containerRef?: React.RefObject<HTMLDivElement | null>;
   segmentsInRange?: Set<Id>;
   excerptStartSegmentId?: Id | null;
@@ -38,6 +40,7 @@ export function Transcript({
   displayStates,
   flags = defaultFlags,
   onOpenSavedAt,
+  onOpenNote,
   containerRef,
   segmentsInRange,
   excerptStartSegmentId = null,
@@ -68,6 +71,7 @@ export function Transcript({
               displayStates={displayStates}
               timestampVerbosity={flags.timestampVerbosity}
               onOpenSavedAt={onOpenSavedAt}
+              onOpenNote={onOpenNote}
               segmentsInRange={segmentsInRange}
               excerptStartSegmentId={excerptStartSegmentId}
               excerptEndSegmentId={excerptEndSegmentId}

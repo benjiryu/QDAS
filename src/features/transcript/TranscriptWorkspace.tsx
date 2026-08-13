@@ -35,6 +35,9 @@ import type {
   Note,
   ResolvedSource,
 } from '../../domain';
+import { NotePanel } from '../notes/NotePanel';
+import { useNotePanel } from '../notes/useNotePanel';
+import type { NoteCommit } from '../notes/useNotePanel';
 import { CodePanel } from '../codes/CodePanel';
 import { useCodePanel } from '../codes/useCodePanel';
 import type { SaveOutcome } from '../codes/useCodePanel';
@@ -261,16 +264,76 @@ export function TranscriptWorkspace({
     [allExcerpts, allNotes, effectiveAssignments, orientation.focusedTurnId, resolved],
   );
 
+  /**
+   * The subset of those carrying a note, for `note.open`. D-055.
+   *
+   * A subset rather than its own lookup: an excerpt can be saved on this turn
+   * and have no note, and offering it would open an empty note panel on a
+   * passage the coder only coded.
+   */
+  const notedAt = useMemo(() => savedAt.filter((summary) => summary.noteId !== null), [savedAt]);
+
+  /**
+   * The isolated note panel, per D-055.
+   *
+   * Declared before the selection hook, which needs to open it, while what
+   * closing it writes needs the selection hook in turn. A ref breaks the knot,
+   * the same bridge this file already uses to reach the code panel's lookups.
+   */
+  const noteCommit = useRef<((commit: NoteCommit) => void) | null>(null);
+  /** Reaches the code panel's note region, for `excerpt.note` while it is open. */
+  const panelFocusNote = useRef<(() => void) | null>(null);
+  /** Where focus goes when the note panel closes. Contract 2.4. */
+  const noteReturnTurnId = useRef<Id | null>(null);
+  const notePanel = useNotePanel({
+    onCommit: (commit) => noteCommit.current?.(commit),
+  });
+
   const excerpt = useExcerptSelection({
     resolved,
     containerRef: orientation.containerRef,
     panelOpen,
-    onCapture: (target) => {
+    onCapture: (target, range) => {
+      /*
+        `excerpt.note` lands in the isolated panel now, per D-055, and only
+        `excerpt.code` opens code selection. The two never stack: this is the
+        fresh-capture route, and the case where the code panel is already open
+        never reaches here — it focuses that panel's note region instead.
+      */
+      if (target === 'note') {
+        noteReturnTurnId.current = orientation.focusedTurnId;
+        notePanel.open({
+          target: { kind: 'capture' },
+          label: describeExcerptSize(excerptSize(resolved, range)),
+        });
+        return;
+      }
       setPanelFocus(target);
       setPanelOpen(true);
     },
     onClosePanel: () => setPanelOpen(false),
     savedAt,
+    notedAt,
+    codePanelOpen: panelOpen,
+    /* `excerpt.note` with the code panel open goes to its note region rather
+       than capturing again. D-055. */
+    onFocusPanelNote: () => panelFocusNote.current?.(),
+    onOpenNote: (summary) => {
+      const note = summary.noteId
+        ? allNotes.find((candidate) => candidate.noteId === summary.noteId)
+        : undefined;
+      /*
+        The excerpt's own turn, not the focused one. A pointer user clicks the
+        rail icon on a turn they never focused, and returning them to wherever
+        focus happened to be would land them somewhere they did not come from.
+      */
+      noteReturnTurnId.current = requireTurnOf(resolved, summary.range.startSegmentId).turn.turnId;
+      notePanel.open({
+        target: { kind: 'excerpt', excerptId: summary.excerptId, noteId: summary.noteId },
+        label: `sentences ${summary.startSentence} to ${summary.endSentence}`,
+        text: note?.noteText ?? '',
+      });
+    },
     onReopen: (summary) => {
       /*
         The panel opens pre-populated with what is already saved, per D-030 —
@@ -570,6 +633,144 @@ export function TranscriptWorkspace({
   });
 
   /**
+   * What closing the note panel writes, per D-055.
+   *
+   * The panel decided *what* closing did; this performs it. Every branch ends
+   * with focus back on the turn the note was invoked from, per contract 2.4 —
+   * not the `postCodingReturn` destination, which belongs to finishing a coding
+   * act rather than to writing a sentence about a passage.
+   */
+  const handleNoteCommit = useCallback(
+    (commit: NoteCommit) => {
+      const now = new Date().toISOString();
+      const returnTo = noteReturnTurnId.current;
+      noteReturnTurnId.current = null;
+
+      const land = () => {
+        if (returnTo) queueMicrotask(() => orientation.focusTurn(returnTo));
+      };
+
+      if (commit.target.kind === 'capture') {
+        /*
+          Nothing written, so nothing is created and the capture goes. Routed
+          through the discard command rather than reimplemented: it already
+          announces and already returns focus to the turn the capture began in.
+        */
+        if (commit.outcome !== 'saved') {
+          excerpt.run('excerpt.discard');
+          return;
+        }
+
+        const range = excerpt.selection.range;
+        if (!range) return;
+
+        /*
+          A note with no codes, which D-055 codifies as legal: an excerpt
+          persists with at least one code assignment or a note. This path
+          already existed — `buildCodingRecords` writes the note and refuses
+          only when there is nothing at all — so this is the same record the
+          code panel would have written by a shorter road.
+        */
+        const records = buildCodingRecords(
+          resolved,
+          { range, codeIds: [], noteText: commit.text, uncertain: false },
+          {
+            sourceId: resolved.source.sourceId,
+            coderId: userId,
+            codingRoundId,
+            codebookVersionId,
+          },
+          panelCodeById.current,
+          now,
+        );
+        if (!records) return;
+
+        setSavedExcerpts((current) => [...current, records.excerpt]);
+        if (records.note) setSavedNotes((current) => [...current, records.note as Note]);
+        excerpt.markSaved();
+        announcer.announce('Note saved.');
+        land();
+        return;
+      }
+
+      const { excerptId } = commit.target;
+      const existing = allNotes.find((candidate) => candidate.relatedExcerptId === excerptId);
+      const isOwn = existing?.authorId === userId;
+
+      if (commit.outcome === 'deleted') {
+        /*
+          Emptying is the deletion route, and it reaches only the coder's own
+          note. Another coder's is never destroyed from here — the seeded
+          excerpts belong to the second coder and are reachable today — and
+          saying so is better than a silent no-op on a destructive act.
+        */
+        if (existing && isOwn) {
+          setSavedNotes((current) => current.filter((note) => note.noteId !== existing.noteId));
+          announcer.announce('Note deleted.');
+        } else {
+          announcer.announce('That note belongs to another coder and was not deleted.');
+        }
+        land();
+        return;
+      }
+
+      if (commit.outcome === 'saved') {
+        if (existing && isOwn) {
+          setSavedNotes((current) => [
+            ...current.filter((note) => note.noteId !== existing.noteId),
+            { ...existing, noteText: commit.text },
+          ]);
+          announcer.announce('Note updated.');
+        } else {
+          // Alongside rather than over the top, which is the same rule the code
+          // panel's save path follows for another coder's note.
+          setSavedNotes((current) => [
+            ...current,
+            {
+              noteId: `nt-${Math.random().toString(16).slice(2, 12)}`,
+              authorId: userId,
+              noteType: null,
+              noteText: commit.text,
+              visibility: 'afterIndependentCoding' as const,
+              status: 'active',
+              createdAt: now,
+              relatedExcerptId: excerptId,
+              relatedSourceId: null,
+              relatedAssignmentId: null,
+              relatedCodeId: null,
+              relatedReviewItemId: null,
+            },
+          ]);
+          announcer.announce('Note saved.');
+        }
+        land();
+        return;
+      }
+
+      announcer.announce('Note unchanged.');
+      land();
+    },
+    [
+      allNotes,
+      announcer,
+      codebookVersionId,
+      codingRoundId,
+      excerpt,
+      orientation,
+      resolved,
+      userId,
+    ],
+  );
+
+  useEffect(() => {
+    noteCommit.current = handleNoteCommit;
+  }, [handleNoteCommit]);
+
+  useEffect(() => {
+    panelFocusNote.current = panel.focusNote;
+  }, [panel.focusNote]);
+
+  /**
    * The D-044 hand-off.
    *
    * A ref refreshed after every render, and a cleanup that writes it when this
@@ -706,6 +907,29 @@ export function TranscriptWorkspace({
     [allExcerpts, allNotes, effectiveAssignments, excerpt, resolved],
   );
 
+  /**
+   * Clicking the rail's note icon, the pointer twin of `note.open`. D-055.
+   *
+   * Resolved against the clicked turn rather than the focused one: a pointer
+   * user clicks the icon on a turn they have not focused, and answering for
+   * somewhere else would open the wrong note.
+   */
+  const openNoteAt = useCallback(
+    (turnId: Id) => {
+      if (excerpt.selection.state === 'confirmed') return;
+      const here = savedExcerptsInTurn(
+        resolved,
+        turnId,
+        allExcerpts,
+        effectiveAssignments,
+        allNotes,
+      ).filter((summary) => summary.noteId !== null);
+      // One opens; several ask, exactly as the command does.
+      excerpt.runNoteAt(here);
+    },
+    [allExcerpts, allNotes, effectiveAssignments, excerpt, resolved],
+  );
+
   return (
     <>
       <div
@@ -725,6 +949,7 @@ export function TranscriptWorkspace({
         displayStates={displayStates}
         flags={flags}
         onOpenSavedAt={openSavedAt}
+        onOpenNote={openNoteAt}
         containerRef={orientation.containerRef}
         segmentsInRange={excerpt.segmentsInRange}
         excerptStartSegmentId={excerpt.startSegmentId}
@@ -737,6 +962,9 @@ export function TranscriptWorkspace({
       />
       {/* D-033: below the transcript at narrow width, alongside it when there
           is room, in the same logical order either way. */}
+      {/* One panel at a time, per D-055: this and the code panel never stack,
+          and the routes into each keep them apart. */}
+      <NotePanel panel={notePanel} />
       <CodePanel
         panel={panel}
         flags={flags}

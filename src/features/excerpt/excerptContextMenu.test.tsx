@@ -293,8 +293,12 @@ describe('what the items do', () => {
     });
 
     expect(highlighted()).toBe(`${first.text.slice(5)}${second.text.slice(0, 7)}`);
+    // The item follows the command's destination, per D-055: the isolated note
+    // panel now, rather than code selection's note row. The menu adds no
+    // capability, so it goes wherever the strip control goes.
+    expect(document.querySelector('[data-region="note-panel"]')).not.toBeNull();
     expect(document.activeElement?.tagName).toBe('TEXTAREA');
-    expect(announced().join(' ')).toContain('Note field focused');
+    expect(announced().join(' ')).toContain('Field focused');
   });
 
   it('adds no capability: both items are on the strip as well', () => {

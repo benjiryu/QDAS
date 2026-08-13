@@ -47,6 +47,15 @@ export function ExcerptToolbar({ excerpt, resolved }: ExcerptToolbarProps) {
   const { selection } = excerpt;
   const size = selection.range ? excerptSize(resolved, selection.range) : null;
 
+  /*
+    One chooser for both commands, per D-055. The question is the same either
+    way — which of these overlapping excerpts do you mean — so the list, the
+    focus rules and the dismissal are shared, and only the wording follows
+    which command is waiting.
+  */
+  const isNoteChoice = excerpt.choiceIntent === 'note';
+  const choiceLabel = isNoteChoice ? 'Notes here' : 'Saved excerpts here';
+
   return (
     <section className="excerpt-toolbar" aria-label="Excerpt">
       <p className="excerpt-toolbar__status">
@@ -90,13 +99,16 @@ export function ExcerptToolbar({ excerpt, resolved }: ExcerptToolbarProps) {
         strip when it is dismissed, per accessibility contract 2.4.
       */}
       {excerpt.openChoices.length > 0 ? (
-        <div className="excerpt-toolbar__choices" role="group" aria-label="Saved excerpts here">
+        <div className="excerpt-toolbar__choices" role="group" aria-label={choiceLabel}>
           <p>
-            {excerpt.openChoices.length} saved excerpts cover this sentence. Choose one to open.
+            {excerpt.openChoices.length}{' '}
+            {isNoteChoice
+              ? 'notes on this speaker turn. Choose one to open.'
+              : 'saved excerpts cover this sentence. Choose one to open.'}
           </p>
           {/* Named although its group is: a list-jump lands on the list, not
               on the container that names it. D-051. */}
-          <ul className="excerpt-toolbar__choice-list" aria-label="Saved excerpts here">
+          <ul className="excerpt-toolbar__choice-list" aria-label={choiceLabel}>
             {excerpt.openChoices.map((choice, index) => (
               <li key={choice.excerptId}>
                 <button
@@ -106,8 +118,10 @@ export function ExcerptToolbar({ excerpt, resolved }: ExcerptToolbarProps) {
                 >
                   {/* Identified by range and code count, never by coder: R-4
                       keeps identities hidden until independent coding closes. */}
-                  Sentences {choice.startSentence} to {choice.endSentence}, {choice.codeIds.length}{' '}
-                  {choice.codeIds.length === 1 ? 'code' : 'codes'}
+                  Sentences {choice.startSentence} to {choice.endSentence},{' '}
+                  {isNoteChoice
+                    ? 'has a note'
+                    : `${choice.codeIds.length} ${choice.codeIds.length === 1 ? 'code' : 'codes'}`}
                 </button>
               </li>
             ))}

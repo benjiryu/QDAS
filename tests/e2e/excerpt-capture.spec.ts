@@ -178,13 +178,17 @@ test('the fallback announces itself as a fallback', async ({ page }) => {
   expect(squashed(await highlighted(page))).toBe(squashed(turnText));
 });
 
-test('add note opens the panel in the note field', async ({ page }) => {
+test('add note opens the isolated note panel', async ({ page }) => {
+  // Amended for D-055: this command used to open code selection focused on its
+  // note row. Reaching the field through the whole panel was what session
+  // evidence found too costly, so it now opens the field on its own.
   await page.locator('[data-turn-id]').nth(1).click();
 
   await press(page, 'excerpt.note');
 
-  await expect(page.getByRole('dialog', { name: /code assignment/i })).toBeVisible();
-  await expect(page.getByLabel(/note about this excerpt/i)).toBeFocused();
+  await expect(page.locator('[data-region="note-panel"]')).toBeVisible();
+  await expect(page.getByRole('dialog', { name: /code assignment/i })).toHaveCount(0);
+  await expect(page.getByLabel('Note', { exact: true })).toBeFocused();
 });
 
 test('a saved mid-sentence excerpt is coded exactly, not rounded to the sentence', async ({

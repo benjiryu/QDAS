@@ -52,6 +52,11 @@ interface TranscriptTurnProps {
   coding?: TurnCoding;
   /** Names and hues for the rail's pills. */
   codeById?: Map<Id, Code>;
+  /**
+   * Clicking the rail's note icon opens that turn's note, per D-055. The
+   * pointer twin of `note.open`, mirroring click-a-coded-sentence from D-030.
+   */
+  onOpenNote?: (turnId: Id) => void;
 }
 
 type ExcerptMarker = 'start' | 'end' | 'only' | 'in-range';
@@ -166,6 +171,7 @@ export function TranscriptTurn({
   excerptState,
   coding,
   codeById,
+  onOpenNote,
 }: TranscriptTurnProps) {
   const descriptionId = useId();
   const description = coding ? turnDescription(coding) : null;
@@ -347,14 +353,37 @@ export function TranscriptTurn({
             </span>
           ))}
           {coding?.hasNote ? (
-            /* Drawn rather than typed: Luciole has no glyph at U+270E, and a
-               missing glyph renders as a replacement box. */
-            <svg className="transcript-turn__note" viewBox="0 0 16 16" focusable="false">
-              <path
-                d="M2 3.5A1.5 1.5 0 0 1 3.5 2h9A1.5 1.5 0 0 1 14 3.5v6A1.5 1.5 0 0 1 12.5 11H6.7L3.4 13.8A.5.5 0 0 1 2.6 13.4V11H2.5A.5.5 0 0 1 2 10.5z"
-                fill="currentColor"
-              />
-            </svg>
+            /*
+              The pointer twin of `note.open`, per D-055, the way clicking a
+              coded sentence is the twin of `excerpt.open`.
+
+              `tabIndex={-1}` is not an oversight. The rail is `aria-hidden` per
+              D-041 because its content is already in the turn's description,
+              and a focusable control inside an aria-hidden subtree is a
+              genuine defect — reachable by Tab, absent from the tree. So this
+              is the pointer route and the chord is the other one. The cost is
+              recorded: a keyboard user who cannot use the chord has no third
+              way in.
+            */
+            <button
+              type="button"
+              className="transcript-turn__note"
+              tabIndex={-1}
+              data-command="note.open"
+              onClick={(event) => {
+                event.stopPropagation();
+                onOpenNote?.(turn.turn.turnId);
+              }}
+            >
+              {/* Drawn rather than typed: Luciole has no glyph at U+270E, and a
+                  missing glyph renders as a replacement box. */}
+              <svg viewBox="0 0 16 16" focusable="false" aria-hidden="true">
+                <path
+                  d="M2 3.5A1.5 1.5 0 0 1 3.5 2h9A1.5 1.5 0 0 1 14 3.5v6A1.5 1.5 0 0 1 12.5 11H6.7L3.4 13.8A.5.5 0 0 1 2.6 13.4V11H2.5A.5.5 0 0 1 2 10.5z"
+                  fill="currentColor"
+                />
+              </svg>
+            </button>
           ) : null}
         </span>
       ) : null}

@@ -68,5 +68,9 @@ export const EXCERPT_UNAVAILABLE: Record<string, string> = {
   nothingToCapture:
     'Nothing to capture. Select some transcript text, or move focus to a speaker turn.',
   noSavedExcerptHere: 'This sentence is not inside a saved excerpt.',
+  /* D-055. Distinct from the one above: an excerpt can be here and carry no
+     note, and "not inside a saved excerpt" would then be untrue as well as
+     unhelpful. */
+  noNoteHere: 'No note on this speaker turn.',
   alreadyCapturing: 'A range is already captured. Save or cancel code selection first.',
 };
