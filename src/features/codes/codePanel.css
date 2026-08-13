@@ -285,6 +285,38 @@
 }
 
 /*
+ * The note field itself.
+ *
+ * This had no rule at all, so it rendered at the browser's default textarea
+ * size — about twenty columns — however wide the panel was. The create-code
+ * fields take their width from `.code-panel__field`; the note sits outside that
+ * container and was never given the equivalent.
+ *
+ * Deliberately uncapped, where those fields stop at 24rem. That cap suits a
+ * code name, which is a few words; this is prose, and the panel's content box
+ * is about 36rem, which is inside a comfortable reading measure rather than
+ * past it.
+ *
+ * Vertical resize only. A field a coder can drag wider than the panel puts its
+ * own text off screen, which is the one direction that cannot help.
+ *
+ * The same treatment as `.note-panel__input`, so the two surfaces that edit one
+ * note look like they edit one note.
+ */
+.code-panel__note-input {
+  font: inherit;
+  color: inherit;
+  width: 100%;
+  min-height: 4.5rem;
+  padding: 0.4rem;
+  background: var(--surface);
+  border: var(--border-thin) solid var(--border);
+  border-radius: var(--radius-small);
+  box-sizing: border-box;
+  resize: vertical;
+}
+
+/*
  * The written note, shown under the row while the box is shut, so returning to
  * an excerpt shows what was written without opening anything to find out.
  *

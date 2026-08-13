@@ -939,3 +939,21 @@ Date: 2026-08 | Workflow: notes | Status: approved. Driven by screen reader sess
 Process note, for the working habits section of the build sequence: a behavior change negotiated inside a Claude Code fix session is a decision, and it reaches this log or it will be re-litigated by whoever reads the log in good faith. That is what happened here.
 
 One panel at a time: the note panel and code panel do not stack. The isolated panel serves the direct routes from the transcript; the code panel's note region serves the combined coding flow. Editing via either surface edits the same note.
+
+## D-056 Transcript text sizing, a per-user reading preference
+
+Date: 2026-08 | Workflow: transcript display | Status: approved
+
+The transcript gains a text size control: plus and minus buttons in the transcript header near the position ribbon, stepping between roughly 100 and 250 percent, each step announced discretely as "Text size N percent". The preference persists per user across sessions and applies to the transcript reading surface, including highlights and the rail's alignment, not to application chrome.
+
+This is the Word document-zoom model and it was in the original requirements: the handoff's user preference list carries Text size separately from Browser zoom. The two compose rather than compete: zoom scales the whole interface; text sizing grows only the reading surface, so a magnification user can run moderate zoom with large transcript text and keep chrome compact.
+
+Why the architecture makes this cheap: D-002 rejected line as a unit because wrapping changes with zoom, so nothing depends on line geometry; excerpt boundaries are character offsets, unmoved by text size; marks are DOM ranges that reflow. Text grows and every research object stays put.
+
+Constraints:
+
+- Implemented as `font-size` on the transcript container with relative units inside, never `transform: scale()`, which zooms without reflowing and recreates the horizontal panning failure the contract prohibits.
+- Placed in the transcript header, not the command strip, which D-038 pins at five controls.
+- No chords. Browser zoom owns Ctrl+plus and Ctrl+minus and they are not intercepted.
+- The 400 percent reflow smoke test item runs once at maximum text size as well; the combination must not scroll horizontally.
+- The setting is recorded in session notes like the flag preset, since it changes what a magnification participant experienced.

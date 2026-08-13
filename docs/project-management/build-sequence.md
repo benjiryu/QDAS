@@ -1199,6 +1199,29 @@ still edits the same note.
 Done when: from a focused turn, one chord opens the note, editing and closing
 lands you back on the turn, and a passage can carry a note with no codes.
 
+### Task 37. Transcript text sizing
+
+```
+Implement D-056: a text size control for the transcript reading surface.
+
+- Plus and minus buttons in the transcript header near the position ribbon,
+  labeled, each step announced discretely as "Text size N percent", stepping
+  100 to 250 percent
+- font-size on the transcript container, relative units within; never
+  transform: scale. Highlights, marks, and the rail must reflow with the text
+- Persist the preference per user across sessions
+- Application chrome, the strip, sidebar, and panels are unaffected
+- Do not bind Ctrl+plus or Ctrl+minus
+
+Tests: stepping changes the container font size and announces; the preference
+survives reload; excerpt offsets and stored ranges are unchanged after
+resizing; at maximum size and 320 width nothing scrolls horizontally.
+```
+
+Done when: a magnification user can grow the transcript to 250 percent while
+the sidebar and strip stay put, and a highlight made at one size is the same
+excerpt at another.
+
 ## Failure modes to watch for
 
 **The agent builds something simulated.** Point it at `prototype-scope.md`. File import, authentication, and IRR are not gaps to fill.

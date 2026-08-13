@@ -228,3 +228,55 @@ test('a saved mid-sentence excerpt is coded exactly, not rounded to the sentence
     'coded',
   );
 });
+
+/*
+ * Two controls whose size is the whole point of them.
+ *
+ * Both are measurements, so they can only be made here: jsdom drops every
+ * declaration carrying `var()` and has no layout to measure in the first place.
+ */
+
+test('the rail note icon is a large enough pointer target', async ({ page }) => {
+  // Since D-055 this icon is the only pointer route to a turn's note, so a miss
+  // has nothing cheap to fall back on. Asserted against the 24 by 24 minimum
+  // and its reason rather than against the rem value, so a future restyle is
+  // free to move the number and not free to go back under the threshold.
+  await page.locator('[data-turn-id]').first().click();
+  await press(page, 'excerpt.note');
+  await page.getByLabel('Note', { exact: true }).fill('A note to hang the icon on.');
+  await page.getByRole('button', { name: 'Save & Close' }).click();
+  await expect(page.locator('[data-region="note-panel"]')).toHaveCount(0);
+
+  const icon = page.locator('[data-command="note.open"]').first();
+  await expect(icon).toBeVisible();
+
+  const box = (await icon.boundingBox())!;
+  expect(box.width).toBeGreaterThanOrEqual(24);
+  expect(box.height).toBeGreaterThanOrEqual(24);
+});
+
+test('the code panel note field fills the width of its region', async ({ page }) => {
+  /*
+    It had no rule at all, so it rendered at the browser's default textarea
+    width — about twenty columns — however wide the panel was. The failure was
+    not a value slightly off; it was the field ignoring the panel entirely.
+  */
+  await page.locator('[data-turn-id]').first().click();
+  await press(page, 'excerpt.code');
+  await expect(page.getByRole('dialog', { name: /code assignment/i })).toBeVisible();
+
+  // Scoped to the dialog: the excerpt strip carries an Add note control too,
+  // and it is the one that captures rather than the one that expands the row.
+  const panel = page.getByRole('dialog', { name: /code assignment/i });
+  await panel.getByRole('button', { name: /add note/i }).click();
+  const field = page.getByLabel(/note about this excerpt/i);
+  await expect(field).toBeVisible();
+
+  const fieldBox = (await field.boundingBox())!;
+  const regionBox = (await page.locator('[data-region="note"]').boundingBox())!;
+
+  // Effectively all of it, allowing for the region's own padding.
+  expect(fieldBox.width).toBeGreaterThan(regionBox.width * 0.95);
+  // And never past the edge, which `box-sizing` is there to prevent.
+  expect(fieldBox.width).toBeLessThanOrEqual(regionBox.width + 1);
+});

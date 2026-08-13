@@ -157,10 +157,19 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
+  /*
+     2rem, which is 32px at the default text size and comfortably past the 24 by
+     24 minimum for a pointer target. The margin is worth having here in
+     particular: since D-055 this icon is the only pointer route to a turn's
+     note, so a miss has nothing cheap to fall back on.
+
+     In `rem` so it grows with the user's text size rather than holding a pixel
+     count, which is what contract 2.5 asks of everything that has to survive
+     400 percent zoom.
+  */
+  width: 2rem;
+  height: 2rem;
   padding: 0.25rem;
-  margin-top: 0.05rem;
   color: var(--text-muted);
   background: none;
   border: 0;
@@ -170,8 +179,8 @@
 }
 
 .transcript-turn__note svg {
-  width: 1em;
-  height: 1em;
+  width: 1.25em;
+  height: 1.25em;
 }
 
 .transcript-turn__note:hover {
