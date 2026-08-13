@@ -111,9 +111,18 @@ function captureFirstTurn() {
 }
 
 /** Reopens the saved excerpt by clicking its own turn. */
+/**
+ * Reopens the first turn's excerpt into the code panel.
+ *
+ * By `excerpt.open` rather than by clicking. Clicking routes by what the
+ * excerpt carries, so on a note-only excerpt it opens the note panel — which
+ * is what makes the round trip below, note first and codes after, need the
+ * command. That is the command's job: it reopens for coding whatever is there.
+ */
 async function reopenFirstTurn() {
   const turn = document.querySelector<HTMLElement>('[data-turn-id]')!;
-  fireEvent.click(turn.querySelector('[data-segment-id]')!);
+  act(() => turn.focus());
+  chord('excerpt.open');
   await waitFor(() => expect(panelIsOpen()).toBe(true));
 }
 

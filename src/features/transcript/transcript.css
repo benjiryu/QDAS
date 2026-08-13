@@ -300,17 +300,22 @@
   align-items: center;
   justify-content: center;
   /*
-     2rem, which is 32px at the default text size and comfortably past the 24 by
-     24 minimum for a pointer target. The margin is worth having here in
-     particular: since D-055 this icon is the only pointer route to a turn's
-     note, so a miss has nothing cheap to fall back on.
+     `font: inherit` is what makes the `em` sizing below mean anything.
 
-     In `rem` so it grows with the user's text size rather than holding a pixel
-     count, which is what contract 2.5 asks of everything that has to survive
-     400 percent zoom.
+     A button does not inherit the page's font: the user-agent sheet gives it
+     one of its own, around 13.3px in Chromium. So `2em` here was resolving
+     against that rather than against the transcript, which left the target
+     smaller than intended at 100 percent and — the visible symptom — frozen
+     while the reader stepped the text up to 250.
   */
-  /* `em`, so it grows with the transcript's text rather than staying put while
-     the rail around it scales. D-056. */
+  font: inherit;
+  /*
+     2em, which is 32px at the default size and comfortably past the 24 by 24
+     minimum for a pointer target, growing from there with the transcript per
+     D-056. The margin matters here in particular: since D-055 this icon is the
+     only pointer route to a turn's note, so a miss has nothing cheap to fall
+     back on.
+  */
   width: 2em;
   height: 2em;
   padding: 0.25em;

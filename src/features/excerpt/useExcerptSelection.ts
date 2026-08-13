@@ -85,7 +85,36 @@ export interface ExcerptMenuState {
  * set of wording that follows the intent. A second chooser beside the first
  * would be a second thing to keep in step for no difference the coder can see.
  */
-export type ChoiceIntent = 'code' | 'note';
+export type ChoiceIntent =
+  /** Reopen for coding, whatever the excerpt carries. `excerpt.open`. */
+  | 'code'
+  /** Open the note, including on an excerpt that also has codes. `note.open`. */
+  | 'note'
+  /**
+   * Ask each excerpt what it is. The pointer route.
+   *
+   * Per excerpt rather than per invocation, which is the grain the question
+   * actually has: a sentence can be covered by one coded excerpt and one
+   * carrying only a note, and the right destination differs by row. Deciding
+   * once when the chooser opens would have to guess for half the list.
+   *
+   * Clicking is "open what is here", so it answers with whatever is here. The
+   * two chords say what they want and get it: `excerpt.open` reopens for
+   * coding, `note.open` reaches the note.
+   */
+  | 'auto';
+
+/**
+ * Whether this excerpt is a note and nothing else.
+ *
+ * An excerpt persists with at least one code assignment or a note, per D-055,
+ * so this is the one that has no coding to reopen — sending it to the code
+ * panel shows an empty codebook with the note hidden in a disclosure, which is
+ * the cost D-055 exists to remove.
+ */
+export function isNoteOnly(summary: SavedExcerptSummary): boolean {
+  return summary.codeIds.length === 0 && summary.noteId !== null;
+}
 
 export interface ExcerptSelectionApi {
   selection: ExcerptSelection;
@@ -109,8 +138,10 @@ export interface ExcerptSelectionApi {
   choiceIntent: ChoiceIntent;
   chooseSavedExcerpt: (excerptId: Id) => void;
   dismissChoices: () => void;
-  /** Opens one, or offers a choice among several. Used by the command and by a click. */
+  /** Opens one for coding, or offers a choice among several. `excerpt.open`. */
   runOpenAt: (summaries: SavedExcerptSummary[]) => void;
+  /** The click route: each excerpt opens wherever what it carries belongs. */
+  runOpenByContentAt: (summaries: SavedExcerptSummary[]) => void;
   /** The same, into the note panel. Used by `note.open` and by the rail icon. */
   runNoteAt: (summaries: SavedExcerptSummary[]) => void;
 }
@@ -281,6 +312,16 @@ export function useExcerptSelection({
     [onOpenNote],
   );
 
+  /**
+   * Reopens for coding, whatever the excerpt carries.
+   *
+   * Deliberately not routed by content, where the click below is. This command
+   * means "reopen this to code it", and it is the only way a passage noted
+   * before it was coded can gain codes later — the round trip D-055's
+   * codes-win-over-a-note precedence depends on. Routing it to the note panel
+   * would close that path, since re-capturing the same range makes a second
+   * excerpt rather than editing the first.
+   */
   const runOpenAt = useCallback(
     (summaries: SavedExcerptSummary[]) => {
       if (summaries.length === 0) return;
@@ -295,6 +336,30 @@ export function useExcerptSelection({
       );
     },
     [announcer, reopen],
+  );
+
+  /**
+   * The click route, per excerpt-selection.md section 3: open what is here.
+   *
+   * An excerpt carrying only a note opens the note panel, because sending it to
+   * code selection shows an empty codebook with the note hidden in a
+   * disclosure — the cost D-055 exists to remove.
+   */
+  const runOpenByContentAt = useCallback(
+    (summaries: SavedExcerptSummary[]) => {
+      if (summaries.length === 0) return;
+      setChoiceIntent('auto');
+      if (summaries.length === 1) {
+        if (isNoteOnly(summaries[0])) openNote(summaries[0]);
+        else reopen(summaries[0]);
+        return;
+      }
+      setOpenChoices(summaries);
+      announcer.announce(
+        `${summaries.length} saved excerpts cover this sentence. Choose which one to open.`,
+      );
+    },
+    [announcer, openNote, reopen],
   );
 
   /** The same shape for notes, per D-055: one opens, several are offered. */
@@ -318,9 +383,18 @@ export function useExcerptSelection({
     (excerptId: Id) => {
       const summary = openChoices.find((choice) => choice.excerptId === excerptId);
       if (!summary) return;
-      // Which command was waiting decides what the choice does. D-055.
-      if (choiceIntent === 'note') openNote(summary);
-      else reopen(summary);
+
+      /*
+        `note` means the note whatever the excerpt carries, which is what makes
+        `note.open` reach the note on a coded excerpt. `auto` asks the excerpt,
+        so one chooser can hold a coded excerpt and a note-only one and send
+        each where it belongs.
+      */
+      if (choiceIntent === 'note' || (choiceIntent === 'auto' && isNoteOnly(summary))) {
+        openNote(summary);
+        return;
+      }
+      reopen(summary);
     },
     [choiceIntent, openChoices, openNote, reopen],
   );
@@ -563,6 +637,7 @@ export function useExcerptSelection({
     chooseSavedExcerpt,
     dismissChoices,
     runOpenAt,
+    runOpenByContentAt,
     runNoteAt,
   };
 }

@@ -2,7 +2,8 @@ import { useMemo } from 'react';
 import { bindingsFor, describeChord, detectPlatform } from '../../config/keybindings';
 import type { Command } from '../../config/keybindings';
 import { describeExcerptSize, excerptSize } from '../../domain';
-import type { ResolvedSource } from '../../domain';
+import type { ResolvedSource, SavedExcerptSummary } from '../../domain';
+import { isNoteOnly } from './useExcerptSelection';
 import type { ExcerptCommand, ExcerptSelectionApi } from './useExcerptSelection';
 import './excerpt.css';
 
@@ -55,6 +56,18 @@ export function ExcerptToolbar({ excerpt, resolved }: ExcerptToolbarProps) {
   */
   const isNoteChoice = excerpt.choiceIntent === 'note';
   const choiceLabel = isNoteChoice ? 'Notes here' : 'Saved excerpts here';
+
+  /*
+    What choosing this row will do.
+
+    Under `auto` the list can hold both kinds at once, so each row says which it
+    is rather than the heading claiming they are all the same. Under `note` they
+    are all notes because `note.open` filtered them that way.
+  */
+  const describeChoice = (choice: SavedExcerptSummary): string => {
+    if (isNoteChoice || (excerpt.choiceIntent === 'auto' && isNoteOnly(choice))) return 'a note';
+    return `${choice.codeIds.length} ${choice.codeIds.length === 1 ? 'code' : 'codes'}`;
+  };
 
   return (
     <section className="excerpt-toolbar" aria-label="Excerpt">
@@ -119,9 +132,7 @@ export function ExcerptToolbar({ excerpt, resolved }: ExcerptToolbarProps) {
                   {/* Identified by range and code count, never by coder: R-4
                       keeps identities hidden until independent coding closes. */}
                   Sentences {choice.startSentence} to {choice.endSentence},{' '}
-                  {isNoteChoice
-                    ? 'has a note'
-                    : `${choice.codeIds.length} ${choice.codeIds.length === 1 ? 'code' : 'codes'}`}
+                  {describeChoice(choice)}
                 </button>
               </li>
             ))}

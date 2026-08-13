@@ -265,7 +265,7 @@ describe('two notes on one turn are disambiguated, per D-055', () => {
     const options = within(choices).getAllByRole('button');
     expect(options).toHaveLength(2);
     for (const option of options) {
-      expect(option.textContent).toMatch(/^Sentences \d+ to \d+, has a note$/);
+      expect(option.textContent).toMatch(/^Sentences \d+ to \d+, a note$/);
     }
     expect(announced().join(' ')).toContain('2 notes on this speaker turn');
 
@@ -347,5 +347,112 @@ describe('note-only excerpts, codified rather than created', () => {
       expect(run.tagName.toLowerCase(), 'a mark, per D-052').toBe('mark');
       expect(run.getAttribute('data-color-token'), 'no family, so no hue').toBeNull();
     }
+  });
+});
+
+describe('clicking routes by what the excerpt carries', () => {
+  /*
+    Clicking means "open what is here", so it answers with whatever is here.
+    The two chords say what they want instead: `excerpt.open` reopens for
+    coding — which is the only way a passage noted before it was coded can gain
+    codes later — and `note.open` reaches the note.
+  */
+  const clickFirstSentenceOf = (turn: HTMLElement) =>
+    fireEvent.click(turn.querySelector('[data-segment-id]')!);
+
+  it('opens the note panel on an excerpt carrying only a note', async () => {
+    // Code selection on a note-only excerpt is an empty codebook with the note
+    // hidden in a disclosure, which is the cost D-055 exists to remove.
+    renderAt(sourceUrl);
+    const turn = focusFreshTurn();
+    await writeNoteOn(turn, 'Only a note here.');
+
+    clickFirstSentenceOf(turn);
+
+    await waitFor(() => expect(notePanel()).not.toBeNull());
+    expect(noteField()).toHaveValue('Only a note here.');
+    expect(codePanelIsOpen(), 'code selection stays out of it').toBe(false);
+  });
+
+  it('still opens code selection on a coded excerpt', async () => {
+    // The case most at risk from a routing change.
+    renderAt(sourceUrl);
+    const turn = focusFreshTurn();
+    act(() => turn.focus());
+    chord('excerpt.code');
+    await waitFor(() => expect(codePanelIsOpen()).toBe(true));
+
+    const panel = screen.getByRole('dialog', { name: /code assignment/i });
+    fireEvent.click(panel.querySelector(`[data-code-id="${fixture.codes[0].codeId}"]`)!);
+    fireEvent.click(within(panel).getByRole('button', { name: 'Save & Close' }));
+    await waitFor(() => expect(codePanelIsOpen()).toBe(false));
+
+    clickFirstSentenceOf(turn);
+
+    await waitFor(() => expect(codePanelIsOpen()).toBe(true));
+    expect(notePanel()).toBeNull();
+  });
+
+  it('leaves excerpt.open reopening for coding, which is how a note gains codes', async () => {
+    /*
+      The round trip D-055's codes-win-over-a-note precedence depends on. If
+      this command routed by content too, a passage noted before it was coded
+      could never become coded: re-capturing the same range makes a second
+      excerpt rather than editing the first.
+    */
+    renderAt(sourceUrl);
+    const turn = focusFreshTurn();
+    await writeNoteOn(turn, 'Noted first, coded later.');
+
+    act(() => turn.focus());
+    chord('excerpt.open');
+
+    await waitFor(() => expect(codePanelIsOpen()).toBe(true));
+    expect(notePanel()).toBeNull();
+
+    const panel = screen.getByRole('dialog', { name: /code assignment/i });
+    fireEvent.click(panel.querySelector(`[data-code-id="${fixture.codes[0].codeId}"]`)!);
+    fireEvent.click(within(panel).getByRole('button', { name: 'Save & Close' }));
+    await waitFor(() => expect(codePanelIsOpen()).toBe(false));
+
+    expect(turn.querySelector('[data-coded-run]')?.getAttribute('data-coded-run')).toBe('coded');
+  });
+
+  it('offers one chooser for a mixed overlap, each row saying which it is', async () => {
+    /*
+      Routing is decided per excerpt, not per invocation, because this is the
+      grain the question has: one sentence, one coded excerpt and one note-only
+      one, and a different right answer per row.
+    */
+    renderAt(sourceUrl);
+    const turn = focusFreshTurn();
+
+    // A note on the whole turn.
+    await writeNoteOn(turn, 'A note over the turn.');
+
+    // And a coded excerpt over the same turn.
+    act(() => turn.focus());
+    chord('excerpt.code');
+    await waitFor(() => expect(codePanelIsOpen()).toBe(true));
+    const panel = screen.getByRole('dialog', { name: /code assignment/i });
+    fireEvent.click(panel.querySelector(`[data-code-id="${fixture.codes[0].codeId}"]`)!);
+    fireEvent.click(within(panel).getByRole('button', { name: 'Save & Close' }));
+    await waitFor(() => expect(codePanelIsOpen()).toBe(false));
+
+    clickFirstSentenceOf(turn);
+
+    const choices = await screen.findByRole('list', { name: 'Saved excerpts here' });
+    const options = within(choices).getAllByRole('button');
+    expect(options).toHaveLength(2);
+
+    const labels = options.map((option) => option.textContent ?? '');
+    expect(labels.some((label) => label.endsWith('a note'))).toBe(true);
+    expect(labels.some((label) => /\d+ codes?$/.test(label))).toBe(true);
+
+    // And each row opens its own kind.
+    const noteRow = options[labels.findIndex((label) => label.endsWith('a note'))];
+    fireEvent.click(noteRow);
+    await waitFor(() => expect(notePanel()).not.toBeNull());
+    expect(noteField()).toHaveValue('A note over the turn.');
   });
 });

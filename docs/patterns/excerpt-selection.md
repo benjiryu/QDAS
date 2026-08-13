@@ -55,7 +55,9 @@ Requirements carried from D-028: the menu adds no capability, every item exists 
 | `confirmed` | A range is captured and the panel is open |
 | `saved` | Range persisted with at least one code assignment |
 
-Transitions: `idle` → `confirmed` on capture. `confirmed` → `saved` on save with a non-empty pending assignment, or per D-055 with a saved note: an excerpt persists with at least one code or a note. `confirmed` → `idle` on closing with neither, which discards the capture; with codes checked, closing commits, per D-042; in the note panel, closing with text commits the note. `saved` → `confirmed` via `excerpt.open` per D-030, range locked, assignments preloaded. Note-only excerpts reopen through `note.open` into the note panel.
+Transitions: `idle` → `confirmed` on capture. `confirmed` → `saved` on save with a non-empty pending assignment, or per D-055 with a saved note: an excerpt persists with at least one code or a note. `confirmed` → `idle` on closing with neither, which discards the capture; with codes checked, closing commits, per D-042; in the note panel, closing with text commits the note. `saved` → `confirmed` via `excerpt.open` per D-030, range locked, assignments preloaded. Note-only excerpts reopen through `note.open` into the note panel, and **clicking** one opens the note panel as well: a click means "open what is here", so it answers with whatever is there.
+
+`excerpt.open` deliberately does not route that way. It reopens for coding whatever the excerpt carries, and it is the only path by which a passage noted before it was coded can gain codes: re-capturing the same range creates a second excerpt rather than editing the first. The three routes each mean something distinct — the click asks what is here, `excerpt.open` asks to code, `note.open` asks for the note.
 
 There is no adjustment phase. Fixing a wrong range means cancelling and reselecting, which native selection makes cheap. If sessions show that cancel-and-reselect is not cheap for screen reader users, that is D-036's reopening evidence.
 

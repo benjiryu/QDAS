@@ -906,8 +906,14 @@ export function TranscriptWorkspace({
         allNotes,
       );
       if (here.length === 0) return;
-      // One opens; several ask, exactly as the command does.
-      excerpt.runOpenAt(here);
+      /*
+        Routed by what each excerpt carries: a note with no codes opens the note
+        panel rather than an empty codebook. Clicking means "open what is here",
+        so it answers with whatever is here — where the two chords say what they
+        want, `excerpt.open` reopening for coding and `note.open` reaching the
+        note.
+      */
+      excerpt.runOpenByContentAt(here);
     },
     [allExcerpts, allNotes, effectiveAssignments, excerpt, resolved],
   );

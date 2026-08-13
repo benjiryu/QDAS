@@ -480,25 +480,40 @@ test('the transcript grows and the chrome does not', async ({ page }) => {
 });
 
 test('the rail scales with the prose rather than staying behind', async ({ page }) => {
-  // D-056 asks for the rail's alignment to move with the text. Its widths were
-  // in `rem`, which is root-relative and would have left the speaker column and
-  // the rail fixed while the words inside them grew.
-  const pillWidth = () =>
-    page
-      .locator('.transcript-turn__pill')
-      .first()
-      .evaluate((node) => node.getBoundingClientRect().width);
-  const speakerWidth = () =>
-    page
-      .locator('.transcript-turn__speaker')
-      .first()
-      .evaluate((node) => node.getBoundingClientRect().width);
+  /*
+    D-056 asks for the rail's alignment to move with the text. Its widths were
+    in `rem`, which is root-relative and would have left the speaker column and
+    the rail fixed while the words inside them grew.
 
-  const before = { pill: await pillWidth(), speaker: await speakerWidth() };
+    The note icon is measured here too, and was not when this was written —
+    which is how it shipped frozen. It is a `button`, and the user-agent sheet
+    gives buttons a font of their own rather than letting them inherit one, so
+    its `em` sizing resolved against roughly 13.3px and never moved. A test that
+    checks two of the three things in a row is a test that can pass while the
+    third stands still.
+  */
+  const widthOf = (selector: string) =>
+    page.locator(selector).first().evaluate((node) => node.getBoundingClientRect().width);
+
+  const before = {
+    pill: await widthOf('.transcript-turn__pill'),
+    speaker: await widthOf('.transcript-turn__speaker'),
+    icon: await widthOf('.transcript-turn__note'),
+  };
+
+  // The pointer-target floor, checked at the default size where it is tightest.
+  const iconBox = (await page.locator('.transcript-turn__note').first().boundingBox())!;
+  expect(iconBox.width).toBeGreaterThanOrEqual(24);
+  expect(iconBox.height).toBeGreaterThanOrEqual(24);
+
   await maximiseTextSize(page);
 
-  expect(await pillWidth()).toBeGreaterThan(before.pill * 1.5);
-  expect(await speakerWidth()).toBeGreaterThan(before.speaker * 1.5);
+  expect(await widthOf('.transcript-turn__pill')).toBeGreaterThan(before.pill * 1.5);
+  expect(await widthOf('.transcript-turn__speaker')).toBeGreaterThan(before.speaker * 1.5);
+  expect(
+    await widthOf('.transcript-turn__note'),
+    'the note icon grows with the rail around it',
+  ).toBeGreaterThan(before.icon * 1.5);
 });
 
 test('nothing scrolls sideways at maximum text size, down to 320px', async ({ page }) => {
