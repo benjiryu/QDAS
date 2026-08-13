@@ -19,12 +19,39 @@ import type { Id } from '../../domain';
  * workspace, which owns the records, performs it.
  */
 
-/** What the note is attached to. */
+/**
+ * Where a note the panel writes attaches, per D-055 and D-058.
+ *
+ * The three scopes D-058 restored are derived from the record rather than
+ * stored on it, so these are about what the panel is *doing* rather than about
+ * a field: creating against a capture, editing what an excerpt already carries,
+ * editing a note that hangs off a source or the project, or writing a new one
+ * where the scope is still the writer's to choose.
+ */
 export type NoteTarget =
   /** A capture with no record yet: saving is what creates the excerpt. */
   | { kind: 'capture' }
   /** An excerpt already saved, with its existing note where it has one. */
-  | { kind: 'excerpt'; excerptId: Id; noteId: Id | null };
+  | { kind: 'excerpt'; excerptId: Id; noteId: Id | null }
+  /** An existing file-wide or project note, reached from the Notes page. */
+  | { kind: 'note'; noteId: Id }
+  /**
+   * A new note with no excerpt, written from the Notes page.
+   *
+   * `scope` is a source id or the project, and unlike the others it is the
+   * writer's to change before saving — which is why it is the one target that
+   * carries a field the panel renders.
+   */
+  | { kind: 'new'; scope: NoteWriteScope };
+
+/** A source id, or the project. D-058. */
+export type NoteWriteScope = { sourceId: Id } | 'project';
+
+/** One option in the scope field. */
+export interface NoteScopeOption {
+  value: string;
+  label: string;
+}
 
 /**
  * What closing the panel did.
@@ -57,7 +84,22 @@ export interface NotePanelApi {
   setText: (text: string) => void;
   /** True when it opened on an existing note rather than a blank one. */
   isLoaded: boolean;
-  open: (options: { target: NoteTarget; label: string; text?: string }) => void;
+  open: (options: {
+    target: NoteTarget;
+    label: string;
+    text?: string;
+    /**
+     * Offered only when the scope is still the writer's to choose, which is a
+     * new non-excerpt note. Editing one leaves it where it is: D-058 specifies
+     * the field for creation and says nothing about moving a note between
+     * scopes, so the build does not invent the move.
+     */
+    scopeOptions?: NoteScopeOption[];
+  }) => void;
+  /** The chosen scope, while a new non-excerpt note is being written. */
+  scopeOptions: NoteScopeOption[];
+  scope: string;
+  setScope: (value: string) => void;
   /** The single exit. Escape, the close control, and clicking outside all land here. */
   close: () => void;
   setFieldElement: (node: HTMLTextAreaElement | null) => void;
@@ -71,6 +113,9 @@ interface Options {
   onCommit: (commit: NoteCommit) => void;
 }
 
+/** The scope field's value for the project, which has no id of its own. */
+export const PROJECT_SCOPE = 'project';
+
 export function useNotePanel({ onCommit }: Options): NotePanelApi {
   const announcer = useAnnouncer();
 
@@ -78,6 +123,8 @@ export function useNotePanel({ onCommit }: Options): NotePanelApi {
   const [label, setLabel] = useState('');
   const [text, setText] = useState('');
   const [target, setTarget] = useState<NoteTarget>({ kind: 'capture' });
+  const [scopeOptions, setScopeOptions] = useState<NoteScopeOption[]>([]);
+  const [scope, setScope] = useState('');
   /** What it opened holding, so closing can tell a change from a no-op. */
   const [openedWith, setOpenedWith] = useState('');
 
@@ -87,8 +134,16 @@ export function useNotePanel({ onCommit }: Options): NotePanelApi {
   }, []);
 
   const open = useCallback<NotePanelApi['open']>(
-    ({ target: nextTarget, label: nextLabel, text: nextText = '' }) => {
+    ({ target: nextTarget, label: nextLabel, text: nextText = '', scopeOptions: options = [] }) => {
       setTarget(nextTarget);
+      setScopeOptions(options);
+      setScope(
+        nextTarget.kind === 'new'
+          ? nextTarget.scope === 'project'
+            ? PROJECT_SCOPE
+            : nextTarget.scope.sourceId
+          : '',
+      );
       setLabel(nextLabel);
       setText(nextText);
       setOpenedWith(nextText);
@@ -150,14 +205,26 @@ export function useNotePanel({ onCommit }: Options): NotePanelApi {
     setIsOpen(false);
     setText('');
     setOpenedWith('');
-    onCommit({ outcome, target, text: trimmed });
-  }, [onCommit, openedWith, target, text]);
+    setScopeOptions([]);
+
+    // The scope the writer settled on, folded back into the target so the
+    // caller writes the note where the field says rather than where it opened.
+    const committed: NoteTarget =
+      target.kind === 'new'
+        ? { kind: 'new', scope: scope === PROJECT_SCOPE ? 'project' : { sourceId: scope } }
+        : target;
+
+    onCommit({ outcome, target: committed, text: trimmed });
+  }, [onCommit, openedWith, scope, target, text]);
 
   return {
     isOpen,
     label,
     text,
     setText,
+    scopeOptions,
+    scope,
+    setScope,
     isLoaded: openedWith.trim() !== '',
     open,
     close,

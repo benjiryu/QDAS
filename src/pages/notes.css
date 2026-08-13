@@ -1,0 +1,102 @@
+/*
+ * The Notes page, per D-058 and destinations.md section 3.
+ *
+ * The two-column layout, the filter control and the pills are the Coded Data
+ * page's and are imported from `codedData.css` rather than restated: D-058 says
+ * the filter is that pattern reused, and a second copy would drift the first
+ * time either page was touched. Only what is this page's own is here.
+ */
+
+.notes__new {
+  font: inherit;
+  padding: 0.4rem 0.9rem;
+  border-radius: var(--radius-medium);
+  border: var(--border-thick) solid var(--color-grey-750);
+  background: var(--row-bg);
+  color: var(--color-black);
+  cursor: pointer;
+}
+
+.notes__section h2 {
+  font-size: 1rem;
+  margin: 1rem 0 0.5rem;
+}
+
+.notes__section:first-of-type h2 {
+  margin-top: 0;
+}
+
+/*
+ * The note card, with the edge bar the Figma frame carries. The bar is
+ * decoration: everything it could be read as saying is in the text beside it.
+ */
+.notes__card {
+  padding: 0.6rem 0.75rem;
+  margin-bottom: 0.5rem;
+  background: var(--surface);
+  border: var(--border-thin) solid var(--border);
+  border-left: 0.25rem solid var(--color-grey-750);
+  border-radius: var(--radius-small);
+}
+
+.notes__text {
+  margin: 0.35rem 0 0;
+  white-space: pre-wrap;
+}
+
+.notes__meta {
+  margin: 0.25rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.9em;
+}
+
+.notes__excerpt {
+  margin: 0;
+}
+
+.notes__excerpt summary {
+  cursor: pointer;
+}
+
+.notes__excerpt-full {
+  margin: 0.35rem 0 0;
+  padding: 0.35rem 0.5rem;
+  background: var(--row-bg);
+  border-radius: var(--radius-small);
+}
+
+.notes__codes {
+  margin: 0.35rem 0 0;
+  font-size: 0.9em;
+}
+
+.notes__pills {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-right: 0.4rem;
+}
+
+/*
+ * A non-excerpt entry is one control: the whole card opens the panel, so the
+ * hit area is the card rather than a word inside it. Left-aligned and full
+ * width, because a button holding a paragraph is not a button-shaped thing.
+ */
+.notes__open {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  padding: 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.notes__open:hover .notes__text {
+  text-decoration: underline;
+}

@@ -24,6 +24,7 @@ import { segmentsA, segmentsB, sourceA, sourceB } from './transcripts.generated'
 import {
   CODEBOOK_VERSION_ID,
   CODING_ROUND_ID,
+  CURRENT_CODER_ID,
   SECOND_CODER_ID,
   THIRD_CODER_ID,
 } from './project';
@@ -356,7 +357,7 @@ export const codeAssignments: CodeAssignment[] = specs.flatMap((spec) =>
   })),
 );
 
-export const notes: Note[] = specs
+const excerptNotes: Note[] = specs
   .filter((spec) => spec.note !== undefined)
   .map((spec) => ({
     noteId: `nt-${spec.excerptId.slice(3)}`,
@@ -368,10 +369,60 @@ export const notes: Note[] = specs
     status: 'active',
     createdAt: spec.createdAt,
     relatedExcerptId: spec.excerptId,
-    // Coding notes attach to the excerpt. File-wide notes are a separate
-    // surface and are not built in v0.1. D-011 and D-017.
     relatedSourceId: null,
     relatedAssignmentId: null,
     relatedCodeId: null,
     relatedReviewItemId: null,
   }));
+
+/**
+ * One file-wide note and one project note, per D-058.
+ *
+ * Scope is derived rather than stored: `relatedExcerptId` set means excerpt,
+ * else `relatedSourceId` means the source, else the project. So these are
+ * ordinary notes distinguished only by which relation they carry.
+ *
+ * The current coder's, deliberately. Every other seeded note belongs to the
+ * second coder, and R-4 shows a participant only their own during independent
+ * coding — authored by anyone else these would be invisible and the fixture
+ * would demonstrate nothing.
+ *
+ * The excerpt scope has no own-coder example here, so a fresh session shows
+ * these two and no excerpt note. Giving it one means seeding an excerpt for the
+ * current coder, which moves Coded data's counts and its empty state; that is a
+ * change to make deliberately rather than as a side effect of this one.
+ */
+const scopedNotes: Note[] = [
+  {
+    noteId: 'nt-file-a1',
+    authorId: CURRENT_CODER_ID,
+    noteType: null,
+    noteText:
+      'This interview keeps returning to the waiting list. Worth checking whether the second transcript does the same before deciding it is a theme.',
+    visibility: 'afterIndependentCoding',
+    status: 'active',
+    createdAt: '2026-02-11T09:12:00.000Z',
+    relatedExcerptId: null,
+    relatedSourceId: sourceA.sourceId,
+    relatedAssignmentId: null,
+    relatedCodeId: null,
+    relatedReviewItemId: null,
+  },
+  {
+    noteId: 'nt-project-a1',
+    authorId: CURRENT_CODER_ID,
+    noteType: null,
+    noteText:
+      'Both interviews describe learning that happens beside someone rather than in a workshop. If that holds across the set it may want a code of its own.',
+    visibility: 'afterIndependentCoding',
+    status: 'active',
+    createdAt: '2026-02-11T09:20:00.000Z',
+    relatedExcerptId: null,
+    relatedSourceId: null,
+    relatedAssignmentId: null,
+    relatedCodeId: null,
+    relatedReviewItemId: null,
+  },
+];
+
+export const notes: Note[] = [...excerptNotes, ...scopedNotes];

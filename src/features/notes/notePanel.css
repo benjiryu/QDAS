@@ -45,3 +45,19 @@
   font-size: 0.85em;
   color: var(--color-grey-750);
 }
+
+/*
+ * The scope field, per D-058. Offered only while a new non-excerpt note is
+ * being written; an existing note stays where it is.
+ */
+.note-panel__scope {
+  font: inherit;
+  color: inherit;
+  padding: 0.35rem;
+  background: var(--surface);
+  border: var(--border-thin) solid var(--border);
+  border-radius: var(--radius-small);
+  /* Its own width rather than the field's: a source title is long, and a
+     select stretched to the panel reads as a text field at a glance. */
+  max-width: 100%;
+}

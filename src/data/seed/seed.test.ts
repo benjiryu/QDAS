@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { noteScope } from '../../domain';
 import { createSeedFixture } from './index';
+import { CURRENT_CODER_ID } from './project';
 
 /**
  * The fixture is checked against the required shape in
@@ -211,14 +213,55 @@ describe('pre-existing coded excerpts', () => {
     }
   });
 
-  it('attaches every note to an excerpt, untyped, per D-011 and D-020', () => {
+  it('gives every note exactly one scope, untyped, per D-058 and D-020', () => {
+    /*
+      Amended for D-058, which brought back the two non-excerpt tiers. This
+      asserted that every note attaches to an excerpt, which was true while the
+      excerpt was the only scope and is now false by design.
+
+      What survives is the part that mattered: a note resolves to exactly one
+      tier, and an excerpt-scoped one still points at a real excerpt. Scope is
+      derived from which relation is set, so "exactly one" is the property that
+      keeps the derivation unambiguous.
+    */
     const excerptIds = new Set(fixture.excerpts.map((excerpt) => excerpt.excerptId));
+    const sourceIds = new Set(fixture.sources.map((source) => source.sourceId));
     expect(fixture.notes.length).toBeGreaterThan(0);
+
     for (const note of fixture.notes) {
-      expect(note.relatedExcerptId).not.toBeNull();
-      expect(excerptIds.has(note.relatedExcerptId as string)).toBe(true);
       expect(note.noteType).toBeNull();
+
+      const relations = [note.relatedExcerptId, note.relatedSourceId].filter(
+        (relation) => relation !== null,
+      );
+      expect(relations.length, `${note.noteId} carries both relations`).toBeLessThanOrEqual(1);
+
+      switch (noteScope(note)) {
+        case 'excerpt':
+          expect(excerptIds.has(note.relatedExcerptId as string)).toBe(true);
+          break;
+        case 'source':
+          expect(sourceIds.has(note.relatedSourceId as string)).toBe(true);
+          break;
+        case 'project':
+          expect(note.relatedExcerptId).toBeNull();
+          expect(note.relatedSourceId).toBeNull();
+          break;
+      }
     }
+  });
+
+  it('carries one own note in each non-excerpt scope, per D-058', () => {
+    /*
+      The fixture extension Task 30 asks for, and it has to be the current
+      coder's: R-4 shows a participant only their own notes during independent
+      coding, so notes authored by anyone else would be invisible and the
+      extension would demonstrate nothing.
+    */
+    const own = fixture.notes.filter((note) => note.authorId === CURRENT_CODER_ID);
+
+    expect(own.filter((note) => noteScope(note) === 'source')).toHaveLength(1);
+    expect(own.filter((note) => noteScope(note) === 'project')).toHaveLength(1);
   });
 
   it('hides seeded work until independent coding closes, per R-4', () => {

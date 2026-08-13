@@ -698,6 +698,14 @@ export function TranscriptWorkspace({
         return;
       }
 
+      /*
+        The transcript only ever opens the panel on a capture or on an excerpt.
+        The other two targets D-058 added — an existing non-excerpt note, and a
+        new one being written against a scope — belong to the Notes page, which
+        has its own commit handler.
+      */
+      if (commit.target.kind !== 'excerpt') return;
+
       const { excerptId } = commit.target;
       const existing = allNotes.find((candidate) => candidate.relatedExcerptId === excerptId);
       const isOwn = existing?.authorId === userId;

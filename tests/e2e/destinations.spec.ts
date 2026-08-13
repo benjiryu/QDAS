@@ -340,3 +340,48 @@ test('the sidebar reflows at 320px without scrolling sideways', async ({ page })
     expect(overflows, `overflow on ${destination.label}`).toBe(false);
   }
 });
+
+/* ---------- The Notes page, per D-058 ---------- */
+
+test('the notes columns stack in reading order at 320px', async ({ page }) => {
+  /*
+    D-033: the narrow stack is the layout that is designed and the wide one
+    derives from it, so the filter precedes the list at every width. Measured
+    rather than inferred from the DOM, which the unit test already pins — this
+    is the half jsdom cannot answer, since it has no layout at all.
+  */
+  await page.goto(`${projectUrl}/notes`);
+  await expect(page.getByRole('heading', { level: 1, name: 'Notes' })).toBeVisible();
+
+  await page.setViewportSize({ width: 320, height: 900 });
+
+  const filters = (await page.locator('[data-region="filters"]').boundingBox())!;
+  const notes = (await page.locator('[data-region="notes"]').boundingBox())!;
+
+  // One column, filter above list.
+  expect(notes.y).toBeGreaterThanOrEqual(filters.y + filters.height - 1);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+    ),
+  ).toBe(false);
+
+  // Two columns once there is room, and the filter still comes first.
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const wideFilters = (await page.locator('[data-region="filters"]').boundingBox())!;
+  const wideNotes = (await page.locator('[data-region="notes"]').boundingBox())!;
+  expect(wideNotes.x).toBeGreaterThan(wideFilters.x);
+});
+
+test('the notes page has no accessibility violations, panel open and closed', async ({ page }) => {
+  await page.goto(`${projectUrl}/notes`);
+  await expect(page.getByRole('heading', { level: 1, name: 'Notes' })).toBeVisible();
+
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+
+  // And with the note panel over it, which is where the scope field lives.
+  await page.getByRole('button', { name: 'New note' }).click();
+  await expect(page.locator('[data-region="note-panel"]')).toBeVisible();
+
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+});

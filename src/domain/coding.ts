@@ -447,3 +447,24 @@ export function applySupersession(
 export function isStanding(assignment: CodeAssignment): boolean {
   return assignment.status !== 'superseded';
 }
+
+/* ---------- Note scope, per D-058 ---------- */
+
+/**
+ * Which of the three tiers a note belongs to.
+ *
+ * Specification: decision D-058, docs/pages/destinations.md section 3.
+ *
+ * Derived rather than stored, which is what made the two non-excerpt tiers
+ * cheap to bring back: `relatedExcerptId` was already there, `relatedSourceId`
+ * was reserved by D-011 and left unused, and a note carrying neither is the
+ * project's. Nothing in the model changed to support this — the scopes were
+ * always expressible and only the surface for them was missing.
+ */
+export type NoteScope = 'excerpt' | 'source' | 'project';
+
+export function noteScope(note: Note): NoteScope {
+  if (note.relatedExcerptId !== null) return 'excerpt';
+  if (note.relatedSourceId !== null) return 'source';
+  return 'project';
+}

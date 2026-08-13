@@ -25,8 +25,20 @@ import './notePanel.css';
 export function NotePanel({ panel }: { panel: NotePanelApi }) {
   const headingId = useId();
   const fieldId = useId();
+  const scopeId = useId();
 
-  const { isOpen, label, text, setText, isLoaded, close, setFieldElement } = panel;
+  const {
+    isOpen,
+    label,
+    text,
+    setText,
+    isLoaded,
+    close,
+    setFieldElement,
+    scopeOptions,
+    scope,
+    setScope,
+  } = panel;
 
   return (
     <ModalOverlay
@@ -65,6 +77,35 @@ export function NotePanel({ panel }: { panel: NotePanelApi }) {
                 <span className="code-panel__close-label">Close</span>
               </button>
             </div>
+
+            {/*
+              The scope, per D-058, and only while it is still the writer's to
+              choose — a new note with no excerpt. Before the text field in
+              reading order, as D-058 specifies, and not focused: the scope
+              arrives already set to the active filter and is usually right,
+              where the text is always empty.
+
+              Editing an existing note shows nothing here. D-058 gives the field
+              for creation and says nothing about moving a note between scopes,
+              so the build does not invent the move.
+            */}
+            {scopeOptions.length > 0 ? (
+              <div className="code-panel__region note-panel__field">
+                <label htmlFor={scopeId}>Attach this note to</label>
+                <select
+                  id={scopeId}
+                  className="note-panel__scope"
+                  value={scope}
+                  onChange={(event) => setScope(event.target.value)}
+                >
+                  {scopeOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
 
             <div className="code-panel__region note-panel__field">
               {/*

@@ -32,6 +32,11 @@ import { clearSourcePositions } from '../data/sourcePositionStore';
  */
 
 const fixture = createSeedFixture();
+
+/** The coder's own seeded notes, which every count on the Notes page starts from. */
+const OWN_SEEDED_NOTES = fixture.notes.filter(
+  (note) => note.authorId === CURRENT_CODER_ID,
+).length;
 const project = fixture.project;
 const source = fixture.sources[0];
 const sourceUrl = `/projects/${project.projectId}/sources/${source.sourceId}`;
@@ -249,7 +254,14 @@ describe('saved work survives the same round trip', () => {
     expect(summaryText()).toContain('1 coded excerpt');
 
     await user.click(sidebar().getByRole('link', { name: 'Notes' }));
-    expect(screen.getByText('1 note')).toBeInTheDocument();
+    /*
+      Counted against the fixture rather than against a literal. D-058 seeded
+      one file-wide and one project note for the current coder, so the page no
+      longer starts at zero — and a test that hard-codes the total has to be
+      edited every time the fixture gains a note, which teaches whoever edits it
+      to stop reading the number.
+    */
+    expect(screen.getByText(`${OWN_SEEDED_NOTES + 1} notes`)).toBeInTheDocument();
 
     // And back on the transcript, the sentences are still marked coded.
     await user.click(sidebar().getByRole('link', { name: source.title }));
@@ -334,7 +346,9 @@ describe('destination entry, per the shared rules', () => {
               // substring of the summary line rather than the whole of it.
       ['Code book', `${fixture.codes.length} codes`],
       ['Coded data', '0 coded excerpts'],
-      ['Notes', '0 notes'],
+      // Not zero since D-058: the fixture carries the coder's own file-wide and
+      // project notes, which is what gives the page something to show.
+      ['Notes', `${OWN_SEEDED_NOTES} notes`],
     ]) {
       await user.click(sidebar().getByRole('link', { name: label }));
 
