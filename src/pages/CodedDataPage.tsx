@@ -1,4 +1,5 @@
 import { useEffect, useId, useMemo, useState } from 'react';
+import { lineageDescription } from '../features/codes/codeTree';
 import { Link, useParams } from 'react-router';
 import { readCodedDataFilter, readSavedWork, writeCodedDataFilter } from '../data/codingSessionStore';
 import { createSeedFixture } from '../data/seed';
@@ -165,6 +166,9 @@ export function CodedDataPage() {
                     count={filter.count}
                     selected={live === filter.code.codeId}
                     onSelect={setSelected}
+                    depth={filter.depth}
+                    lineage={filter.lineage}
+                    colorToken={filter.code.colorToken}
                   />
                 </li>
               ))}
@@ -257,35 +261,87 @@ function FilterOption({
   count,
   selected,
   onSelect,
+  depth = 0,
+  lineage = [],
+  colorToken,
 }: {
   value: string;
   label: string;
   count: number;
   selected: boolean;
   onSelect: (value: string) => void;
+  /** Level in the codebook, per D-062. 0 for a family, and for "All codes". */
+  depth?: number;
+  /** The ancestors' names, outermost first. */
+  lineage?: readonly string[];
+  /** The family's hue. Absent on "All codes", which belongs to no family. */
+  colorToken?: string;
 }) {
+  const describedById = useId();
+  const describedBy = lineageDescription(lineage);
+
+  /*
+    Three fills for three levels, per D-062, and this is where the decision met
+    a measurement. Its "three-shade token set" has three shades but only two
+    that take black text: shade-1 is 3.43:1 at worst — violet, blue, purple,
+    dark green and rose all fail 4.5:1 — against 6.95:1 for shade-2 and 13.34:1
+    for shade-3. So a family takes shade-2, a child shade-3, and the third level
+    is unfilled with the family border the pill already carries: progressively
+    lighter carried to its end rather than a shade invented to fill a gap.
+
+    Deeper than that reuses the unfilled treatment. Indentation carries what is
+    left, which is the channel D-062 requires anyway — shading reinforces level
+    and never conveys it alone.
+  */
+  const level = Math.min(depth, 2);
+
   return (
     /*
       Wrapping, per D-051: a `for`-associated label beside its control names it
       and then reads again as loose text, so each filter was two stops.
     */
-    <label className="coded-data__filter" data-selected={selected ? '' : undefined}>
+    <>
+    <label
+      className="coded-data__filter"
+      data-selected={selected ? '' : undefined}
+      data-level={level}
+    >
       <input
         type="radio"
         name="coded-data-filter"
         value={value}
         checked={selected}
         onChange={() => onSelect(value)}
+        /*
+          The lineage, per D-054 as D-062 reuses it: the name stays exactly
+          "Water access, 20" and the family rides in the description, so search,
+          sorting and the count all keep operating on a clean name.
+        */
+        aria-describedby={describedBy ? describedById : undefined}
       />
       <span className="coded-data__filter-body">
         {/* The code name is data and scales with the reading preference; the
             count and the punctuation around it are the filter's scaffolding and
             stay put. D-061 classifies the two apart, so they need to be two
             elements. The accessible name is unchanged either way. */}
-        <span className="coded-data__filter-name">{label}</span>,{' '}
+        <span className="coded-data__filter-name" data-color-token={colorToken}>
+          {label}
+        </span>
+        ,{' '}
         <span className="coded-data__count">{count}</span>
       </span>
     </label>
+      {/*
+        Outside the label, not inside it. Inside, its text joins the label's
+        contents and lands in the accessible name — the one thing D-054 rules
+        out, and the name here has to stay the code and its count.
+      */}
+      {describedBy ? (
+        <span id={describedById} className="visually-hidden">
+          {describedBy}
+        </span>
+      ) : null}
+    </>
   );
 }
 

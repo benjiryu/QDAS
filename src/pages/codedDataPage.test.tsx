@@ -335,3 +335,160 @@ describe('the count line', () => {
     expect(summaryText()).toMatch(/\d+ coded excerpts?/);
   });
 });
+
+describe('the filter list, per D-062', () => {
+  /*
+    A lookup surface rather than a teaching one, which is the whole reason this
+    page diverges from the authored order. The codebook and the panel keep it.
+  */
+  const filterRows = () =>
+    Array.from(document.querySelectorAll<HTMLElement>('.coded-data__filter'));
+
+  /** The filter names in rendered order, without "All codes" at the head. */
+  const filterNames = () =>
+    filterRows()
+      .slice(1)
+      .map((row) => row.querySelector('.coded-data__filter-name')!.textContent!);
+
+  const showEveryCode = () => writeSimulatedSession({ role: 'qualitativeLead' });
+
+  it('orders families alphabetically and exhausts each before the next', () => {
+    showEveryCode();
+    renderAt(codedDataUrl);
+
+    const names = filterNames();
+    const familyNames = fixture.codes
+      .filter((code) => code.parentCodeId === null && names.includes(code.name))
+      .map((code) => code.name);
+
+    // Families in alphabetical order.
+    const familyPositions = familyNames.map((name) => names.indexOf(name));
+    expect([...familyPositions].sort((a, b) => a - b)).toEqual(familyPositions);
+    expect([...familyNames].sort((a, b) => a.localeCompare(b))).toEqual(familyNames);
+
+    // And a family is finished before the next begins: every descendant of a
+    // family sits between it and the family after it.
+    const codeById = new Map(fixture.codes.map((code) => [code.codeId, code]));
+    const familyOf = (name: string): string => {
+      let code = fixture.codes.find((candidate) => candidate.name === name)!;
+      while (code.parentCodeId) code = codeById.get(code.parentCodeId)!;
+      return code.name;
+    };
+    const runs = names.map(familyOf).filter((name, index, all) => name !== all[index - 1]);
+    expect(new Set(runs).size, 'no family is interrupted and resumed').toBe(runs.length);
+  });
+
+  it('orders siblings alphabetically under their parent', () => {
+    showEveryCode();
+    renderAt(codedDataUrl);
+
+    const names = filterNames();
+    const parents = fixture.codes.filter((code) =>
+      fixture.codes.some((child) => child.parentCodeId === code.codeId),
+    );
+
+    for (const parent of parents) {
+      const siblings = fixture.codes
+        .filter((code) => code.parentCodeId === parent.codeId && names.includes(code.name))
+        .map((code) => code.name);
+      if (siblings.length < 2) continue;
+
+      const rendered = names.filter((name) => siblings.includes(name));
+      expect([...rendered].sort((a, b) => a.localeCompare(b)), parent.name).toEqual(rendered);
+    }
+  });
+
+  it('is not canonical order, which is the divergence D-062 makes', () => {
+    /*
+      Asserted against a case where the two actually differ. On a fixture where
+      authored order happened to be alphabetical this test would pass while the
+      page ignored the decision entirely.
+    */
+    showEveryCode();
+    renderAt(codedDataUrl);
+
+    const names = filterNames();
+    const canonical = [...fixture.codes]
+      .filter((code) => names.includes(code.name))
+      .sort((a, b) => a.canonicalOrderIndex - b.canonicalOrderIndex)
+      .map((code) => code.name);
+
+    expect(canonical).not.toEqual(names);
+  });
+
+  it('indents by level and carries the family hue', () => {
+    showEveryCode();
+    renderAt(codedDataUrl);
+
+    const codeById = new Map(fixture.codes.map((code) => [code.codeId, code]));
+    const depthOf = (name: string): number => {
+      let code = fixture.codes.find((candidate) => candidate.name === name)!;
+      let depth = 0;
+      while (code.parentCodeId) {
+        code = codeById.get(code.parentCodeId)!;
+        depth += 1;
+      }
+      return depth;
+    };
+
+    for (const row of filterRows().slice(1)) {
+      const pill = row.querySelector<HTMLElement>('.coded-data__filter-name')!;
+      const code = fixture.codes.find((candidate) => candidate.name === pill.textContent)!;
+
+      expect(row.dataset.level, code.name).toBe(String(Math.min(depthOf(code.name), 2)));
+      // The family's hue, the same token the rail and the panel read.
+      expect(pill.dataset.colorToken, code.name).toBe(code.colorToken);
+    }
+  });
+
+  it('keeps the accessible name pure and puts lineage in the description', () => {
+    /*
+      D-054 reused verbatim, per D-062. The name is what search, sorting and the
+      count all operate on, and what a coder hears when choosing a filter; the
+      family is context and belongs under their own verbosity setting.
+    */
+    showEveryCode();
+    renderAt(codedDataUrl);
+
+    // Chosen from what actually rendered: a code with no assignments has no
+    // filter row, so picking one from the fixture alone finds nothing.
+    const row = filterRows()
+      .slice(1)
+      .find((candidate) => candidate.dataset.level === '1')!;
+    const name = row.querySelector('.coded-data__filter-name')!.textContent!;
+    const count = row.querySelector('.coded-data__count')!.textContent;
+    const child = fixture.codes.find((code) => code.name === name)!;
+    const family = fixture.codes.find((code) => code.codeId === child.parentCodeId)!;
+    const radio = row.querySelector('input')!;
+
+    // Exactly the code name and its count, and nothing else.
+    expect(radio).toHaveAccessibleName(`${name}, ${count}`);
+    expect(radio).toHaveAccessibleDescription(`in ${family.name}`);
+  });
+
+  it('gives a child with unused ancestors its full depth and names them', () => {
+    // D-062's own-view edge. No placeholder row appears for the ancestors; the
+    // child simply keeps its place and says where it came from.
+    renderAt(codedDataUrl);
+
+    const rows = filterRows().slice(1);
+    for (const row of rows) {
+      const name = row.querySelector('.coded-data__filter-name')!.textContent!;
+      const code = fixture.codes.find((candidate) => candidate.name === name)!;
+      if (code.parentCodeId === null) continue;
+
+      const parent = fixture.codes.find((c) => c.codeId === code.parentCodeId)!;
+      const parentRendered = rows.some(
+        (candidate) =>
+          candidate.querySelector('.coded-data__filter-name')!.textContent === parent.name,
+      );
+      if (parentRendered) continue;
+
+      // The ancestor has no row of its own, and the child still indents and
+      // still names it.
+      expect(row.dataset.level).not.toBe('0');
+      const radio = row.querySelector('input')!;
+      expect(radio).toHaveAccessibleDescription(new RegExp(parent.name));
+    }
+  });
+});

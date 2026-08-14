@@ -1048,3 +1048,13 @@ Date: 2026-08 | Workflow: coded data | Status: approved. Amends D-049's filter l
 **Frequency unchanged.** Counts stay visible and stay fused into the accessible name per D-049.
 
 **Own-view edge.** A child whose ancestors are unused renders at its full indentation depth with its lineage description naming the absent ancestors; no disabled placeholder rows.
+
+## D-063 The confirmed-state highlight wears native selection blue
+
+Date: 2026-08 | Workflow: excerpt capture | Status: approved. Extends D-060; retires the purple confirmed highlight
+
+Participants found the panel-open highlight jarring: native selection blue through drag and menu, then a sudden purple at capture. The fix is continuity of appearance, not of mechanism. Keeping the literal native selection through the panel was considered and rejected: focusing or typing in the panel's search field destroys the document selection, so a native-dependent visual would die mid-coding. Capture still converts the range to the application-owned highlight per rule 1.1.
+
+The confirmed-state highlight adopts the same blue token as D-060's author `::selection` style. One continuous visual from drag through menu into the open panel; the ownership handoff at capture is invisible. The same treatment applies when `excerpt.open` or `note.open` reopens a saved excerpt: while a panel addresses a range, that range wears selection blue. On save-or-commit close, the coded family-color treatment (or the note-only gray and underline) appears; that transition is meaningful and stays visible.
+
+Known collision, accepted: blue is also a family hue. Defused by the selection token being distinct from the family blue tokens, the confirmed state existing only while a panel is open, and coded highlights carrying their non-color channel. Session confusion is the reopening evidence.

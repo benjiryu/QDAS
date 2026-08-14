@@ -29,7 +29,12 @@ import type {
   TranscriptSegment,
   User,
 } from '../../domain';
-import { byCanonicalOrder } from '../codes/codeTree';
+import {
+  buildCodeTree,
+  byCanonicalOrder,
+  byLookupPath,
+  flattenCodeTree,
+} from '../codes/codeTree';
 import type { CodedDataView } from './resolveView';
 
 export interface CodedResult {
@@ -48,6 +53,17 @@ export interface CodedResult {
 export interface CodeFilter {
   code: Code;
   count: number;
+  /**
+   * How deep the code sits in the codebook, per D-062. 0 for a family.
+   *
+   * Derived from the whole codebook rather than from the codes in this list,
+   * which is what makes D-062's own-view edge fall out rather than needing a
+   * rule: a child whose ancestors nobody used keeps its real depth and names
+   * them, and no placeholder row appears for a code with no excerpts.
+   */
+  depth: number;
+  /** The ancestors' names, outermost first. Empty for a family. */
+  lineage: string[];
 }
 
 export interface CodedData {
@@ -120,10 +136,32 @@ export function buildCodedData({
 
   // Only codes carrying a standing assignment, per section 2: a code nobody has
   // used is not a filter, in either view.
+  /*
+    Depth and lineage for every code in the codebook, not only the used ones.
+    See `CodeFilter.depth`: the absent ancestors are exactly what a child with
+    unused parents needs in order to indent honestly.
+  */
+  const placeById = new Map(
+    flattenCodeTree(buildCodeTree([...codes])).map((node) => [
+      node.code.codeId,
+      { depth: node.depth, lineage: node.parentPath },
+    ]),
+  );
+
+  /*
+    Lookup order, per D-062: families alphabetical, depth-first within, siblings
+    alphabetical. A page-scoped divergence from the authored order — the
+    codebook and the panel still teach the vocabulary in the order it was
+    written, and the sort on the result rows below is untouched.
+  */
   const filters: CodeFilter[] = [...counts.entries()]
-    .map(([codeId, count]) => ({ code: codeById.get(codeId), count }))
-    .filter((entry): entry is CodeFilter => entry.code !== undefined)
-    .sort((a, b) => byCanonicalOrder(a.code, b.code));
+    .map(([codeId, count]) => {
+      const code = codeById.get(codeId);
+      const place = placeById.get(codeId);
+      return code ? { code, count, depth: place?.depth ?? 0, lineage: place?.lineage ?? [] } : null;
+    })
+    .filter((entry): entry is CodeFilter => entry !== null)
+    .sort((a, b) => byLookupPath([...a.lineage, a.code.name], [...b.lineage, b.code.name]));
 
   /* ---------- Results ---------- */
 

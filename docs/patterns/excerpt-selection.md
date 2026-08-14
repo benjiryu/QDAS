@@ -80,7 +80,7 @@ Boundaries are exact characters: `startSegmentId` + `startOffset` through `endSe
 
 ## 6. Visual behavior
 
-- The application highlight is the only selection visual after capture; native selection is cleared.
+- The application highlight is the only selection visual after capture; native selection is cleared. Per D-063 the confirmed-state highlight uses the same blue token as the author `::selection` style, so drag, menu, and open panel read as one continuous visual; the purple confirmed treatment is retired. A saved range reopened by `excerpt.open` or `note.open` wears the same selection blue while its panel is open, returning to its saved treatment on close.
 - It is also the selection visual **while the context menu is open**, painted from the snapshot the menu took. Opening the menu moves focus out of the transcript, and how a browser paints a selection that no longer has focus is not something this pattern can rest on — which is what made the highlight vanish in some scenarios and not others. The menu's preview is the lighter band rather than the confirmed one: nothing is captured until an item is chosen, and dismissing the menu removes the preview and puts the native selection back, so a coder who changed their mind about the menu has not lost the passage.
 - A captured range may begin or end mid-sentence. The highlight shows exactly what will be coded.
 - Highlight state is not conveyed by color alone.

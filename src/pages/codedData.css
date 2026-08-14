@@ -87,6 +87,54 @@
   font-size: var(--reading-font-size);
 }
 
+/*
+ * The filter pill carries its family's hue again, per D-062, and its level with
+ * it.
+ *
+ * `em` padding and radius so the pill grows around a name the reader has
+ * scaled, the same treatment D-061 gave every other pill.
+ */
+.coded-data__filter[data-level] .coded-data__filter-name {
+  padding: 0.05em 0.5em;
+  border-radius: 999em;
+  border: 1px solid var(--code-strong, var(--border));
+  background: var(--code-fill, var(--row-bg));
+  color: var(--color-black);
+}
+
+/*
+ * Level 1 takes the lighter shade, level 2 and deeper no fill at all.
+ *
+ * Only two of the family's three shades take black text: shade-1 measures
+ * 3.43:1 at worst, where 4.5:1 is the floor, so it cannot hold a label. Rather
+ * than invent a fourth colour, the third level is the pill's border alone —
+ * progressively lighter carried to its end. Black on shade-2 is 6.95:1 at
+ * worst and on shade-3 is 13.34:1, so every level reads.
+ */
+.coded-data__filter[data-level='1'] .coded-data__filter-name {
+  background: var(--code-wash, var(--row-bg));
+}
+
+.coded-data__filter[data-level='2'] .coded-data__filter-name {
+  background: none;
+}
+
+/*
+ * Indentation is the non-colour channel, per D-062: level is never carried by
+ * hue alone, and this is what survives greyscale and a colour vision
+ * difference.
+ *
+ * In `em` so it tracks the reading scale rather than drifting away from the
+ * names it indents as they grow. D-061.
+ */
+.coded-data__filter[data-level='1'] {
+  margin-left: 1.25em;
+}
+
+.coded-data__filter[data-level='2'] {
+  margin-left: 2.5em;
+}
+
 .coded-data__filter[data-selected] .coded-data__count {
   font-weight: var(--font-weight-bold);
 }

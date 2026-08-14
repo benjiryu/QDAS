@@ -34,6 +34,48 @@ export interface CodeSearchResult {
   matchedOn: 'name' | 'parentPath';
 }
 
+/**
+ * A code's lineage, as the sentence a screen reader hears.
+ *
+ * Specification: D-054, reused verbatim by D-062 for the Coded Data filters.
+ *
+ * Shared so the panel and the filter list cannot word it differently: the same
+ * relation said two ways is the drift the "one component, one label" rule
+ * exists to stop, and here the two surfaces are far enough apart to drift
+ * quietly.
+ *
+ * Outermost first — "in Water access, Rules" for a grandchild — so the path
+ * reads general to specific while the row as a whole reads specific to general:
+ * the code, then its family. Null where there is no lineage; "in" with nothing
+ * after it is worse than silence.
+ */
+export function lineageDescription(lineage: readonly string[]): string | null {
+  return lineage.length > 0 ? `in ${lineage.join(', ')}` : null;
+}
+
+/**
+ * Lookup order for the Coded Data filter list, per D-062.
+ *
+ * Families alphabetical, then depth-first within a family with siblings
+ * alphabetical — which is one path comparison rather than three rules, since
+ * comparing `[...lineage, name]` element by element produces exactly that
+ * traversal.
+ *
+ * Deliberately not canonical order, and deliberately only here. The codebook
+ * and the panel teach the vocabulary in the order it was authored; this is a
+ * lookup surface, and lookup wants alphabet. Scoping is what makes the
+ * divergence defensible, so this comparator has one caller by design.
+ */
+export function byLookupPath(a: readonly string[], b: readonly string[]): number {
+  const depth = Math.min(a.length, b.length);
+  for (let index = 0; index < depth; index += 1) {
+    const order = a[index].localeCompare(b[index], undefined, { sensitivity: 'base' });
+    if (order !== 0) return order;
+  }
+  // A parent precedes its own descendants, which is what depth-first means.
+  return a.length - b.length;
+}
+
 /** Shared with the Codebook page, so the two surfaces cannot order differently. */
 export function byCanonicalOrder(a: Code, b: Code): number {
   return a.canonicalOrderIndex - b.canonicalOrderIndex;
