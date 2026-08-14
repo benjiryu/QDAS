@@ -43,8 +43,10 @@
 
 /*
  * The focused item reads as part of the button family. It used to borrow
- * --excerpt-bg, which is the transcript highlight's green: the same colour
- * meaning two unrelated things on two surfaces.
+ * `--excerpt-bg`, which is the transcript highlight's colour — the same value
+ * meaning two unrelated things on two surfaces. That it is now the selection
+ * blue rather than the violet it was then only sharpens the reason to keep them
+ * apart.
  */
 .excerpt-menu__item[data-focused] {
   background: var(--color-blue-10, Highlight);

@@ -85,8 +85,15 @@
  * The highlight sits on the captured characters, not on the sentences that
  * contain them. Section 6: a range may begin or end mid-sentence, and what is
  * highlighted is exactly what will be coded.
+ *
+ * Selected through the sentence's state attribute so it outranks the coded
+ * wash, which is written at the same specificity in another stylesheet and
+ * would otherwise win on source order alone. That precedence is the intended
+ * one and is worth spelling out: while a panel is addressing a range, what the
+ * panel is doing to it matters more than what it already carries — a reopened
+ * excerpt would otherwise keep its family wash and look untouched.
  */
-.transcript-segment__run[data-captured] {
+.transcript-turn [data-excerpt-state] .transcript-segment__run[data-captured] {
   background: var(--excerpt-bg);
   box-shadow: 0 -2px 0 0 var(--excerpt-edge) inset, 0 2px 0 0 var(--excerpt-edge) inset;
 }
@@ -112,12 +119,13 @@
 }
 
 /*
- * Confirmed is a heavier band, so a captured range is distinct from the coded
- * indicator a saved excerpt leaves behind. Section 7.
+ * There is no second, heavier band any more.
+ *
+ * It existed to separate a confirmed range from a lighter in-progress one, and
+ * D-060 removed the only case that drew the lighter one: since the menu stopped
+ * painting a preview, `data-captured` renders while a range is confirmed and at
+ * no other time. Two treatments for one state is one treatment too many.
  */
-.transcript-turn [data-excerpt-state='confirmed'] .transcript-segment__run[data-captured] {
-  background: var(--excerpt-confirmed-bg);
-}
 
 @media (forced-colors: active) {
   /* Backgrounds are dropped here, so the boundary bars carry the whole signal. */
@@ -132,22 +140,30 @@
 }
 
 /*
- * Violet, which no code family uses.
+ * The selection's own blue, per D-063, and the violet is retired.
  *
- * These sat in dark green until coded runs began drawing their family's wash.
- * The indigo family renders dark green, so an in-progress range and a coded one
- * would have washed the same colour, and section 7 asks that the pending range
- * be distinct from a coded one. Only the boundary bars would have separated
- * them.
+ * Participants found the old treatment jarring, and rightly: the passage was
+ * native selection blue through the drag and the menu, then turned purple the
+ * instant it was captured. Nothing had happened to the range that a coder cared
+ * about — the ownership moved from the browser to the application, which is
+ * bookkeeping — so the colour change was announcing an event that was not one.
  *
- * Violet rather than the yellow the coded treatment vacated: an edge bar has to
- * stay visible on its own wash, and yellow-1 on yellow-3 is 1.46:1. Violet-1 on
- * violet-3 is 3.89:1, which clears the 3:1 a non-text indicator needs and
- * matches what dark green managed. Black on violet-2 for the confirmed state is
- * 6.95:1, up from 4.12:1.
+ * The same token D-060 gave `::selection`, so drag, menu and open panel are one
+ * continuous visual. What is still meaningful stays visible: on save the coded
+ * family wash appears, and that transition marks something a coder did.
+ *
+ * The bars take the application's blue rather than a third hue, so the band and
+ * its boundaries read as one thing. `blue-100` measures 6.07:1 on the band,
+ * where a non-text indicator needs 3:1, and 9.18:1 on white for the stretch of
+ * bar that overhangs. Black text on the band is 13.89:1, up from 6.95:1 on the
+ * violet it replaces.
+ *
+ * The collision D-063 records and accepts: blue is also a code family's hue.
+ * Defused by this token being distinct from the family blues, by the band
+ * existing only while a panel is open, and by coded runs carrying an underline
+ * that this never draws.
  */
 :root {
-  --excerpt-bg: var(--violet-3);
-  --excerpt-confirmed-bg: var(--violet-2);
-  --excerpt-edge: var(--violet-1);
+  --excerpt-bg: var(--native-selection-bg);
+  --excerpt-edge: var(--color-blue-100);
 }

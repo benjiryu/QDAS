@@ -28,6 +28,7 @@ import {
   turnCoding,
 } from '../../domain';
 import type {
+  CapturedRange,
   Code,
   CodeAssignment,
   Excerpt,
@@ -290,6 +291,15 @@ export function TranscriptWorkspace({
     onCommit: (commit) => noteCommit.current?.(commit),
   });
 
+  /**
+   * The range the note panel is addressing, painted while it is open. D-063.
+   *
+   * State rather than a ref, because the transcript has to repaint when it
+   * changes. Display only: the excerpt machine does not move for a note edit,
+   * so the commands stay available and nothing here is captured.
+   */
+  const [notedRange, setNotedRange] = useState<CapturedRange | null>(null);
+
   const excerpt = useExcerptSelection({
     resolved,
     containerRef: orientation.containerRef,
@@ -316,6 +326,7 @@ export function TranscriptWorkspace({
     savedAt,
     notedAt,
     codePanelOpen: panelOpen,
+    addressedRange: notedRange,
     /* `excerpt.note` with the code panel open goes to its note region rather
        than capturing again. D-055. */
     onFocusPanelNote: () => panelFocusNote.current?.(),
@@ -329,6 +340,8 @@ export function TranscriptWorkspace({
         focus happened to be would land them somewhere they did not come from.
       */
       noteReturnTurnId.current = requireTurnOf(resolved, summary.range.startSegmentId).turn.turnId;
+      /* Wears selection blue while its panel is open, per D-063. */
+      setNotedRange(summary.range);
       notePanel.open({
         target: { kind: 'excerpt', excerptId: summary.excerptId, noteId: summary.noteId },
         label: `sentences ${summary.startSentence} to ${summary.endSentence}`,
@@ -646,6 +659,10 @@ export function TranscriptWorkspace({
       const now = new Date().toISOString();
       const returnTo = noteReturnTurnId.current;
       noteReturnTurnId.current = null;
+      /* The panel is done addressing it, so the range returns to whatever its
+         saved treatment is — the grey and underline of a note-only excerpt, or
+         its family's wash. D-063. */
+      setNotedRange(null);
 
       const land = () => {
         if (returnTo) queueMicrotask(() => orientation.focusTurn(returnTo));

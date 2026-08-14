@@ -280,3 +280,169 @@ test('the code panel note field fills the width of its region', async ({ page })
   // And never past the edge, which `box-sizing` is there to prevent.
   expect(fieldBox.width).toBeLessThanOrEqual(regionBox.width + 1);
 });
+
+/* ---------- The confirmed highlight, per D-063 ---------- */
+
+/** The background the transcript paints on captured characters. */
+async function capturedBackground(page: Page): Promise<string> {
+  return page
+    .locator('[data-captured]')
+    .first()
+    .evaluate((node) => getComputedStyle(node).backgroundColor);
+}
+
+test('capture produces no colour change from the native selection', async ({ page }) => {
+  /*
+    The participant complaint, as an assertion. The passage was selection blue
+    through the drag and the menu and then turned purple the instant it was
+    captured — announcing an event that, to a coder, was not one: the range only
+    changed hands from the browser to the application.
+
+    D-063 makes the application highlight adopt the same token D-060 gave
+    `::selection`, so the handoff is invisible. Compared as painted values
+    rather than as token names, since it is the appearance the complaint was
+    about.
+  */
+  const selectionBlue = await page
+    .locator('[data-segment-id]')
+    .first()
+    .evaluate((node) => getComputedStyle(node, '::selection').backgroundColor);
+
+  await sweepAcrossTwoSentences(page);
+  await press(page, 'excerpt.code');
+  await expect(page.getByRole('dialog', { name: /code assignment/i })).toBeVisible();
+
+  expect(await capturedBackground(page)).toBe(selectionBlue);
+});
+
+test('save produces the coded treatment, which is a change worth seeing', async ({ page }) => {
+  // The other half of D-063: what stays visible. Capture is bookkeeping and is
+  // silent; saving is something the coder did, and it looks like it.
+  const dragged = await sweepAcrossTwoSentences(page);
+  await press(page, 'excerpt.code');
+
+  const panel = page.getByRole('dialog', { name: /code assignment/i });
+  await expect(panel).toBeVisible();
+  const whileOpen = await capturedBackground(page);
+
+  await panel.locator('[data-code-id]').first().click();
+  await page.getByRole('button', { name: 'Save & Close' }).click();
+  await expect(panel).toHaveCount(0);
+
+  const coded = page.locator('[data-coded-run="coded"]').first();
+  await expect(coded).toBeVisible();
+
+  const after = await coded.evaluate((node) => getComputedStyle(node).backgroundColor);
+  expect(after, 'the family wash is not the selection blue').not.toBe(whileOpen);
+  expect(squashed(await highlighted(page)), 'and the capture band is gone').not.toBe(
+    squashed(dragged),
+  );
+});
+
+test('the boundary bars read against the band they sit on', async ({ page }) => {
+  // The D-036 markers carry which end is which, so they are a non-text
+  // indicator and need 3:1 — measured against the new band rather than the
+  // violet one they were chosen for.
+  await sweepAcrossTwoSentences(page);
+  await press(page, 'excerpt.code');
+  await expect(page.getByRole('dialog', { name: /code assignment/i })).toBeVisible();
+
+  const ratio = await page.evaluate(() => {
+    const edge = document.querySelector<HTMLElement>('[data-capture-edge]')!;
+    const style = getComputedStyle(edge);
+    const bar = style.borderLeftColor === 'rgba(0, 0, 0, 0)' ? style.borderRightColor : style.borderLeftColor;
+
+    const lum = (colour: string) => {
+      const [r, g, b] = colour.match(/\d+/g)!.slice(0, 3).map((value) => {
+        const channel = Number(value) / 255;
+        return channel <= 0.03928 ? channel / 12.92 : Math.pow((channel + 0.055) / 1.055, 2.4);
+      });
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    const [hi, lo] = [lum(bar), lum(style.backgroundColor)].sort((a, b) => b - a);
+    return (hi + 0.05) / (lo + 0.05);
+  });
+
+  expect(ratio).toBeGreaterThanOrEqual(3);
+});
+
+test('a reopened excerpt wears the blue, and its saved treatment returns', async ({ page }) => {
+  // D-063 extends the treatment to any range a panel is addressing, so
+  // reopening looks like capturing rather than like a third state.
+  const dragged = await sweepAcrossTwoSentences(page);
+  await press(page, 'excerpt.code');
+  const panel = page.getByRole('dialog', { name: /code assignment/i });
+  await panel.locator('[data-code-id]').first().click();
+  await page.getByRole('button', { name: 'Save & Close' }).click();
+  await expect(panel).toHaveCount(0);
+
+  const codedBackground = await page
+    .locator('[data-coded-run="coded"]')
+    .first()
+    .evaluate((node) => getComputedStyle(node).backgroundColor);
+
+  // Reopen it: the range is addressed again, so it wears the selection blue.
+  await page.locator('[data-coded-run="coded"]').first().click();
+  await expect(panel).toBeVisible();
+  const selectionBlue = await page
+    .locator('[data-segment-id]')
+    .first()
+    .evaluate((node) => getComputedStyle(node, '::selection').backgroundColor);
+  expect(await capturedBackground(page)).toBe(selectionBlue);
+
+  // And closing hands it back to its saved treatment.
+  await page.getByRole('button', { name: 'Save & Close' }).click();
+  await expect(panel).toHaveCount(0);
+  expect(
+    await page
+      .locator('[data-coded-run="coded"]')
+      .first()
+      .evaluate((node) => getComputedStyle(node).backgroundColor),
+  ).toBe(codedBackground);
+  expect(squashed(dragged)).not.toBe('');
+});
+
+test('a note-only excerpt wears the blue while note.open addresses it', async ({ page }) => {
+  /*
+    The case that did not work before this. A note edit does not move the
+    excerpt machine — it is not a capture — so the range says which panel is
+    addressing it instead, and goes back to the note-only grey and its dotted
+    underline when the panel commits.
+  */
+  await page.locator('[data-turn-id]').first().click();
+  await press(page, 'excerpt.note');
+  await page.getByLabel('Note', { exact: true }).fill('Noted, not coded.');
+  await page.getByRole('button', { name: 'Save & Close' }).click();
+  await expect(page.locator('[data-region="note-panel"]')).toHaveCount(0);
+
+  const noted = page.locator('[data-coded-run="noted"]').first();
+  await expect(noted).toBeVisible();
+  const savedTreatment = await noted.evaluate((node) => ({
+    background: getComputedStyle(node).backgroundColor,
+    decoration: getComputedStyle(node).textDecorationStyle,
+  }));
+
+  await page.locator('[data-turn-id]').first().click();
+  await press(page, 'note.open');
+  await expect(page.locator('[data-region="note-panel"]')).toBeVisible();
+
+  const selectionBlue = await page
+    .locator('[data-segment-id]')
+    .first()
+    .evaluate((node) => getComputedStyle(node, '::selection').backgroundColor);
+  expect(await capturedBackground(page)).toBe(selectionBlue);
+
+  await page.getByRole('button', { name: 'Save & Close' }).click();
+  await expect(page.locator('[data-region="note-panel"]')).toHaveCount(0);
+
+  await expect(page.locator('[data-captured]')).toHaveCount(0);
+  expect(
+    await page
+      .locator('[data-coded-run="noted"]')
+      .first()
+      .evaluate((node) => ({
+        background: getComputedStyle(node).backgroundColor,
+        decoration: getComputedStyle(node).textDecorationStyle,
+      })),
+  ).toEqual(savedTreatment);
+});

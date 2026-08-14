@@ -171,6 +171,20 @@ interface Options {
   /** Focuses the code panel's note region, for exactly that case. */
   onFocusPanelNote?: () => void;
   /**
+   * A saved range some other panel is addressing, painted while it is open.
+   *
+   * Per D-063: while a panel addresses a range, that range wears selection
+   * blue. `excerpt.open` gets this from the machine, which it moves; the note
+   * panel does not move the machine — a note edit is not a capture — so it says
+   * which range it is addressing instead.
+   *
+   * Display only. Nothing here changes what is captured or what the commands
+   * will do, which is the difference between this and the menu preview D-060
+   * removed: that painted a range the browser still owned, and this paints one
+   * already saved.
+   */
+  addressedRange?: CapturedRange | null;
+  /**
    * Capture opens code selection, or the note panel, per the command and
    * D-055. The range comes with it: the reducer's dispatch is not readable
    * until the next render, and the caller needs it now to name the excerpt.
@@ -201,6 +215,7 @@ export function useExcerptSelection({
   onClosePanel,
   codePanelOpen = false,
   onFocusPanelNote,
+  addressedRange = null,
   initialSelection = IDLE,
 }: Options): ExcerptSelectionApi {
   const announcer = useAnnouncer();
@@ -234,9 +249,15 @@ export function useExcerptSelection({
     stylesheet: an author `::selection` on the transcript, which browsers apply
     to inactive selections too, so the one native visual persists unchanged.
   */
+  /*
+    What the transcript paints: the captured range, or a saved one a panel is
+    addressing. D-063.
+  */
+  const displayedRange = selection.range ?? addressedRange;
+
   const rangeSegments = useMemo(
-    (): TranscriptSegment[] => (selection.range ? excerptSegments(resolved, selection.range) : []),
-    [resolved, selection.range],
+    (): TranscriptSegment[] => (displayedRange ? excerptSegments(resolved, displayedRange) : []),
+    [displayedRange, resolved],
   );
 
   const segmentsInRange = useMemo(
@@ -647,10 +668,10 @@ export function useExcerptSelection({
     run,
     availability,
     segmentsInRange,
-    startSegmentId: selection.range?.startSegmentId ?? null,
-    endSegmentId: selection.range?.endSegmentId ?? null,
-    startOffset: selection.range?.startOffset ?? null,
-    endOffset: selection.range?.endOffset ?? null,
+    startSegmentId: displayedRange?.startSegmentId ?? null,
+    endSegmentId: displayedRange?.endSegmentId ?? null,
+    startOffset: displayedRange?.startOffset ?? null,
+    endOffset: displayedRange?.endOffset ?? null,
     openChoices,
     choiceIntent,
     chooseSavedExcerpt,

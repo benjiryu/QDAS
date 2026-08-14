@@ -181,7 +181,7 @@
 /*
  * Measured against every background a turn can carry: the plain row 9.2:1, the
  * six family washes 6.0:1 to 7.8:1, the mixed-family grey 7.6:1, and the
- * capture's violet fills. Non-text needs 3:1, so the ring stays visible inside
+ * capture's selection-blue band. Non-text needs 3:1, so the ring stays visible inside
  * a highlight, which is where a focus ring is easiest to lose.
  *
  * The washes multiplied when coded runs took their family's colour, so the
