@@ -1049,6 +1049,24 @@ Date: 2026-08 | Workflow: coded data | Status: approved. Amends D-049's filter l
 
 **Own-view edge.** A child whose ancestors are unused renders at its full indentation depth with its lineage description naming the absent ancestors; no disabled placeholder rows.
 
+## D-064 The Coded Data filter list drops pills for underlines, and gains a search
+
+Date: 2026-08 | Workflow: coded data | Status: approved. Decided by Benji directly; recorded here so the change carries its author and rationale. Reverses the visual half of D-062 and its amendment
+
+The filter list's code pills are removed. A code name is plain text wearing its family's colour as an underline, and a search field sits above the list, matching by the same rule the code assignment panel uses so a coder typing the same letters on either surface finds the same codes.
+
+Scoped deliberately: the result rows keep their pills and their `aria-hidden` text twin, so D-041's treatment there is untouched. The search narrows which filters are offered and never the results below, which are the selected filter's business.
+
+**What this gives up, recorded rather than discovered later.** D-062 gave level a visual channel — indentation — and its amendment replaced that channel with pill fill treatment rather than removing it. Both are now gone. A sighted reader sees a flat alphabetical list with no indication that "Rules" sits under "Water access". The D-054 lineage description still carries level, so the loss falls on sighted and magnification users, who are the population this page serves. Session-evidence flag, alongside the amendment's own: if participants cannot follow the hierarchy, indentation is what returns.
+
+Family grouping survives without colour, which is what keeps this off "colour alone": D-062's ordering keeps a family contiguous and alphabetical, so position carries the grouping and the underline reinforces it.
+
+**Measured.** The underline uses `--code-strong`, the most visible of a family's three shades on white, and for four families it stays faint — yellow 1.69:1, light green 2.00:1, sea green 2.37:1, orange 2.41:1, against the 3:1 a non-text indicator would need. Not a contrast failure, since the name is text and carries the identity, but a real limit on how well the colour reads. Pinned per family by a browser test so a token change is reported rather than absorbed.
+
+Worth naming so the divergence is deliberate: the transcript went the other way for the same reason. D-041's rail uses one grey underline for every family precisely because per-family shade-1 underlines measured under 3:1 there.
+
+The search field is new behaviour that destinations.md section 2 did not specify; section 2 is amended to match.
+
 ## D-063 The confirmed-state highlight wears native selection blue
 
 Date: 2026-08 | Workflow: excerpt capture | Status: approved. Extends D-060; retires the purple confirmed highlight

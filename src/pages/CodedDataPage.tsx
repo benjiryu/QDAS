@@ -1,5 +1,6 @@
-import { useEffect, useId, useMemo, useState } from 'react';
-import { lineageDescription } from '../features/codes/codeTree';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { lineageDescription, matchCode } from '../features/codes/codeTree';
+import { useAnnouncer } from '../a11y';
 import { Link, useParams } from 'react-router';
 import { readCodedDataFilter, readSavedWork, writeCodedDataFilter } from '../data/codingSessionStore';
 import { createSeedFixture } from '../data/seed';
@@ -45,6 +46,7 @@ export function CodedDataPage() {
   const roleId = useId();
   const phaseId = useId();
   const filtersId = useId();
+  const searchId = useId();
   const resultsId = useId();
 
   /*
@@ -88,6 +90,50 @@ export function CodedDataPage() {
   useEffect(() => {
     if (projectId) writeCodedDataFilter(projectId, view, selected);
   }, [projectId, selected, view]);
+
+  /*
+    The filter search. Component state rather than the session store: section 2
+    persists the selected filter and says nothing about a query, and a query
+    that outlived the visit would hide most of the list on arrival with no
+    obvious reason why.
+  */
+  const [query, setQuery] = useState('');
+
+  /*
+    Matching by the panel's rule, in this page's order.
+
+    `searchCodes` would sort canonically, which is exactly the ordering D-062
+    diverges from here — so the predicate is shared and the ordering is not.
+  */
+  const shownFilters = (data?.filters ?? []).filter(
+    (filter) => query.trim() === '' || matchCode(filter.code.name, filter.lineage, query) !== null,
+  );
+
+  /*
+    The count, announced once the typing settles.
+
+    Continuous, per D-050, for the reason the panel's is: the intermediate
+    counts are drafts of one fact still being typed, and speaking each would
+    report three numbers of which only the last is true.
+  */
+  const announcer = useAnnouncer();
+  const announcedFor = useRef<string | null>(null);
+  const trimmedQuery = query.trim();
+
+  useEffect(() => {
+    if (trimmedQuery === '') {
+      announcedFor.current = null;
+      return;
+    }
+    if (announcedFor.current === trimmedQuery) return;
+    announcedFor.current = trimmedQuery;
+
+    announcer.announce(
+      `${shownFilters.length} ${shownFilters.length === 1 ? 'code' : 'codes'} for ${trimmedQuery}.`,
+      'polite',
+      'continuous',
+    );
+  }, [announcer, shownFilters.length, trimmedQuery]);
 
   if (!found || !projectId || !data) {
     return (
@@ -148,6 +194,27 @@ export function CodedDataPage() {
             aria-labelledby={filtersId}
           >
             <h2 id={filtersId}>Codes</h2>
+
+            {/*
+              Search, first control in the region, named as the panel's is and
+              matching by the same rule — a coder typing the same letters on
+              either surface finds the same codes.
+
+              It narrows which filters are offered and never the results below:
+              what is shown is decided by the filter that is selected, and a
+              list quietly changing under a coder who was only looking for a
+              code would be the surprise.
+            */}
+            <div className="coded-data__search">
+              <label htmlFor={searchId}>Search codes</label>
+              <input
+                id={searchId}
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+              />
+            </div>
+
             <ul className="coded-data__filter-list" aria-labelledby={filtersId}>
               <li>
                 <FilterOption
@@ -158,7 +225,7 @@ export function CodedDataPage() {
                   onSelect={setSelected}
                 />
               </li>
-              {data.filters.map((filter) => (
+              {shownFilters.map((filter) => (
                 <li key={filter.code.codeId}>
                   <FilterOption
                     value={filter.code.codeId}
@@ -166,7 +233,6 @@ export function CodedDataPage() {
                     count={filter.count}
                     selected={live === filter.code.codeId}
                     onSelect={setSelected}
-                    depth={filter.depth}
                     lineage={filter.lineage}
                     colorToken={filter.code.colorToken}
                   />
@@ -261,7 +327,6 @@ function FilterOption({
   count,
   selected,
   onSelect,
-  depth = 0,
   lineage = [],
   colorToken,
 }: {
@@ -270,8 +335,6 @@ function FilterOption({
   count: number;
   selected: boolean;
   onSelect: (value: string) => void;
-  /** Level in the codebook, per D-062. 0 for a family, and for "All codes". */
-  depth?: number;
   /** The ancestors' names, outermost first. */
   lineage?: readonly string[];
   /** The family's hue. Absent on "All codes", which belongs to no family. */
@@ -281,31 +344,24 @@ function FilterOption({
   const describedBy = lineageDescription(lineage);
 
   /*
-    Three fills for three levels, per D-062, and this is where the decision met
-    a measurement. Its "three-shade token set" has three shades but only two
-    that take black text: shade-1 is 3.43:1 at worst — violet, blue, purple,
-    dark green and rose all fail 4.5:1 — against 6.95:1 for shade-2 and 13.34:1
-    for shade-3. So a family takes shade-2, a child shade-3, and the third level
-    is unfilled with the family border the pill already carries: progressively
-    lighter carried to its end rather than a shade invented to fill a gap.
+    No level attribute, and no visual level channel.
 
-    Deeper than that reuses the unfilled treatment. Indentation carries what is
-    left, which is the channel D-062 requires anyway — shading reinforces level
-    and never conveys it alone.
+    D-062 gave level indentation, its amendment replaced that with pill fill
+    treatment, and both are gone: the pills went and indentation did not come
+    back with them. So a sighted reader sees a flat alphabetical list, and level
+    reaches only a screen reader, through the lineage description below.
+
+    Recorded as a decision rather than left here as a shrug — the loss falls on
+    the magnification users this page serves, and the ordering still keeps a
+    family contiguous, so grouping survives even where level does not.
   */
-  const level = Math.min(depth, 2);
-
   return (
     /*
       Wrapping, per D-051: a `for`-associated label beside its control names it
       and then reads again as loose text, so each filter was two stops.
     */
     <>
-    <label
-      className="coded-data__filter"
-      data-selected={selected ? '' : undefined}
-      data-level={level}
-    >
+    <label className="coded-data__filter" data-selected={selected ? '' : undefined}>
       <input
         type="radio"
         name="coded-data-filter"

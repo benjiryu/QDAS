@@ -137,21 +137,38 @@ export function parentPathOf(nodes: CodeNode[], codeId: Id): string[] {
  * Results come back in canonical order, not in relevance order. A list that
  * reorders itself between queries is the thing section 4 rules out.
  */
-export function searchCodes(nodes: CodeNode[], rawQuery: string): CodeSearchResult[] {
+/**
+ * Whether a code matches a query, and on which field.
+ *
+ * Extracted so the panel's search and the Coded Data filter search cannot drift
+ * into matching different things. They differ in what they do with the answer —
+ * the panel returns results in canonical order, the filter list keeps D-062's
+ * lookup order — but a coder typing the same letters on either surface should
+ * find the same codes.
+ *
+ * Null where nothing matches, and null for an empty query: a blank field is not
+ * a search that everything passes.
+ */
+export function matchCode(
+  name: string,
+  lineage: readonly string[],
+  rawQuery: string,
+): CodeSearchResult['matchedOn'] | null {
   const query = rawQuery.trim().toLowerCase();
-  if (query === '') return [];
+  if (query === '') return null;
 
+  const has = (value: string) => value.toLowerCase().includes(query);
+  if (has(name)) return 'name';
+  if (lineage.some(has)) return 'parentPath';
+  return null;
+}
+
+export function searchCodes(nodes: CodeNode[], rawQuery: string): CodeSearchResult[] {
   const results: CodeSearchResult[] = [];
 
   for (const node of flattenCodeTree(nodes)) {
-    const { code } = node;
-    const has = (value: string) => value.toLowerCase().includes(query);
-
-    let matchedOn: CodeSearchResult['matchedOn'] | null = null;
-    if (has(code.name)) matchedOn = 'name';
-    else if (node.parentPath.some(has)) matchedOn = 'parentPath';
-
-    if (matchedOn) results.push({ code, parentPath: node.parentPath, matchedOn });
+    const matchedOn = matchCode(node.code.name, node.parentPath, rawQuery);
+    if (matchedOn) results.push({ code: node.code, parentPath: node.parentPath, matchedOn });
   }
 
   return results.sort((a, b) => byCanonicalOrder(a.code, b.code));

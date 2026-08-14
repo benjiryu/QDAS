@@ -416,28 +416,24 @@ describe('the filter list, per D-062', () => {
     expect(canonical).not.toEqual(names);
   });
 
-  it('indents by level and carries the family hue', () => {
+  it('carries the family hue, which is now the only visual a code name has', () => {
     showEveryCode();
     renderAt(codedDataUrl);
 
-    const codeById = new Map(fixture.codes.map((code) => [code.codeId, code]));
-    const depthOf = (name: string): number => {
-      let code = fixture.codes.find((candidate) => candidate.name === name)!;
-      let depth = 0;
-      while (code.parentCodeId) {
-        code = codeById.get(code.parentCodeId)!;
-        depth += 1;
-      }
-      return depth;
-    };
-
+    /*
+      Level has no visual channel any more. D-062 gave it indentation, the
+      amendment replaced that with pill fill treatment, and both went when the
+      pills did — so this asserts what remains and no longer asserts what does
+      not. Level reaches a screen reader through the lineage description, which
+      the test below covers.
+    */
     for (const row of filterRows().slice(1)) {
-      const pill = row.querySelector<HTMLElement>('.coded-data__filter-name')!;
-      const code = fixture.codes.find((candidate) => candidate.name === pill.textContent)!;
+      const name = row.querySelector<HTMLElement>('.coded-data__filter-name')!;
+      const code = fixture.codes.find((candidate) => candidate.name === name.textContent)!;
 
-      expect(row.dataset.level, code.name).toBe(String(Math.min(depthOf(code.name), 2)));
       // The family's hue, the same token the rail and the panel read.
-      expect(pill.dataset.colorToken, code.name).toBe(code.colorToken);
+      expect(name.dataset.colorToken, code.name).toBe(code.colorToken);
+      expect(row.dataset.level, 'no level attribute survives the restyle').toBeUndefined();
     }
   });
 
@@ -452,18 +448,28 @@ describe('the filter list, per D-062', () => {
 
     // Chosen from what actually rendered: a code with no assignments has no
     // filter row, so picking one from the fixture alone finds nothing.
+    // A code with a lineage, found by the description it carries rather than by
+    // a level attribute the restyle removed.
     const row = filterRows()
       .slice(1)
-      .find((candidate) => candidate.dataset.level === '1')!;
+      .find((candidate) => candidate.querySelector('input')!.hasAttribute('aria-describedby'))!;
     const name = row.querySelector('.coded-data__filter-name')!.textContent!;
     const count = row.querySelector('.coded-data__count')!.textContent;
     const child = fixture.codes.find((code) => code.name === name)!;
-    const family = fixture.codes.find((code) => code.codeId === child.parentCodeId)!;
     const radio = row.querySelector('input')!;
+
+    /* The whole lineage, outermost first, per D-054 — not only the immediate
+       parent: a grandchild names both of its ancestors. */
+    const codeById = new Map(fixture.codes.map((code) => [code.codeId, code]));
+    const ancestors: string[] = [];
+    for (let code = child; code.parentCodeId; ) {
+      code = codeById.get(code.parentCodeId)!;
+      ancestors.unshift(code.name);
+    }
 
     // Exactly the code name and its count, and nothing else.
     expect(radio).toHaveAccessibleName(`${name}, ${count}`);
-    expect(radio).toHaveAccessibleDescription(`in ${family.name}`);
+    expect(radio).toHaveAccessibleDescription(`in ${ancestors.join(', ')}`);
   });
 
   it('gives a child with unused ancestors its full depth and names them', () => {
