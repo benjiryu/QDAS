@@ -57,14 +57,36 @@ describe.each(routes)('$path', ({ path, heading }) => {
     expect(screen.getAllByRole('banner')).toHaveLength(1);
   });
 
-  it('has an application-level and a project-level navigation, both labeled', () => {
+  it('has one navigation landmark, the project sidebar, and it is labeled', () => {
+    /*
+      One since D-068, which removed the banner's. It wrapped a single link, so
+      landmark-jumping to the banner arrived at a wrapper announced
+      "Application, navigation" rather than at anything in it. A navigation
+      landmark marks a navigation system; the sidebar is one and that was not.
+    */
     renderRoute(path);
 
-    const navigations = screen.getAllByRole('navigation');
-    expect(navigations).toHaveLength(2);
-
-    expect(screen.getByRole('navigation', { name: 'Application' })).toBeInTheDocument();
+    expect(screen.getAllByRole('navigation')).toHaveLength(1);
     expect(screen.getByRole('navigation', { name: 'Project' })).toBeInTheDocument();
+  });
+
+  it('flattens the banner: no landmark and no list between it and its controls', () => {
+    // D-068's structural claim. Each of the three is one stop, reached without
+    // entering anything — which is what the removed wrappers cost on every
+    // visit.
+    renderRoute(path);
+    const banner = screen.getByRole('banner');
+
+    expect(within(banner).queryAllByRole('navigation')).toHaveLength(0);
+    expect(within(banner).queryAllByRole('list')).toHaveLength(0);
+
+    for (const child of [
+      within(banner).getByRole('link', { name: 'Accessible QDAS' }),
+      within(banner).getByRole('link', { name: 'Projects' }),
+      within(banner).getByRole('button', { name: 'Keyboard shortcuts' }),
+    ]) {
+      expect(child.parentElement).toBe(banner);
+    }
   });
 
   it('has one main', () => {

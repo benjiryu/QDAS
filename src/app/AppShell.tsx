@@ -13,8 +13,13 @@ import './AppShell.css';
  * Specification: docs/accessibility-contract.md sections 2.1 and 2.4.
  *
  * The shell owns the landmark structure that every route shares: one banner,
- * an application-level navigation, a labeled project-level navigation, and one
- * main. Each route supplies its own h1.
+ * one labeled project-level navigation, and one main. Each route supplies its
+ * own h1.
+ *
+ * There was an application-level navigation landmark too, until D-068 removed
+ * it. It wrapped one link, and landmark-jumping to the banner landed on the
+ * wrapper rather than on anything in it. A navigation landmark marks a
+ * navigation system; the sidebar is one and this was not.
  *
  * ## Where focus goes on route entry
  *
@@ -92,15 +97,17 @@ export function AppShell() {
           Accessible QDAS
         </Link>
 
-        <nav aria-label="Application">
-          {/* Named for the same reason as every other list, per D-051, even
-              though its landmark is named: the two are reached separately. */}
-          <ul className="nav-list" aria-label="Application">
-            <li>
-              <Link to="/projects">Projects</Link>
-            </li>
-          </ul>
-        </nav>
+        {/*
+          A link, not a navigation system, since D-068. It used to sit inside a
+          `nav` holding a one-item list, so reaching it by landmark meant
+          entering a wrapper announced "Application, navigation", then "list",
+          and only then arriving — while the button below sat one stop away as a
+          direct child of this header.
+
+          The list carried a name per D-051, which is the rule for how a list is
+          named and not a reason for something to be one.
+        */}
+        <Link to="/projects">Projects</Link>
 
         {/*
           The way into the help, and the reason it is a visible control rather
@@ -109,8 +116,8 @@ export function AppShell() {
           teaches chords to people who already know one.
 
           In the banner because that is chrome on every route and never scrolls
-          away; after the navigation rather than before it, so asking for help
-          does not push the way out of the page one stop further back.
+          away; last of the three, so asking for help does not push the way out
+          of the page one stop further back.
         */}
         <button
           type="button"

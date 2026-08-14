@@ -182,7 +182,8 @@ describe('it stays out of the interface under test', () => {
 
     expect(screen.getAllByRole('banner')).toHaveLength(1);
     expect(screen.getAllByRole('main')).toHaveLength(1);
-    expect(screen.getAllByRole('navigation')).toHaveLength(2);
+    // One since D-068 flattened the banner: the sidebar's.
+    expect(screen.getAllByRole('navigation')).toHaveLength(1);
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
   });
 

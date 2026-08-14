@@ -90,12 +90,16 @@ function unnamedLists(): string[] {
 }
 
 describe('the lists on each surface are named', () => {
-  it('names the sidebar’s two lists, and the application nav', () => {
+  it('names the sidebar’s lists', () => {
+    /*
+      The banner's list was here too until D-068 removed it. It held one item,
+      and D-051 had been cited to justify naming it — which is the rule for how
+      a list is named, not a reason for something to be one.
+    */
     renderAt(`/projects/${project.projectId}`);
 
     expect(screen.getByRole('list', { name: 'Project 1 Files' })).toBeInTheDocument();
     expect(screen.getByRole('list', { name: 'Destinations' })).toBeInTheDocument();
-    expect(screen.getByRole('list', { name: 'Application' })).toBeInTheDocument();
     expect(screen.getByRole('list', { name: 'Your sources' })).toBeInTheDocument();
   });
 

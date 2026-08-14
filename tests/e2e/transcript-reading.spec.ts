@@ -216,7 +216,7 @@ test('tab moves between turns, never into a sentence', async ({ page }) => {
 });
 
 test('every turn is one tab stop, and there are as many as there are turns', async ({ page }) => {
-  // Scoped to the transcript: the application navigation is a list too.
+  // Scoped to the transcript: the sidebar's lists are lists too.
   const listItems = page.getByRole('region', { name: 'Transcript' }).getByRole('listitem');
   await expect(listItems).toHaveCount(turns.length);
 
