@@ -132,6 +132,21 @@ main {
 }
 
 /*
+ * Who is signed in, per the D-059 addendum.
+ *
+ * The divider is this block's own bottom border rather than a separate rule, so
+ * the line is drawn by the thing it belongs to and never appears without it.
+ * Blue-50 on blue-100 is decoration and measures as such; nothing a reader has
+ * to see rides on it, which is why it can be quiet.
+ */
+.project-nav__user {
+  margin: 0 0 0.5rem;
+  padding: 0.35rem 0.5rem 0.6rem;
+  font-weight: var(--font-weight-bold);
+  border-bottom: var(--border-thin) solid var(--color-blue-50);
+}
+
+/*
  * No underlines anywhere in here, per D-059. The hover treatment below replaces
  * them, and the current item carries `aria-current` and a pill of its own.
  */
@@ -212,11 +227,11 @@ main {
 }
 
 /* The same pill the destinations wear, for the same reason: it is one of them
-   now. */
+   now. Its shape comes from `.project-nav__link`, as every pill in here does
+   since the D-059 addendum. */
 .project-nav__group-label[aria-current='page'] {
   background: var(--color-white);
   color: var(--color-blue-100);
-  border-radius: var(--radius-pill);
 }
 
 /*
@@ -275,11 +290,15 @@ main {
  *
  * Dark blue text since D-059, where this was black. Same pill as hover, which
  * that decision accepts for the reason given on the hover rule above.
+ *
+ * No radius of its own since the D-059 addendum. This used to override to
+ * `--radius-pill`, fully circular sides, while hover inherited the link's
+ * rounded rectangle — so "the same pill" was never literally true. The shape is
+ * defined once, on `.project-nav__link`, and both states now read from it.
  */
 .project-nav__destination[aria-current='page'] {
   background: var(--color-white);
   color: var(--color-blue-100);
-  border-radius: var(--radius-pill);
 }
 
 /*

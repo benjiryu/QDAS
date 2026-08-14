@@ -25,10 +25,10 @@ export const THIRD_CODER_ID = 'us-6d208ac413';
 export const QUALITATIVE_LEAD_ID = 'us-f52c9b3e07';
 
 export const users: User[] = [
-  { userId: CURRENT_CODER_ID, displayName: 'Sam Okafor', role: 'coder' },
-  { userId: SECOND_CODER_ID, displayName: 'Dana Whitfield', role: 'coder' },
-  { userId: THIRD_CODER_ID, displayName: 'Priya Raman', role: 'coder' },
-  { userId: QUALITATIVE_LEAD_ID, displayName: 'Nadia Okonkwo', role: 'qualitativeLead' },
+  { userId: CURRENT_CODER_ID, displayName: 'Sam Okafor', title: 'AFB Researcher', role: 'coder' },
+  { userId: SECOND_CODER_ID, displayName: 'Dana Whitfield', title: 'AFB Researcher', role: 'coder' },
+  { userId: THIRD_CODER_ID, displayName: 'Priya Raman', title: 'AFB Researcher', role: 'coder' },
+  { userId: QUALITATIVE_LEAD_ID, displayName: 'Nadia Okonkwo', title: 'Qualitative Lead', role: 'qualitativeLead' },
 ];
 
 export const project: Project = {

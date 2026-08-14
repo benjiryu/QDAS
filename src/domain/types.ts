@@ -33,6 +33,16 @@ export interface Project {
 export interface User {
   userId: Id;
   displayName: string;
+  /**
+   * What this person is called on screen where a name would not help: the
+   * sidebar's title block, per the D-059 addendum, reads it rather than
+   * hardcoding a string.
+   *
+   * Distinct from `role`, which is the permission the application checks, and
+   * from `displayName`, which is who they are. A qualitative lead and a coder
+   * can both be "AFB Researcher".
+   */
+  title: string;
   role: UserRole;
 }
 

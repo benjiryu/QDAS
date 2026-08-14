@@ -180,3 +180,61 @@ describe('the content order the rule fixes', () => {
     expect(sidebar().queryByRole('link', { name: /themes/i })).toBeNull();
   });
 });
+
+describe('the user title block, per the D-059 addendum', () => {
+  const block = () => document.querySelector<HTMLElement>('.project-nav__user');
+
+  it('reads the seeded user record rather than a string written here', () => {
+    /*
+      The addendum's own condition: "the string comes from the seed user record,
+      never hardcoded in the component." Compared against the fixture, so
+      hardcoding the same words in the component would still fail the moment the
+      seed changed — which is the property being protected.
+    */
+    renderAt(`/projects/${project.projectId}`);
+
+    const seeded = fixture.users.find((user) => user.userId === CURRENT_CODER_ID)!;
+    expect(seeded.title).toBeTruthy();
+    expect(block()?.textContent).toBe(seeded.title);
+  });
+
+  it('is neither a link nor a heading nor a tab stop', async () => {
+    // Static text, per the addendum. The reasoning D-043 gave the files label
+    // before D-059 made that one a destination: a stop that leads nowhere is
+    // worse than no stop, in the tab order or in the heading outline.
+    const user = userEvent.setup();
+    renderAt(`/projects/${project.projectId}`);
+
+    const text = block()!;
+    expect(text.tagName.toLowerCase()).toBe('p');
+    expect(text.closest('a, button')).toBeNull();
+    expect(text).not.toHaveAttribute('tabindex');
+    expect(
+      screen.queryByRole('heading', { name: text.textContent ?? '' }),
+      'and it opens no section',
+    ).toBeNull();
+
+    const sidebar = screen.getByRole('navigation', { name: 'Project' });
+    const stops = within(sidebar).getAllByRole('link').length;
+    for (let index = 0; index < stops + 3; index += 1) {
+      await user.tab();
+      expect(document.activeElement).not.toBe(text);
+    }
+  });
+
+  it('is there with no project in context, since the landmark is', () => {
+    // Contract 2.1 makes the second navigation part of the structure every
+    // route shares, and this belongs to the person rather than the project.
+    renderAt('/projects');
+
+    expect(block()).not.toBeNull();
+    expect(screen.getByRole('navigation', { name: 'Project' }).contains(block())).toBe(true);
+  });
+
+  it('precedes the project files group', () => {
+    renderAt(`/projects/${project.projectId}`);
+
+    const label = document.querySelector('.project-nav__group-label')!;
+    expect(block()!.compareDocumentPosition(label) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+});

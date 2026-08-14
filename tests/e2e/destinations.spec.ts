@@ -79,7 +79,18 @@ test('the current destination draws a white pill and the current source a white 
   // Dark blue since D-059, where this was black: the pill took the Figma's
   // hover treatment and the two are deliberately the same.
   expect(pill.text).toBe('rgb(31, 71, 131)');
-  expect(parseFloat(pill.radius)).toBeGreaterThan(4);
+  /*
+    The rounded rectangle every link in the sidebar wears, per the D-059
+    addendum: this used to override to a 100px pill while hover kept the link's
+    own shape, so "the same pill" was true of the colour and not of the shape.
+    Asserted against a link that is not current, so it checks the unification
+    rather than a number.
+  */
+  const plainRadius = await page
+    .locator('.project-nav__destination:not([aria-current="page"])')
+    .first()
+    .evaluate((node) => getComputedStyle(node).borderTopLeftRadius);
+  expect(pill.radius).toBe(plainRadius);
 
   await page.goto(`${projectUrl}/sources/${source.sourceId}`);
   const bar = await page
@@ -175,9 +186,14 @@ test('the current destination is marked by more than hue', async ({ page }) => {
   });
 
   expect(marker.current).toBe('page');
-  // A shape that is not there otherwise…
-  expect(marker.radius).toBeGreaterThan(4);
-  // …and a luminance step, so it survives greyscale rather than resting on hue.
+  /*
+    The luminance step is the whole of it now, and it is enough: a filled pill
+    against an unfilled row survives greyscale, which is what contract 2.5 asks.
+
+    The radius used to be asserted here as a second channel. It no longer
+    separates anything — the D-059 addendum gives every link one shape — so
+    asserting it would be measuring a constant and calling it a signal.
+  */
   expect(marker.lift).toBeGreaterThan(0.5);
 });
 
@@ -466,4 +482,57 @@ test('sidebar links wear the pill rather than an underline', async ({ page }) =>
     [currentStyle.color, currentStyle.background],
   );
   expect(contrast).toBeGreaterThanOrEqual(4.5);
+});
+
+test('hover and the current destination wear one shape, per the D-059 addendum', async ({
+  page,
+}) => {
+  /*
+    D-059 said the two wear the same pill and accepted them being visually
+    identical, because hover is transient and pointer-tied while `aria-current`
+    and the focus ring carry current state. The build did not deliver it: hover
+    inherited the link's rounded rectangle while the current destination
+    overrode to fully circular sides, so the acceptance was never literally
+    true. It is now.
+  */
+  await page.goto(`/projects/${project.projectId}/codebook`);
+  await expect(page.getByRole('heading', { level: 1, name: 'Code book' })).toBeVisible();
+
+  const current = page.locator('.project-nav__destination[aria-current="page"]');
+  await expect(current).toBeVisible();
+  const currentRadius = await current.evaluate((node) => getComputedStyle(node).borderRadius);
+
+  // A different destination, hovered.
+  const other = page.locator('.project-nav__destination:not([aria-current="page"])').first();
+  await other.hover();
+  const hoverRadius = await other.evaluate((node) => getComputedStyle(node).borderRadius);
+
+  expect(hoverRadius).toBe(currentRadius);
+
+  // And it is the rounded rectangle rather than the pill the override drew.
+  expect(parseFloat(currentRadius)).toBeLessThan(20);
+
+  // The hover treatment still lands, so this did not unify them by removing it.
+  expect(await other.evaluate((node) => getComputedStyle(node).backgroundColor)).toBe(
+    'rgb(255, 255, 255)',
+  );
+});
+
+test('the user title block sits at the top of the nav and is not a control', async ({ page }) => {
+  await page.goto(`/projects/${project.projectId}`);
+
+  const block = page.locator('.project-nav__user');
+  await expect(block).toBeVisible();
+
+  // Static text: nothing to click, nothing to tab to, and a divider drawn by
+  // its own border rather than by a separator element.
+  const shape = await block.evaluate((node) => ({
+    tag: node.tagName.toLowerCase(),
+    borderBottom: parseFloat(getComputedStyle(node).borderBottomWidth),
+    separators: node.parentElement?.querySelectorAll('hr').length ?? 0,
+  }));
+
+  expect(shape.tag).toBe('p');
+  expect(shape.borderBottom).toBeGreaterThan(0);
+  expect(shape.separators).toBe(0);
 });

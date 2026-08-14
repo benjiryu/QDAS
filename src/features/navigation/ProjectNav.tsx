@@ -43,6 +43,19 @@ export function ProjectNav() {
   const { projectId } = useParams();
   const filesId = useId();
 
+  /*
+    The title block's text, per the D-059 addendum: read from the seeded user
+    record rather than written here, so the two cannot drift and so a change of
+    title is a data change.
+
+    Outside the project lookup below, because the block belongs to the person
+    rather than to the project — it is there on `/projects` too.
+  */
+  const userTitle = useMemo(() => {
+    const fixture = createSeedFixture();
+    return fixture.users.find((user) => user.userId === CURRENT_CODER_ID)?.title ?? null;
+  }, []);
+
   const view = useMemo(() => {
     const fixture = createSeedFixture();
     if (!projectId || fixture.project.projectId !== projectId) return null;
@@ -60,6 +73,20 @@ export function ProjectNav() {
 
   return (
     <nav aria-label="Project" className="project-nav">
+      {/*
+        Who is signed in, at the top of the landmark, per the D-059 addendum.
+
+        Static text: not a link, because it goes nowhere, and not a heading,
+        because it opens no section — a stop in either list that leads nowhere
+        is worse than no stop, which is the reasoning D-043 gave the files label
+        before D-059 made that one a destination.
+
+        The divider beneath it is drawn with a border rather than an `hr`, so it
+        stays decoration instead of putting a separator in the accessibility
+        tree for something that draws a line.
+      */}
+      {userTitle ? <p className="project-nav__user">{userTitle}</p> : null}
+
       {view === null ? (
         /*
           No project in context, on /projects and on a bad identifier. The

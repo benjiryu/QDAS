@@ -75,7 +75,7 @@ Project
   phase
 
 User
-  userId, displayName, role
+  userId, displayName, title, role
 
 Assignment
   assignmentId, projectId, userId, sourceId, codingRoundId
