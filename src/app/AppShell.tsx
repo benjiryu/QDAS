@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'react';
 import { Link, Outlet, useLocation } from 'react-router';
 import { ProjectNav } from '../features/navigation/ProjectNav';
 import { useReadingScale } from '../features/readingScale/useReadingScale';
+import { ShortcutsHelp } from '../features/help/ShortcutsHelp';
+import { useShortcutsHelp } from '../features/help/useShortcutsHelp';
 import { CURRENT_CODER_ID } from '../data/seed/project';
 import './AppShell.css';
 
@@ -44,6 +46,13 @@ export function AppShell() {
     carries the preference to routes the control never renders on.
   */
   useReadingScale(CURRENT_CODER_ID);
+
+  /*
+    The shortcuts help, mounted here so its chord answers on every route. The
+    commands it documents live in the transcript and its panels, but a coder
+    stuck on a destination page is exactly the person who needs to ask.
+  */
+  const help = useShortcutsHelp();
   const mainRef = useRef<HTMLElement>(null);
   const isFirstRender = useRef(true);
 
@@ -92,6 +101,25 @@ export function AppShell() {
             </li>
           </ul>
         </nav>
+
+        {/*
+          The way into the help, and the reason it is a visible control rather
+          than a chord alone: D-065's gate was that nothing on screen names a
+          command, and a shortcuts dialog reachable only by `Ctrl` plus `/`
+          teaches chords to people who already know one.
+
+          In the banner because that is chrome on every route and never scrolls
+          away; after the navigation rather than before it, so asking for help
+          does not push the way out of the page one stop further back.
+        */}
+        <button
+          type="button"
+          className="app-banner__help"
+          data-command="help.shortcuts"
+          onClick={help.open}
+        >
+          Keyboard shortcuts
+        </button>
       </header>
 
       {/*
@@ -109,6 +137,8 @@ export function AppShell() {
       <main id={MAIN_CONTENT_ID} ref={mainRef} tabIndex={-1}>
         <Outlet />
       </main>
+
+      <ShortcutsHelp help={help} />
     </div>
   );
 }

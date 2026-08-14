@@ -1,0 +1,81 @@
+/*
+ * The shortcuts help.
+ *
+ * The container is the code panel's, reused rather than restated — it already
+ * carries the centring, the internal scroll and the sizing that keeps a dialog
+ * usable at 400 percent zoom, and a second copy of those rules is a second
+ * thing to keep in step.
+ */
+
+/*
+ * Narrower than the code panel: two columns of short text, not a codebook.
+ * `min()` so it still fits a 320px viewport, where the panel's fixed width
+ * would not.
+ */
+.shortcuts-help__modal {
+  display: flex;
+  width: min(34rem, 100%);
+  max-height: 85vh;
+}
+
+.shortcuts-help__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+/*
+ * Label and chord on one row, wrapping to two when there is not room.
+ *
+ * `flex-wrap` rather than a fixed two-column grid, because at 320px and at
+ * maximum reading scale a long label and its chord cannot share a line — and
+ * the alternative to wrapping is horizontal panning, which contract 2.5 rules
+ * out.
+ */
+.shortcuts-help__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  padding: 0.15rem 0;
+}
+
+/* The command's description is the reading content here, per D-061. */
+.shortcuts-help__label {
+  font-size: var(--reading-font-size);
+  min-width: 0;
+}
+
+/*
+ * The chord itself. Bordered so it reads as a key rather than as more prose,
+ * and in the reading scale too: it is the thing the reader came for.
+ */
+.shortcuts-help__chord {
+  font-family: inherit;
+  font-size: var(--reading-font-size);
+  padding: 0.1em 0.45em;
+  border: var(--border-thin) solid var(--border);
+  border-radius: var(--radius-small);
+  background: var(--row-bg);
+  white-space: nowrap;
+}
+
+/*
+ * The way in, in the banner, so the surface that teaches the chords does not
+ * itself require knowing one. That bootstrap is the whole reason this control
+ * exists: D-065's gate was that nothing on screen names a command, and a help
+ * dialog reachable only by chord would have left it open.
+ */
+.app-banner__help {
+  font: inherit;
+  padding: 0.2rem 0.6rem;
+  color: inherit;
+  background: none;
+  border: var(--border-thin) solid currentColor;
+  border-radius: var(--radius-small);
+  cursor: pointer;
+}

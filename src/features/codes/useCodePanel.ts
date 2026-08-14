@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAnnouncer } from '../../a11y';
 import { bindingsFor, commandFor, detectPlatform, resolveEscape } from '../../config/keybindings';
+import { isShortcutsHelpOpen } from '../help/shortcutsHelpStore';
 import type { Code, Id } from '../../domain';
 import { buildCodeTree, searchCodes } from './codeTree';
 import type { CodeNode, CodeSearchResult } from './codeTree';
@@ -716,7 +717,15 @@ export function useCodePanel({
       // resolution lives in the binding module because Escape means something
       // else with the panel closed.
       if (matched === 'codes.close') {
-        if (resolveEscape(true) !== 'codes.close') return;
+        /*
+          Who owns Escape right now. With the shortcuts help open it is the
+          help's, and this panel does nothing at all — closing the help must not
+          commit or discard the coder's pending codes and note, which is the
+          whole reason the layering exists rather than both closing at once.
+        */
+        if (resolveEscape({ helpOpen: isShortcutsHelpOpen(), panelOpen: true }) !== 'codePanel') {
+          return;
+        }
         event.preventDefault();
 
         /*

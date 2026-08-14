@@ -1065,6 +1065,12 @@ Two consequences that follow and are implemented with it: D-028's condition that
 
 Building the shortcuts help is the obvious next step, and until it exists this is a session gate rather than a tidy-up: a participant briefed on the chords will manage, and one who is not cannot code at all by keyboard.
 
+**Gate closed by Task 45.** The shortcuts help exists. It lists every command in the binding table with its platform-correct chord, grouped by where the chord applies, and its content is derived from the table at runtime rather than written out, so it cannot drift from the keys that work. A test asserts every command in the union has a row, which is D-057's completeness claim made checkable.
+
+It is reached two ways, and the second is the one that actually closes the gate: a **"Keyboard shortcuts" control in the application banner**, chrome on every route, after the navigation so asking for help does not push the way out of the page further back. A help surface reachable only by `Ctrl` plus a key teaches chords to people who already know one, which would have left the gate open under a different name.
+
+Escape layers. With the help open above the code panel, Escape closes the help and **the panel neither commits nor discards** — its pending codes and its note text are exactly as they were, and the next Escape reaches the panel. `resolveEscape` gained the layer and now returns which layer owns the key rather than a `Command`: a `help.close` command would need a row in both binding tables, Escape already belongs to `codes.close` there, and the collision guard would reject the pair.
+
 ## D-064 The Coded Data filter list drops pills for underlines, and gains a search
 
 Date: 2026-08 | Workflow: coded data | Status: approved. Decided by Benji directly; recorded here so the change carries its author and rationale. Reverses the visual half of D-062 and its amendment
@@ -1124,3 +1130,13 @@ Date: 2026-08 | Workflow: coded data, review | Status: approved. Team methodolog
 **The poke.** Project-wide rows only: an excerpt meeting the threshold with another coder's gains one plain-text line, "Also coded by [name]", in the row's reading order and accessible to screen readers as text, never icon-only. Multiple coders list all names. No conflict language, no badge, no ReviewItem creation, no resolution affordance: the neighboring row already shows the other coder's codes, so differing code choices on the same excerpt become readable as adjacent data — the reflexivity posture, disagreement as data rather than error. Phase and role gating come free from D-049's project-wide view. (Renumbered from a drafting collision with D-065, the strip removal.)
 
 **What stays Slice 3:** ReviewItem materialization, any agreement or disagreement classification, resolution recording, and any surface that asks coders to reconcile. Comparison matters most during review and reflexivity, and that is where the full treatment lives.
+
+## D-067 The note indicator becomes a disclosure
+
+Date: 2026-08 | Workflow: coded data | Status: approved. From usability sessions: participants who saw "has a note" wanted the note there, not a page away
+
+The note indicator on Coded Data rows becomes a disclosure button revealing the note text inline, a line below within the row, toggleable per row. The native pattern, and the Notes page already uses disclosure for truncated excerpts, so no new lesson.
+
+Requirements that make it accessible rather than merely clickable: a real button with `aria-expanded`, its accessible name constant ("Note") with the attribute carrying state, never a show/hide label swap; the revealed region immediately after the button in DOM and reading order; focus stays on the button across toggling; no live-region announcement, since the attribute and the adjacent text are the feedback. Structural rule: the row is a link, and the disclosure button must be its sibling within the row, never nested inside it. The note text is reading content and scales per D-061.
+
+Visibility unchanged: the disclosure reveals what the indicator already promises. Where R-4 or note visibility means the viewer cannot read the note, no indicator renders, as today. Expansion state is per row and per session; it does not persist.

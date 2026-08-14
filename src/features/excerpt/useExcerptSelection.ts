@@ -624,7 +624,7 @@ export function useExcerptSelection({
       // With the panel open it means close, which the panel owns; with no
       // panel there is nothing to capture out of, so it resolves to nothing.
       if (matched === 'codes.close') {
-        void resolveEscape(panelOpen);
+        void resolveEscape({ panelOpen });
         return;
       }
 

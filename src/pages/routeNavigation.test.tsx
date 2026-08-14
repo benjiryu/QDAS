@@ -79,7 +79,9 @@ describe('reaching a source by following links alone', () => {
     const user = userEvent.setup();
     renderAt('/projects');
 
-    // Tab past the skip link, the product name, and the Projects nav link.
+    // Tab past the skip link, the product name, the Projects nav link, and the
+    // banner's shortcuts control.
+    await user.tab();
     await user.tab();
     await user.tab();
     await user.tab();

@@ -127,18 +127,35 @@ export function alternatesFor(command: Command): Chord[] {
 }
 
 /**
+ * Which layer owns Escape right now.
+ *
  * Escape is the one chord whose meaning depends on context, so it is not a row
- * in the binding table.
+ * in the binding table, and this is where that meaning is decided. Components
+ * ask rather than branching on Escape themselves.
  *
- * With the code panel open it closes the panel, which per D-042 commits the
- * pending codes and the note rather than discarding them. With the panel closed
- * it means nothing: D-036 removed the in-progress range, so there is no capture
- * to discard outside the panel and Escape belongs to the browser.
+ * The layers, topmost first:
  *
- * Components call this rather than branching on Escape themselves.
+ * - **The shortcuts help**, which closes and leaves everything beneath it
+ *   untouched. It can open over the code panel, and closing the help must not
+ *   commit or discard the panel's work.
+ * - **The code panel**, where Escape closes and per D-042 commits the pending
+ *   codes and the note rather than discarding them.
+ * - **Nobody.** D-036 removed the in-progress range, so with no panel open
+ *   there is no capture to discard and Escape belongs to the browser.
+ *
+ * Returns the owner rather than a `Command`, which it used to. A `help.close`
+ * command would need a row in both binding tables, Escape already belongs to
+ * `codes.close` there, and the collision guard would reject the pair — so the
+ * owner is the honest thing to return and needs no fictional command to say it.
  */
-export function resolveEscape(panelOpen: boolean): Command | null {
-  return panelOpen ? 'codes.close' : null;
+export type EscapeOwner = 'help' | 'codePanel' | null;
+
+export function resolveEscape(layers: {
+  helpOpen?: boolean;
+  panelOpen: boolean;
+}): EscapeOwner {
+  if (layers.helpOpen) return 'help';
+  return layers.panelOpen ? 'codePanel' : null;
 }
 
 /**
