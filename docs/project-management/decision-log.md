@@ -1162,3 +1162,13 @@ The row's link is no longer wrapped in a paragraph, so that it and the button ar
 **Carried, not fixed:** `turnCoding` in the domain derives the transcript rail's note indicator with the same absence of any author, status, or visibility filter. `canReadNote` is the predicate it wants, but adopting it changes what the rail shows on the transcript, which is a different surface with its own tests and is not this decision's.
 
 **Worth watching in a session:** the constant name means a page of rows presents many buttons all called "Note", told apart only by the row around them. The decision is explicit and the build follows it.
+
+## D-068 The banner flattens: no nested landmark, no one-item list
+
+Date: 2026-08 | Workflow: navigation | Status: approved. VoiceOver smoke-test finding by Benji
+
+Landmark-jumping to the banner landed on a wrapper announced "Application, navigation", then "list", then — one interaction deeper — the project link, while the shortcuts button sat one stop away as a direct banner child. The wrapper nav and its list are removed: banner children are the product link, the project link, and the shortcuts button as siblings, each one stop.
+
+The principle, since this will recur: a navigation landmark marks a navigation system, not a link; a one-item list announces "list, one item" — two words, zero information; and every wrapper a screen reader must enter is a cost paid on every visit. D-051 was cited in the code as justification for naming the wrapper's list — correctly applied to a structure that should not have existed. D-051 governs how lists are named, not whether something deserves to be one.
+
+After the flatten the rotor shows one navigation landmark, the sidebar, which is a navigation system. The existing role="application" guard test held; the word VoiceOver spoke was the wrapper's label.

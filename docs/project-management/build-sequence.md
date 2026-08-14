@@ -1378,3 +1378,16 @@ expanded reading order, the nesting rule, and toggling without focus loss.
 When tests pass, commit and update the progress line in the same commit.
 Do not push.
 ```
+
+### Task 47. Flatten the banner
+
+```
+Implement decision D-068. In src/app/AppShell.tsx remove the
+nav[aria-label="Application"] wrapper and its list from the banner; the
+product link, project link, and shortcuts button become sibling direct
+children of the header, in that order. Tab order and pointer behavior
+unchanged. Tests: the banner contains no nav landmark and no list; the
+document has exactly one navigation landmark, the sidebar; the existing
+role="application" guard stays. When tests pass, commit and update the
+progress line in the same commit. Do not push.
+```
