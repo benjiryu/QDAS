@@ -88,6 +88,10 @@ test('the page has no accessibility violations in either view', async ({ page })
 
   await page.getByLabel('Role').selectOption('qualitativeLead');
   await expect(page.locator('[data-excerpt-id]').first()).toBeVisible();
+  // The D-066 line only exists in this view, so this is the run that sees it.
+  // Asserted rather than assumed: axe passing over a page that never rendered
+  // the thing under test would be a green light for nothing.
+  await expect(page.locator('.coded-data__also-coded').first()).toBeVisible();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });
 

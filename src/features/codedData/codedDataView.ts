@@ -15,6 +15,7 @@ import {
   rangeOf,
   requireTurnOf,
   resolveSource,
+  sameExcerptCoderIds,
   positionOf,
 } from '../../domain';
 import type {
@@ -48,6 +49,13 @@ export interface CodedResult {
   hasNote: boolean;
   /** Named only in the project-wide view, where R-4 has lifted. */
   coderName: string | null;
+  /**
+   * Other coders who coded the same excerpt, per D-066. Empty in the own view.
+   *
+   * Names, alphabetical. The domain decides who qualifies; the ordering is
+   * wording, and belongs here with the names rather than with the arithmetic.
+   */
+  alsoCodedBy: string[];
 }
 
 export interface CodeFilter {
@@ -193,8 +201,53 @@ export function buildCodedData({
 
   const sourceOrder = new Map(sources.map((source, index) => [source.sourceId, index]));
 
-  const results: CodedResult[] = visibleExcerpts
-    .filter((excerpt) => (codesByExcerpt.get(excerpt.excerptId) ?? []).length > 0)
+  const coded = visibleExcerpts.filter(
+    (excerpt) => (codesByExcerpt.get(excerpt.excerptId) ?? []).length > 0,
+  );
+
+  /*
+    Who else coded the same excerpt, per D-066.
+
+    The candidate set is `coded` rather than every excerpt, which is a scoping
+    decision worth naming: an excerpt whose assignments have all been superseded
+    is not a row on this page, and D-066's reasoning is that the reader looks at
+    the neighbouring row to see what the other coder chose. Pointing at a row
+    that is not there would send them hunting, and "also coded by" would be
+    naming somebody with no standing code.
+
+    Gated on the view as well, and that gate is unreachable today: the own view
+    filters `visibleExcerpts` to one coder above, so no cross-coder pair can
+    reach here to be suppressed. It is kept deliberately and is stated as such
+    rather than left looking load-bearing — R-4 is the rule this page exists
+    under, and if `visibleExcerpts` ever widens, the leak should be stopped by
+    something that says so rather than by remembering to re-narrow it.
+
+    No test bites on removing it, for the same reason. The own view's emptiness
+    is covered, but by the filter above.
+  */
+  const alsoCodedByExcerpt = new Map<Id, string[]>();
+  if (view === 'projectWide') {
+    const bySource = new Map<Id, Excerpt[]>();
+    for (const excerpt of coded) {
+      const list = bySource.get(excerpt.sourceId) ?? [];
+      list.push(excerpt);
+      bySource.set(excerpt.sourceId, list);
+    }
+
+    for (const [sourceId, group] of bySource) {
+      const resolved = resolvedById.get(sourceId);
+      if (!resolved) continue;
+
+      for (const excerpt of group) {
+        const names = sameExcerptCoderIds(resolved, excerpt, group)
+          .map((coderId) => userById.get(coderId)?.displayName ?? 'Unknown coder')
+          .sort((a, b) => a.localeCompare(b));
+        if (names.length > 0) alsoCodedByExcerpt.set(excerpt.excerptId, names);
+      }
+    }
+  }
+
+  const results: CodedResult[] = coded
     .map((excerpt) => {
       const resolved = resolvedById.get(excerpt.sourceId);
       if (!resolved) return null;
@@ -217,6 +270,7 @@ export function buildCodedData({
         // the own view would be noise; naming one during independent coding
         // would be the leak R-4 forbids.
         coderName: view === 'projectWide' ? (coder?.displayName ?? 'Unknown coder') : null,
+        alsoCodedBy: alsoCodedByExcerpt.get(excerpt.excerptId) ?? [],
       } satisfies CodedResult;
     })
     .filter((result): result is CodedResult => result !== null)
@@ -227,7 +281,7 @@ export function buildCodedData({
 
       const resolved = resolvedById.get(a.sourceId)!;
       const startOf = (result: CodedResult) => {
-        const excerpt = visibleExcerpts.find((candidate) => candidate.excerptId === result.excerptId)!;
+        const excerpt = coded.find((candidate) => candidate.excerptId === result.excerptId)!;
         return positionOf(resolved, excerpt.startSegmentId) ?? 0;
       };
       return startOf(a) - startOf(b);

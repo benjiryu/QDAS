@@ -1131,6 +1131,16 @@ Date: 2026-08 | Workflow: coded data, review | Status: approved. Team methodolog
 
 **What stays Slice 3:** ReviewItem materialization, any agreement or disagreement classification, resolution recording, and any surface that asks coders to reconcile. Comparison matters most during review and reflexivity, and that is where the full treatment lives.
 
+**Built by Task 44**, with three things this decision left open resolved as follows and recorded here rather than in code alone.
+
+*The sentence set is the one already spoken.* "Touches" is `excerptSegments`, which is what `excerptSize.sentenceCount` counts and therefore what a coder is told at capture. A boundary sentence the offsets cover zero characters of is counted, even though `excerptText` drops it, so the comparison uses the set the coder heard about rather than introducing a second number for one range.
+
+*Only rows count.* An excerpt whose assignments have all been superseded, or that carries a note and no code, cannot trigger the line. This decision's own reasoning is that the reader looks at the neighbouring row to see what the other coder chose; pointing at a row that is not on the page would send them hunting, and "also coded by" would be naming somebody with no standing code.
+
+*Several names read alphabetically.* This decision requires all names and gives no order. Record order would put whichever excerpt was captured first at the front, which is not information the reader has any use for. The comma join matches the row's existing "Codes: a, b"; both are wording and provisional in the sense `describeExcerptSize` is.
+
+**A conflict this opens, for the team and not for the build.** R-2 in `unresolved-questions.md` reads, still marked RESOLVED: "No overlap threshold in v0.1. Exact boundaries are preserved and differences are presented rather than scored." This decision introduces an overlap threshold in v0.1. The two are arguably compatible in substance — nothing is scored, no agreement is classified, R-3's no-IRR rule is untouched and boundaries are still stored to the character — but the register says one thing and the build now does another. Amending a resolved research question belongs to the research team, so it is recorded here and left. The amendment that would fit: *"R-2. AMENDED by D-066. No scoring and no IRR; a provisional sentence-set threshold groups two coders' work as the same excerpt for presentation only."*
+
 ## D-067 The note indicator becomes a disclosure
 
 Date: 2026-08 | Workflow: coded data | Status: approved. From usability sessions: participants who saw "has a note" wanted the note there, not a page away

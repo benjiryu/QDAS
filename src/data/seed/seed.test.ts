@@ -202,6 +202,45 @@ describe('pre-existing coded excerpts', () => {
     expect(overlapping).toBeGreaterThanOrEqual(4);
   });
 
+  it('has one cross-coder pair above the same-excerpt threshold and one below', () => {
+    /*
+      D-066. Computed here from sequence indices rather than through
+      `sameExcerptCoderIds`, so the fixture and the implementation are checked
+      against each other rather than the fixture being checked against itself.
+
+      What this guards is that the fixture keeps demonstrating the feature. Four
+      of the six seeded pairs sit around 0.28, and before Task 44 the only pair
+      at or above the threshold was exactly on it.
+    */
+    const order = new Map(
+      fixture.segments.map((segment) => [segment.segmentId, segment.sequenceIndex]),
+    );
+    const sentences = (excerpt: (typeof fixture.excerpts)[number]) => {
+      const set = new Set<number>();
+      const from = order.get(excerpt.startSegmentId)!;
+      const to = order.get(excerpt.endSegmentId)!;
+      for (let index = from; index <= to; index += 1) set.add(index);
+      return set;
+    };
+
+    const ratios: number[] = [];
+    for (let i = 0; i < fixture.excerpts.length; i += 1) {
+      for (let j = i + 1; j < fixture.excerpts.length; j += 1) {
+        const a = fixture.excerpts[i];
+        const b = fixture.excerpts[j];
+        if (a.sourceId !== b.sourceId || a.coderId === b.coderId) continue;
+
+        const setA = sentences(a);
+        const setB = sentences(b);
+        const shared = [...setA].filter((index) => setB.has(index)).length;
+        if (shared > 0) ratios.push(shared / (setA.size + setB.size - shared));
+      }
+    }
+
+    expect(ratios.filter((ratio) => ratio > 0.5).length).toBeGreaterThanOrEqual(1);
+    expect(ratios.filter((ratio) => ratio < 0.5).length).toBeGreaterThanOrEqual(1);
+  });
+
   it('keeps boundaries inside one source and never crossed', () => {
     const byId = new Map(fixture.segments.map((segment) => [segment.segmentId, segment]));
     for (const excerpt of fixture.excerpts) {

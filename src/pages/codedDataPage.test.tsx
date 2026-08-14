@@ -10,7 +10,7 @@ import { bindingsFor, detectPlatform } from '../config/keybindings';
 import type { Command } from '../config/keybindings';
 import { clearCodingSession } from '../data/codingSessionStore';
 import { createSeedFixture } from '../data/seed';
-import { CURRENT_CODER_ID, SECOND_CODER_ID } from '../data/seed/project';
+import { CURRENT_CODER_ID, SECOND_CODER_ID, THIRD_CODER_ID } from '../data/seed/project';
 import { clearSimulatedSession, writeSimulatedSession } from '../data/simulatedSession';
 import { clearSourcePositions } from '../data/sourcePositionStore';
 
@@ -130,6 +130,10 @@ describe('acceptance 1: a coder during independent coding sees own work only', (
 
     // The coder's own one is there.
     expect(shown).toHaveLength(1);
+
+    // And no same-excerpt line, per D-066. Naming another coder only to say one
+    // exists is the leak R-4 forbids just as much as naming them outright.
+    expect(document.querySelectorAll('.coded-data__also-coded')).toHaveLength(0);
   });
 });
 
@@ -168,6 +172,75 @@ describe('acceptance 2: the qualitative lead sees project-wide', () => {
         name: new RegExp(`${code.name}, ${expected}$`),
       }),
     ).toBeInTheDocument();
+  });
+});
+
+describe('the same-excerpt indicator, per D-066', () => {
+  /*
+    Overlap pair 6 in the fixture: the third coder's ex-4f92d7c1 takes four of
+    the five sentences of the second coder's ex-5806e4b2, which is 0.8 against
+    the 0.5 threshold. Pair 1 overlaps by two sentences of seven and is the
+    below-threshold case beside it.
+  */
+  const asLead = () => {
+    writeSimulatedSession({ role: 'qualitativeLead' });
+    renderAt(codedDataUrl);
+  };
+  const row = (excerptId: string) =>
+    document.querySelector<HTMLElement>(`[data-excerpt-id="${excerptId}"]`)!;
+  const alsoCodedIn = (excerptId: string) =>
+    row(excerptId).querySelector('.coded-data__also-coded');
+
+  it('names the other coder on both rows of the pair', () => {
+    asLead();
+
+    const second = fixture.users.find((user) => user.userId === SECOND_CODER_ID)!;
+    const third = fixture.users.find((user) => user.userId === THIRD_CODER_ID)!;
+
+    expect(alsoCodedIn('ex-5806e4b2')).toHaveTextContent(`Also coded by ${third.displayName}`);
+    expect(alsoCodedIn('ex-4f92d7c1')).toHaveTextContent(`Also coded by ${second.displayName}`);
+  });
+
+  it('says nothing on a pair that overlaps below the threshold', () => {
+    asLead();
+
+    expect(alsoCodedIn('ex-9d27b014')).toBeNull();
+    expect(alsoCodedIn('ex-5c1908be')).toBeNull();
+  });
+
+  it('marks exactly the rows the fixture is measured to qualify', () => {
+    // An explicit list, so a fixture edit that moves a pair across the
+    // threshold is reported rather than absorbed.
+    asLead();
+
+    const marked = [...document.querySelectorAll('.coded-data__also-coded')].map((line) =>
+      line.closest('[data-excerpt-id]')!.getAttribute('data-excerpt-id'),
+    );
+
+    expect(marked.sort()).toEqual(
+      ['ex-4b8e30da', 'ex-4f92d7c1', 'ex-5806e4b2', 'ex-77e0ac53'].sort(),
+    );
+  });
+
+  it('is plain text in reading order, not a control', () => {
+    /*
+      D-066: text in reading order, never icon-only, no resolution affordance.
+      Positioned after the row's own coder because both lines answer "who", so
+      the two attribution facts are heard together.
+    */
+    asLead();
+
+    const article = row('ex-5806e4b2');
+    const line = alsoCodedIn('ex-5806e4b2')!;
+    const meta = article.querySelector('.coded-data__meta')!;
+    const codes = article.querySelector('.coded-data__codes')!;
+
+    expect(meta.compareDocumentPosition(line) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(codes.compareDocumentPosition(line) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
+
+    expect(line).not.toHaveAttribute('aria-hidden');
+    expect(within(article).getAllByRole('link')).toHaveLength(1);
+    expect(within(article).queryAllByRole('button')).toHaveLength(0);
   });
 });
 

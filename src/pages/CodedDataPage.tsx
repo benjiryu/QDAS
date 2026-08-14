@@ -435,6 +435,21 @@ function ResultRow({ projectId, result }: { projectId: string; result: CodedResu
         {result.hasNote ? <> · Has a note</> : null}
       </p>
 
+      {/*
+        The same-excerpt poke, per D-066. Plain text in reading order, never an
+        icon and never a badge, and no conflict framing: two coders bounding the
+        same passage differently is data, not error.
+
+        Beside the row's own coder rather than below the codes, because both
+        lines answer "who". The codes then read as this coder's answer to the
+        passage, and the reader knows there is a neighbouring row carrying
+        somebody else's — which is the whole mechanism D-066 relies on instead
+        of building comparison machinery.
+      */}
+      {result.alsoCodedBy.length > 0 ? (
+        <p className="coded-data__also-coded">Also coded by {result.alsoCodedBy.join(', ')}</p>
+      ) : null}
+
       <p className="coded-data__codes">
         <span className="coded-data__pills" aria-hidden="true">
           {result.codes.map((code) => (

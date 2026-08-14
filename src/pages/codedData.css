@@ -162,6 +162,18 @@
   color: var(--text-muted);
 }
 
+/*
+ * The same-excerpt line, D-066. Reads as metadata, like the line above it.
+ *
+ * Not in the reading scale: this is of a kind with the source title and the
+ * coder's name, and D-061 classifies the excerpt as the reading content here,
+ * not the attribution around it.
+ */
+.coded-data__also-coded {
+  margin: 0 0 0.15rem;
+  color: var(--text-muted);
+}
+
 .coded-data__source {
   font-weight: var(--font-weight-bold);
 }

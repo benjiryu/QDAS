@@ -83,9 +83,23 @@ const A = sourceA.sourceId;
 const B = sourceB.sourceId;
 
 /**
- * Five pairs overlap with differing boundaries, marked below. Each pair is two
+ * Six pairs overlap with differing boundaries, marked below. Each pair is two
  * coders reading the same passage and disagreeing about where it starts or
  * ends, which is the comparison case review exists for.
+ *
+ * Since D-066 the amount of overlap is itself part of what the fixture
+ * demonstrates, so each pair's sentence-set Jaccard is recorded on it. Measured,
+ * not estimated, and pinned by a test in `src/domain/sameExcerpt.test.ts`:
+ *
+ * - pair 6, 4/5 = 0.800, the same excerpt with room to spare
+ * - pair 2, 3/6 = 0.500, exactly on the threshold
+ * - pairs 1, 3 and 4, 2/7 = 0.286, and pair 5, 2/8 = 0.250, all below it
+ *
+ * Pair 6 exists because pairs 1 to 5 were written before there was a threshold,
+ * and pair 2 landing precisely on 0.5 was luck. D-066 calls the threshold
+ * provisional and tuned by session evidence; tuned up by a hundredth, a fixture
+ * whose only qualifying pair sat exactly on it would stop demonstrating the
+ * feature at all.
  */
 const specs: ExcerptSpec[] = [
   /* ---------- Second coder, source A ---------- */
@@ -177,6 +191,7 @@ const specs: ExcerptSpec[] = [
     codeIds: ['cd-97af51', 'cd-49a0b7'],
   },
   {
+    // Overlap pair 6 with ex-4f92d7c1.
     excerptId: 'ex-5806e4b2',
     sourceId: A,
     startSegmentId: 'sg-38e60a68ff', // turn 22, sentence 1
@@ -326,6 +341,23 @@ const specs: ExcerptSpec[] = [
     createdAt: '2026-06-20T13:52:00.000Z',
     codeIds: ['cd-2c9407', 'cd-0e8534'],
     uncertain: true,
+  },
+  {
+    /*
+      Overlap pair 6. Four sentences of ex-5806e4b2's five, which is 4/5 = 0.800
+      and the fixture's demonstration of D-066's same-excerpt threshold.
+
+      One code shared with the second coder and one not, so the disagreement is
+      readable by looking at the neighbouring row — which is the reason D-066
+      pokes rather than judging.
+    */
+    excerptId: 'ex-4f92d7c1',
+    sourceId: A,
+    startSegmentId: 'sg-38e60a68ff', // turn 22, sentence 1
+    endSegmentId: 'sg-ebc576b8d8', // turn 22, sentence 4
+    coderId: THIRD_CODER_ID,
+    createdAt: '2026-06-20T13:58:00.000Z',
+    codeIds: ['cd-3ca628', 'cd-b0e341'],
   },
   {
     excerptId: 'ex-31da6047',
