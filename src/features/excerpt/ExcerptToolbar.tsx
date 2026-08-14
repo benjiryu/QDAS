@@ -32,7 +32,7 @@ const CONTROLS: { command: ExcerptCommand; label: string }[] = [
   // for the whole strip, and contract 2.2 no longer asks every command to carry
   // one. It stays reachable by chord and by clicking a coded highlight, which
   // is the route D-030 specifies.
-  { command: 'excerpt.code', label: 'Code selection' },
+  { command: 'excerpt.code', label: 'Assign code' },
   { command: 'excerpt.note', label: 'Add note' },
 ];
 

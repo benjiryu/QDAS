@@ -260,8 +260,12 @@ describe('menu semantics and focus', () => {
 
     expect(menu()).toBeNull();
     expect(document.activeElement).toBe(turnElement);
-    // Escape dismissed the menu; it captured nothing.
+    // Escape dismissed the menu; it captured nothing, so the preview the menu
+    // was painting goes with it.
     expect(highlighted()).toBe('');
+    // And the drag survives, so a coder who dismissed the menu is not made to
+    // select the passage again.
+    expect(document.getSelection()?.isCollapsed).toBe(false);
   });
 });
 
@@ -273,7 +277,7 @@ describe('what the items do', () => {
     rightClick(segmentElement(first.segmentId));
 
     act(() => {
-      fireEvent.click(screen.getByRole('menuitem', { name: /Code selection/ }));
+      fireEvent.click(screen.getByRole('menuitem', { name: /Assign code/ }));
     });
 
     expect(highlighted()).toBe(`${first.text.slice(5)}${second.text.slice(0, 7)}`);
@@ -330,9 +334,58 @@ describe('what the items do', () => {
     rightClick(segmentElement(segment.segmentId));
 
     act(() => {
-      fireEvent.click(screen.getByRole('menuitem', { name: /Code selection/ }));
+      fireEvent.click(screen.getByRole('menuitem', { name: /Assign code/ }));
     });
 
     expect(menu()).toBeNull();
   });
+});
+
+describe('the selection stays visible while the menu is open', () => {
+  /*
+    The regression this block exists for: between the right-click and choosing
+    an item, the only thing marking the passage was the browser's own selection.
+    The menu opens with `autoFocus`, which takes focus out of the transcript,
+    and how a browser paints an unfocused selection is its business rather than
+    ours — so the highlight disappeared in some scenarios and not others.
+
+    Section 6 says the application highlight is the only selection visual from
+    capture onward. This window sat just before that, resting on the one thing
+    the rule exists to stop relying on.
+  */
+  it('paints the snapshot the menu is holding, before anything is chosen', () => {
+    renderWorkspace();
+    const [first, second] = multiSentenceTurn.segments;
+
+    drag([first.segmentId, 5], [second.segmentId, 7]);
+    rightClick(segmentElement(first.segmentId));
+
+    expect(menu()).not.toBeNull();
+    expect(highlighted()).toBe(`${first.text.slice(5)}${second.text.slice(0, 7)}`);
+  });
+
+  it('shows a preview, not a capture: no confirmed state and no panel', () => {
+    /*
+      The machine deliberately does not advance. A menu can still be dismissed
+      and a dismissed menu captures nothing, so the state stays `idle` — which
+      also keeps the heavier confirmed fill off, since that is keyed on
+      `[data-excerpt-state='confirmed']`. The preview reads as what the menu
+      would act on rather than as what has been captured.
+    */
+    renderWorkspace();
+    const segment = multiSentenceTurn.segments[0];
+
+    drag([segment.segmentId, 0], [segment.segmentId, 10]);
+    rightClick(segmentElement(segment.segmentId));
+
+    expect(document.querySelector('[data-excerpt-state="confirmed"]')).toBeNull();
+    expect(screen.queryAllByRole('dialog', { name: /code assignment/i })).toHaveLength(0);
+
+    act(() => {
+      fireEvent.click(screen.getByRole('menuitem', { name: /Assign code/ }));
+    });
+
+    expect(document.querySelector('[data-excerpt-state="confirmed"]')).not.toBeNull();
+  });
+
 });

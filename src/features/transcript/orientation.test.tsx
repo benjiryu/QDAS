@@ -272,7 +272,7 @@ describe('what the strip holds afterwards', () => {
       'Speaker',
       'Timestamp',
       'Where am I',
-      'Code selection',
+      'Assign code',
       'Add note',
     ]);
   });

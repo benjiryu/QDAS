@@ -622,6 +622,8 @@ Date: 2026-08 | Workflow: excerpt selection, code assignment | Status: approved
 
 Right-clicking a native selection inside the transcript opens a custom menu: **Code selection**, which captures per D-036 and opens the panel, and **Add note**, which does the same with focus landing in the panel's note field. Elsewhere in the transcript, and everywhere else in the application, the native browser menu is untouched.
 
+*Later: the control is named **Assign code** on screen, in the menu and on the strip together, so the word-for-word parity this decision requires is unaffected. The entries above keep the original wording, being the record of what was decided when.*
+
 D-028 scoped a custom menu as accelerator-only. Feedback made it the primary pointer route, so that scope is superseded; D-028's conditions carry forward as requirements:
 
 - Every menu command exists on the strip and as a chord. The menu adds no capability.

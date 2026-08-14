@@ -374,6 +374,6 @@ describe('destination entry, per the shared rules', () => {
 
     await user.click(sidebar().getByRole('link', { name: 'Coded data' }));
     expect(screen.getByText(/have not coded anything/i)).toBeInTheDocument();
-    expect(screen.getByText(/choose Code selection/i)).toBeInTheDocument();
+    expect(screen.getByText(/choose Assign code/i)).toBeInTheDocument();
   });
 });

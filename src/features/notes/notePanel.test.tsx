@@ -361,7 +361,7 @@ describe('clicking routes by what the excerpt carries', () => {
     fireEvent.click(turn.querySelector('[data-segment-id]')!);
 
   it('opens the note panel on an excerpt carrying only a note', async () => {
-    // Code selection on a note-only excerpt is an empty codebook with the note
+    // The code panel on a note-only excerpt is an empty codebook with the note
     // hidden in a disclosure, which is the cost D-055 exists to remove.
     renderAt(sourceUrl);
     const turn = focusFreshTurn();

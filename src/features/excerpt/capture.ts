@@ -193,3 +193,73 @@ export function clearNativeSelection(): void {
   if (typeof document === 'undefined') return;
   document.getSelection()?.removeAllRanges();
 }
+
+/**
+ * Puts the native selection back over a captured range.
+ *
+ * The dismissal half of the menu's preview. Painting the preview re-renders the
+ * turn — a plain sentence becomes several runs — which replaces the text nodes
+ * the browser's selection pointed into and collapses it. That is the right
+ * trade while the menu is open, since the application highlight is then the
+ * only selection visual and it survives focus moving into the menu. It is the
+ * wrong outcome on dismissal: a coder who changed their mind about the menu did
+ * not change their mind about the passage, and making them drag it again is a
+ * cost the fix has no business imposing.
+ *
+ * Rebuilt from the stored range rather than held as a DOM Range, because a
+ * cloned Range still points at the text nodes the re-render threw away.
+ */
+export function restoreNativeSelection(
+  container: HTMLElement | null,
+  range: CapturedRange,
+): void {
+  if (typeof document === 'undefined' || !container) return;
+
+  const start = positionIn(container, range.startSegmentId, range.startOffset);
+  const end = positionIn(container, range.endSegmentId, range.endOffset);
+  if (!start || !end) return;
+
+  const domRange = document.createRange();
+  try {
+    domRange.setStart(start.node, start.offset);
+    domRange.setEnd(end.node, end.offset);
+  } catch {
+    // A range the DOM will not accept is not worth restoring over.
+    return;
+  }
+
+  const selection = document.getSelection();
+  selection?.removeAllRanges();
+  selection?.addRange(domRange);
+}
+
+/**
+ * A character offset into a sentence, as a DOM position.
+ *
+ * The inverse of `offsetWithin`, and it walks the text nodes rather than
+ * assuming one: a sentence carrying coded runs is already several.
+ */
+function positionIn(
+  container: HTMLElement,
+  segmentId: Id,
+  offset: number,
+): { node: Node; offset: number } | null {
+  const element = container.querySelector<HTMLElement>(`[data-segment-id="${segmentId}"]`);
+  if (!element) return null;
+
+  const walker = element.ownerDocument.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+  let remaining = Math.max(0, offset);
+  let last: Text | null = null;
+
+  let node = walker.nextNode() as Text | null;
+  while (node) {
+    if (remaining <= node.length) return { node, offset: remaining };
+    remaining -= node.length;
+    last = node;
+    node = walker.nextNode() as Text | null;
+  }
+
+  // Past the end, which a clamped offset should not be. The last character is
+  // closer to the truth than giving up.
+  return last ? { node: last, offset: last.length } : null;
+}

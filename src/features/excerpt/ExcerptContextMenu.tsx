@@ -20,7 +20,7 @@ import './excerptMenu.css';
  */
 
 const ITEMS = [
-  { target: 'search', label: 'Code selection', command: 'excerpt.code' },
+  { target: 'search', label: 'Assign code', command: 'excerpt.code' },
   { target: 'note', label: 'Add note', command: 'excerpt.note' },
 ] as const;
 

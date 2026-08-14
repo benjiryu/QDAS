@@ -63,7 +63,7 @@ test.beforeEach(async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1, name: source.title })).toBeVisible();
 });
 
-test('right-clicking a selection offers Code selection and Add note', async ({ page }) => {
+test('right-clicking a selection offers Assign code and Add note', async ({ page }) => {
   await sweepAcrossTwoSentences(page);
 
   await page.locator('[data-segment-id]').first().click({ button: 'right' });
@@ -71,7 +71,7 @@ test('right-clicking a selection offers Code selection and Add note', async ({ p
   const menu = page.getByRole('menu');
   await expect(menu).toBeVisible();
   await expect(menu.getByRole('menuitem')).toHaveCount(2);
-  await expect(menu.getByRole('menuitem', { name: /Code selection/ })).toBeVisible();
+  await expect(menu.getByRole('menuitem', { name: /Assign code/ })).toBeVisible();
   await expect(menu.getByRole('menuitem', { name: /Add note/ })).toBeVisible();
 });
 
@@ -174,4 +174,41 @@ test('the open menu has no accessibility violations', async ({ page }) => {
     .analyze();
 
   expect(results.violations).toEqual([]);
+});
+
+test('the selection stays visible while the menu is open', async ({ page }) => {
+  /*
+    The reported regression, and the layer it was reported from. Only a real
+    browser has real focus and real selection painting: the menu opens with
+    `autoFocus`, focus leaves the transcript, and what the browser then does
+    with an unfocused selection is its business — which is why the highlight
+    disappeared in some scenarios and not others.
+
+    The application paints the snapshot the menu is already holding, so the
+    passage is marked by something we control rather than by something we
+    cannot see.
+  */
+  const dragged = await sweepAcrossTwoSentences(page);
+
+  await page.locator('[data-segment-id]').first().click({ button: 'right' });
+  await expect(page.getByRole('menu')).toBeVisible();
+
+  expect(squashed(await highlighted(page))).toBe(squashed(dragged));
+});
+
+test('dismissing the menu takes the highlight away and leaves the drag', async ({ page }) => {
+  // Dismissing captured nothing, so nothing stays painted. The drag survives:
+  // painting the preview collapses the native selection, and the dismissal puts
+  // it back rather than making the coder select the passage again.
+  const dragged = await sweepAcrossTwoSentences(page);
+
+  await page.locator('[data-segment-id]').first().click({ button: 'right' });
+  await expect(page.getByRole('menu')).toBeVisible();
+
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('menu')).toHaveCount(0);
+
+  expect(await highlighted(page)).toBe('');
+  const stillSelected = await page.evaluate(() => document.getSelection()?.toString() ?? '');
+  expect(squashed(stillSelected)).toBe(squashed(dragged));
 });

@@ -19,7 +19,7 @@ Ownership splits at capture: before it, the range belongs to the browser or the 
 
 | User | Route |
 |---|---|
-| Sighted | Native drag, then the context menu (section 2), the strip's Code selection control, or `excerpt.code` |
+| Sighted | Native drag, then the context menu (section 2), the strip's Assign code control, or `excerpt.code` |
 | Magnification | Same as sighted |
 | Screen reader | Native selection where the screen reader surfaces a real DOM selection, then `excerpt.code`. Where it does not, the turn fallback below |
 
@@ -42,7 +42,7 @@ The two must be unmistakably different. A screen reader user whose browse-mode s
 
 Per D-037. Right-click over the transcript while a selection exists opens a custom menu:
 
-1. **Code selection** — capture, open the panel, focus in search
+1. **Assign code** — capture, open the panel, focus in search
 2. **Add note** — capture, open the panel, focus in the note field
 
 Requirements carried from D-028: the menu adds no capability, every item exists on the strip and as a chord; it opens on Shift+F10 and the applications key when a selection exists, not only on pointer; menu semantics with arrow navigation; Escape closes it and returns focus where it was. Right-click anywhere else, or with no selection, shows the untouched native browser menu.
@@ -79,6 +79,7 @@ Boundaries are exact characters: `startSegmentId` + `startOffset` through `endSe
 ## 6. Visual behavior
 
 - The application highlight is the only selection visual after capture; native selection is cleared.
+- It is also the selection visual **while the context menu is open**, painted from the snapshot the menu took. Opening the menu moves focus out of the transcript, and how a browser paints a selection that no longer has focus is not something this pattern can rest on — which is what made the highlight vanish in some scenarios and not others. The menu's preview is the lighter band rather than the confirmed one: nothing is captured until an item is chosen, and dismissing the menu removes the preview and puts the native selection back, so a coder who changed their mind about the menu has not lost the passage.
 - A captured range may begin or end mid-sentence. The highlight shows exactly what will be coded.
 - Highlight state is not conveyed by color alone.
 - Note-only ranges render with the gray highlight and underline treatment, distinct from coded highlights; the underline is the non-color channel. Per D-055's codification of the existing build behavior.
@@ -86,7 +87,7 @@ Boundaries are exact characters: `startSegmentId` + `startOffset` through `endSe
 
 ## 7. Acceptance criteria
 
-**Exact capture.** Given a drag from mid-sentence to mid-sentence, when the user invokes Code selection, then the stored offsets match the drag exactly and the highlight matches the stored range.
+**Exact capture.** Given a drag from mid-sentence to mid-sentence, when the user invokes Assign code, then the stored offsets match the drag exactly and the highlight matches the stored range.
 
 **Fallback fires honestly.** Given focus on a speaker turn and no observable selection, when `excerpt.code` fires, then the whole turn is captured and the announcement states that no selection was detected and names the turn.
 

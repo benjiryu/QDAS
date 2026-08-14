@@ -146,7 +146,7 @@ test('the strip control captures the selection a drag just made', async ({ page 
   // leaves the selection readable inside the click handler either way, so what
   // this asserts is the route, not the mousedown guard the strip carries for
   // engines that do not. The guard is covered in excerptCapture.test.tsx.
-  const control = page.getByRole('button', { name: /Code selection/ });
+  const control = page.getByRole('button', { name: /Assign code/ });
   await control.scrollIntoViewIfNeeded();
   await control.click();
 
