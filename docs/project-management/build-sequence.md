@@ -1333,3 +1333,34 @@ static text from the seeded user record reading "AFB Researcher", not a
 link or heading, divider beneath. Do not add the home icon. When tests
 pass, commit and update the progress line in the same commit. Do not push.
 ```
+
+### Task 44. Same-excerpt indicator on project-wide rows (D-066)
+
+```
+Implement decision D-066 per the amended docs/pages/destinations.md section
+2. Sentence-set Jaccard in the domain layer with the SAME_EXCERPT_JACCARD
+constant at 0.5; unit tests cover identical ranges, majority overlap just
+above and below threshold, and disjoint ranges. Project-wide rows meeting
+the threshold render "Also coded by [name]" as plain text in reading order.
+Own-work view unchanged. No ReviewItem creation. Extend the synthetic
+fixture so the seeded second coder overlaps one excerpt above threshold and
+one below. When tests pass, commit and update the progress line in the same
+commit. Do not push.
+```
+
+### Task 45. The shortcuts help surface
+
+```
+Build the help.shortcuts surface, closing the session gate D-065 records.
+The chord opens a modal dialog listing every command with its
+platform-correct chord via describeChord, grouped by where it applies:
+transcript, code panel, note panel. Focus enters the dialog on open and
+returns to the invoker on close; Escape closes the help dialog first even
+when the code panel is open beneath it, so extend resolveEscape or its
+caller for layering without committing or discarding anything in the panel.
+The dialog is named, reads as a list to screen readers, reflows at 320
+pixels and maximum reading scale. Content derives from the binding tables
+in src/config/keybindings.ts at runtime; no chord strings are hardcoded.
+When tests pass, commit and update the progress line in the same commit.
+Do not push.
+```

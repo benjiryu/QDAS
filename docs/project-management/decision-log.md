@@ -1114,3 +1114,13 @@ Date: 2026-08 | Status: approved
 The build gave hover a rounded rectangle and current-page fully circular sides. D-059 says the two wear the same pill; the shapes unify on the hover treatment, the rounded rectangle, so the earlier hover-equals-current acceptance is literally true.
 
 A user title block is added at the top of the nav landmark: static text, not a link and not a heading, reading the seeded user's title, "AFB Researcher" in the prototype, with the divider below it per the Figma. The string comes from the seed user record, never hardcoded in the component. The Figma's home icon remains unspecified and is not built.
+
+## D-066 Same-excerpt is defined, and the project-wide view names it in one line
+
+Date: 2026-08 | Workflow: coded data, review | Status: approved. Team methodology decision by Benji; full comparison stays Slice 3
+
+**The definition.** Two excerpts by different coders are the same excerpt when their sentence sets overlap at Jaccard 0.5 or above: the sentences both touch, divided by the sentences either touches, per R-1's sentence-granularity comparison rule. Character boundaries stay untouched as stored data per D-036. The threshold is a provisional named constant in the domain layer, `SAME_EXCERPT_JACCARD`, tuned by session evidence, never hardcoded in a component.
+
+**The poke.** Project-wide rows only: an excerpt meeting the threshold with another coder's gains one plain-text line, "Also coded by [name]", in the row's reading order and accessible to screen readers as text, never icon-only. Multiple coders list all names. No conflict language, no badge, no ReviewItem creation, no resolution affordance: the neighboring row already shows the other coder's codes, so differing code choices on the same excerpt become readable as adjacent data — the reflexivity posture, disagreement as data rather than error. Phase and role gating come free from D-049's project-wide view. (Renumbered from a drafting collision with D-065, the strip removal.)
+
+**What stays Slice 3:** ReviewItem materialization, any agreement or disagreement classification, resolution recording, and any surface that asks coders to reconcile. Comparison matters most during review and reflexivity, and that is where the full treatment lives.

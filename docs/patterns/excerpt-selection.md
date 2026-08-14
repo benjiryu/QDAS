@@ -19,7 +19,7 @@ Ownership splits at capture: before it, the range belongs to the browser or the 
 
 | User | Route |
 |---|---|
-| Sighted | Native drag, then the context menu (section 2), the strip's Assign code control, or `excerpt.code` |
+| Sighted | Native drag, then the context menu (section 2) or `excerpt.code`. The strip is removed per D-065; the menu is the pointer route |
 | Magnification | Same as sighted |
 | Screen reader | Native selection where the screen reader surfaces a real DOM selection, then `excerpt.code`. Where it does not, the turn fallback below |
 
@@ -45,7 +45,7 @@ Per D-037. Right-click over the transcript while a selection exists opens a cust
 1. **Assign code** — capture, open the panel, focus in search
 2. **Add note** — capture, open the panel, focus in the note field
 
-Requirements carried from D-028: the menu adds no capability, every item exists on the strip and as a chord; it opens on Shift+F10 and the applications key when a selection exists, not only on pointer; menu semantics with arrow navigation; Escape closes it and returns focus where it was. Right-click anywhere else, or with no selection, shows the untouched native browser menu.
+Requirements carried from D-028 as amended by D-065: the menu adds no capability, every item exists as a chord — the strip is gone, so the chords alone carry parity and the menu is load-bearing; it opens on Shift+F10 and the applications key when a selection exists, not only on pointer; menu semantics with arrow navigation; Escape closes it and returns focus where it was. Right-click anywhere else, or with no selection, shows the untouched native browser menu.
 
 Per D-060, the menu never alters the native selection or its appearance. The transcript defines an author `::selection` style matching native selection blue, which browsers also apply to inactive selections, so the selection paints identically while focus is in the menu. No application highlight exists before capture; the menu's open, navigation, and close paths leave the DOM selection untouched, and Escape's focus return leaves it intact.
 
@@ -85,7 +85,7 @@ Boundaries are exact characters: `startSegmentId` + `startOffset` through `endSe
 - A captured range may begin or end mid-sentence. The highlight shows exactly what will be coded.
 - Highlight state is not conveyed by color alone.
 - Note-only ranges render with the gray highlight and underline treatment, distinct from coded highlights; the underline is the non-color channel. Per D-055's codification of the existing build behavior.
-- The panel, strip, and reflow behavior are unchanged from D-027, D-031, and D-033.
+- The panel and reflow behavior are unchanged from D-027, D-031, and D-033; the strip is removed per D-065.
 
 ## 7. Acceptance criteria
 
