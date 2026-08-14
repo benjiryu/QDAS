@@ -17,8 +17,11 @@
   margin-bottom: 1rem;
 }
 
+/* The text a coder types is theirs to read, per D-061. The field's box stays
+   chrome; only what is typed in it scales. */
 .codebook__search input {
   font: inherit;
+  font-size: var(--reading-font-size);
   padding: 0.35rem;
   width: 100%;
   max-width: 24rem;
@@ -83,7 +86,9 @@
   gap: 0.25rem 1rem;
 }
 
+/* A code name is data, per D-061, wherever it appears. */
 .codebook__name {
+  font-size: var(--reading-font-size);
   display: flex;
   align-items: baseline;
   gap: 0.4rem;
@@ -138,7 +143,9 @@
  * area, and a line of prose running its whole width is the thing a low-vision
  * reader loses their place in.
  */
+/* The definition is the reading content this decision was asked for. */
 .codebook__definition {
+  font-size: var(--reading-font-size);
   margin: 0 0 0.25rem;
   max-width: 70ch;
 }

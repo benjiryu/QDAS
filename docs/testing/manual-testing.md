@@ -121,7 +121,7 @@ The first produces a fix aimed at the specified behavior. The second produces a 
 
 ## 6. Record the text size with the flag preset
 
-Per D-056, note the transcript text size a participant ended up using, alongside the flag preset. It changes what a magnification participant actually experienced — how much text was on screen, how often they scrolled, whether the speaker column was beside the prose or above it — and a session written up without it cannot be compared with one run at a different size.
+Per D-056 and D-061, note the reading scale a participant ended up using, alongside the flag preset. It applies to all reading content now — code names, definitions, notes, and excerpts on the destination pages — rather than to the transcript alone. It changes what a magnification participant actually experienced — how much text was on screen, how often they scrolled, whether the speaker column was beside the prose or above it — and a session written up without it cannot be compared with one run at a different size.
 
 ## 7. Recording
 

@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { Link, Outlet, useLocation } from 'react-router';
 import { ProjectNav } from '../features/navigation/ProjectNav';
+import { useReadingScale } from '../features/readingScale/useReadingScale';
+import { CURRENT_CODER_ID } from '../data/seed/project';
 import './AppShell.css';
 
 /**
@@ -33,6 +35,15 @@ export const MAIN_CONTENT_ID = 'main-content';
 
 export function AppShell() {
   const { pathname } = useLocation();
+  /*
+    Applies the reading preference on every route, per D-061.
+
+    Called for its effect rather than its value: the control lives in the
+    transcript header, and the Codebook page — the surface the participant
+    asked for — has no control on it. Reading the same store here is what
+    carries the preference to routes the control never renders on.
+  */
+  useReadingScale(CURRENT_CODER_ID);
   const mainRef = useRef<HTMLElement>(null);
   const isFirstRender = useRef(true);
 

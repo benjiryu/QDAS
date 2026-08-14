@@ -106,6 +106,24 @@
   */
   --native-selection-bg: #b4d5fe;
 
+  /* ---------- Reading scale, per D-061 ---------- */
+
+  /*
+     One preference, applied to reading content and never to chrome.
+
+     D-056 sized the transcript and D-061 corrects the classification rather
+     than adding a control: reading content scales, chrome does not, and the
+     transcript was only ever the first surface in that class. A coder reads
+     code names and definitions as data too.
+
+     `--reading-scale` is written to the root element by the header control, so
+     it reaches every route including the ones with no transcript on them. The
+     derived size below is what surfaces name, so opting in is one declaration
+     rather than the same `calc` repeated at every site.
+  */
+  --reading-scale: 1;
+  --reading-font-size: calc(1rem * var(--reading-scale));
+
   /* ---------- Shape ---------- */
   --radius-small: 4px;    /* checkbox */
   --radius-medium: 8px;   /* selectors, disclosure containers */

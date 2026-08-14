@@ -1,4 +1,5 @@
-import type { TextSizeApi } from './useTextSize';
+import { CURRENT_CODER_ID } from '../../data/seed/project';
+import { useReadingScale } from './useReadingScale';
 
 /**
  * The transcript's text size control, per D-056.
@@ -14,8 +15,15 @@ import type { TextSizeApi } from './useTextSize';
  * intercepted; this is a preference rather than a command, and since D-057
  * retired the blanket visible-control rule nothing asks it to carry one.
  */
-export function TextSizeControl({ textSize }: { textSize: TextSizeApi }) {
-  const { percent, canIncrease, canDecrease, increase, decrease } = textSize;
+export function TextSizeControl() {
+  /*
+    The preference is read from the store rather than passed in, since D-061
+    made it the application's rather than the transcript's. Every reader
+    subscribes to the same value, so this control and the shell that applies it
+    on other routes cannot disagree.
+  */
+  const { percent, canIncrease, canDecrease, increase, decrease } =
+    useReadingScale(CURRENT_CODER_ID);
 
   return (
     /*

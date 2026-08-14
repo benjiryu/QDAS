@@ -80,19 +80,26 @@ function chord(command: Command) {
 const group = () => screen.getByRole('group', { name: 'Transcript text size' });
 const increase = () => within(group()).getByRole('button', { name: 'Increase text size' });
 const decrease = () => within(group()).getByRole('button', { name: 'Decrease text size' });
-const surface = () => document.querySelector<HTMLElement>('[data-transcript]')!;
-const shownPercent = () => Number(surface().dataset.textSize);
+/*
+  The preference is read off the root element since D-061, where D-056 set an
+  inline font-size on the transcript. Same claims, new mechanism: one custom
+  property on the root reaches every surface that opts in, including pages with
+  no transcript on them, which is what the decision is for.
+*/
+const root = () => document.documentElement;
+const shownPercent = () => Number(root().dataset.readingScale);
+const scale = () => root().style.getPropertyValue('--reading-scale');
 const announced = () => announcer.getHistory().map((entry) => entry.message);
 
 describe('stepping the size, per D-056', () => {
   it('grows and shrinks the reading surface', () => {
     renderAt(sourceUrl);
     expect(shownPercent()).toBe(100);
-    expect(surface().style.fontSize).toBe('100%');
+    expect(scale()).toBe('1');
 
     fireEvent.click(increase());
     expect(shownPercent()).toBe(125);
-    expect(surface().style.fontSize).toBe('125%');
+    expect(scale()).toBe('1.25');
 
     fireEvent.click(decrease());
     expect(shownPercent()).toBe(100);
@@ -108,8 +115,11 @@ describe('stepping the size, per D-056', () => {
     fireEvent.click(increase());
     fireEvent.click(increase());
 
-    expect(surface().style.fontSize).toBe('150%');
-    expect(surface().style.transform).toBe('');
+    expect(scale()).toBe('1.5');
+    expect(root().style.transform).toBe('');
+    expect(
+      document.querySelector<HTMLElement>('[data-transcript]')!.style.transform,
+    ).toBe('');
   });
 
   it('announces every step, not just where it ended up', () => {

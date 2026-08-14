@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test';
 import type { Locator } from '@playwright/test';
+import { bindingsFor } from '../../src/config/keybindings';
+import type { Chord, Command } from '../../src/config/keybindings';
 import { createSeedFixture } from '../../src/data/seed';
 
 /**
@@ -34,6 +36,17 @@ const speakerLabel = fixture.speakers.find(
 )!.label;
 
 const sourceUrl = `/projects/${source.projectId}/sources/${source.sourceId}`;
+
+/** A command's chord, as Playwright spells it. Same shape the capture spec uses. */
+function press(page: import('@playwright/test').Page, command: Command) {
+  const chord: Chord = bindingsFor('other')[command];
+  const parts: string[] = [];
+  if (chord.ctrl) parts.push('Control');
+  if (chord.alt) parts.push('Alt');
+  if (chord.shift) parts.push('Shift');
+  parts.push(chord.key);
+  return page.keyboard.press(parts.join('+'));
+}
 
 test.beforeEach(async ({ page }) => {
   await page.goto(sourceUrl);
@@ -458,7 +471,9 @@ async function maximiseTextSize(page: import('@playwright/test').Page): Promise<
     if ((await increase.getAttribute('aria-disabled')) === 'true') break;
     await increase.click();
   }
-  return Number(await page.locator('[data-transcript]').getAttribute('data-text-size'));
+  // Read off the root since D-061: one preference for the whole application,
+  // applied as a custom property rather than as one surface's font-size.
+  return Number(await page.locator('html').getAttribute('data-reading-scale'));
 }
 
 test('the transcript grows and the chrome does not', async ({ page }) => {
@@ -545,4 +560,135 @@ test('nothing scrolls sideways at maximum text size, down to 320px', async ({ pa
     );
     expect(overflows, `overflow at ${width}px at maximum text size`).toBe(false);
   }
+});
+
+/* ---------- Reading scale reaches every surface, per D-061 ---------- */
+
+test('the scale reaches a page with no transcript on it', async ({ page }) => {
+  /*
+    The participant request that prompted D-061, as a test: transcript sizing
+    worked and they wanted it in the codebook. The old mechanism was a font-size
+    on the transcript container, which the Codebook page never renders — so
+    reaching it is the whole of the decision.
+  */
+  const before = await page.evaluate(() => {
+    const definition = document.querySelector('.codebook__definition');
+    return definition ? parseFloat(getComputedStyle(definition).fontSize) : null;
+  });
+  expect(before, 'no codebook on the transcript route').toBeNull();
+
+  await maximiseTextSize(page);
+  await page.goto(`/projects/${source.projectId}/codebook`);
+
+  const scaled = await page
+    .locator('.codebook__definition')
+    .first()
+    .evaluate((node) => parseFloat(getComputedStyle(node).fontSize));
+  const heading = await page
+    .locator('h1')
+    .evaluate((node) => parseFloat(getComputedStyle(node).fontSize));
+
+  expect(scaled).toBeGreaterThan(16 * 2);
+  // And the page heading, which is chrome, did not come with it.
+  expect(heading).toBeLessThan(scaled);
+});
+
+test('reading content scales and chrome does not', async ({ page }) => {
+  /*
+    D-061's classification, both halves in one test, because the rule is the
+    boundary rather than either side of it. Measured rather than asserted from
+    the stylesheet: what matters is the size that lands on the page.
+  */
+  await page.locator('[data-turn-id]').first().click();
+  await press(page, 'excerpt.code');
+  await expect(page.getByRole('dialog', { name: /code assignment/i })).toBeVisible();
+
+  const sizeOf = (selector: string) =>
+    page.locator(selector).first().evaluate((node) => parseFloat(getComputedStyle(node).fontSize));
+
+  const before = {
+    codeName: await sizeOf('.code-panel__code-name'),
+    search: await sizeOf('.code-panel__search'),
+    sidebar: await sizeOf('.project-nav'),
+    action: await sizeOf('[data-command="codes.save"]'),
+    ribbon: await sizeOf('.position-ribbon'),
+  };
+
+  await page.keyboard.press('Escape');
+  await maximiseTextSize(page);
+  await page.locator('[data-turn-id]').first().click();
+  await press(page, 'excerpt.code');
+  await expect(page.getByRole('dialog', { name: /code assignment/i })).toBeVisible();
+
+  // Reading content: a code name is data, and so is what the coder types.
+  expect(await sizeOf('.code-panel__code-name')).toBeGreaterThan(before.codeName * 2);
+  expect(await sizeOf('.code-panel__search')).toBeGreaterThan(before.search * 2);
+
+  // Chrome: unchanged, to the pixel.
+  expect(await sizeOf('.project-nav')).toBe(before.sidebar);
+  expect(await sizeOf('[data-command="codes.save"]')).toBe(before.action);
+  expect(await sizeOf('.position-ribbon')).toBe(before.ribbon);
+});
+
+test('pills grow around their labels, and checkbox targets with their rows', async ({ page }) => {
+  // D-061 asks for em padding on pills so a grown label is not clipped, and for
+  // checkbox targets to grow with the row rather than shrinking against it.
+  await page.locator('[data-turn-id]').first().click();
+  await press(page, 'excerpt.code');
+  await expect(page.getByRole('dialog', { name: /code assignment/i })).toBeVisible();
+
+  const measure = () =>
+    page.evaluate(() => {
+      const pill = document.querySelector('.code-panel__code-name')!;
+      const box = document.querySelector('.code-panel input[type="checkbox"]')!;
+      const style = getComputedStyle(pill);
+      return {
+        pillWidth: pill.getBoundingClientRect().width,
+        pillPadding: parseFloat(style.paddingLeft),
+        boxWidth: box.getBoundingClientRect().width,
+        boxHeight: box.getBoundingClientRect().height,
+      };
+    });
+
+  const before = await measure();
+  await page.keyboard.press('Escape');
+  await maximiseTextSize(page);
+  await page.locator('[data-turn-id]').first().click();
+  await press(page, 'excerpt.code');
+  await expect(page.getByRole('dialog', { name: /code assignment/i })).toBeVisible();
+  const after = await measure();
+
+  // The pill's padding grew with its text rather than staying put and clipping.
+  expect(after.pillPadding).toBeGreaterThan(before.pillPadding * 2);
+  expect(after.pillWidth).toBeGreaterThan(before.pillWidth);
+
+  // And the target grew with the row it belongs to.
+  expect(after.boxWidth).toBeGreaterThan(before.boxWidth * 2);
+  expect(after.boxWidth).toBeGreaterThanOrEqual(24);
+  expect(after.boxHeight).toBeGreaterThanOrEqual(24);
+});
+
+test('the code panel reflows vertically at maximum scale, never sideways', async ({ page }) => {
+  // The task's own criterion. A panel that panned horizontally at 250 percent
+  // would breach contract 2.5 at exactly the setting it exists to serve.
+  await maximiseTextSize(page);
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.locator('[data-turn-id]').first().click();
+  await press(page, 'excerpt.code');
+  await expect(page.getByRole('dialog', { name: /code assignment/i })).toBeVisible();
+
+  const overflows = await page.evaluate(
+    () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+  );
+  expect(overflows, 'the page does not pan sideways with the panel open').toBe(false);
+
+  // The panel's middle scrolls instead, which is how it fits without panning.
+  const scrolls = await page
+    .locator('[data-scroll-region]')
+    .evaluate((node) => ({
+      overflowY: getComputedStyle(node).overflowY,
+      scrollable: node.scrollHeight > node.clientHeight,
+    }));
+  expect(scrolls.overflowY).toBe('auto');
+  expect(scrolls.scrollable).toBe(true);
 });

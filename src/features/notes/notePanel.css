@@ -25,6 +25,8 @@
 
 .note-panel__input {
   font: inherit;
+  /* The note itself, per D-061. */
+  font-size: var(--reading-font-size);
   color: inherit;
   padding: 0.4rem;
   background: var(--surface);

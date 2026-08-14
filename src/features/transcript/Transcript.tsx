@@ -23,8 +23,6 @@ interface TranscriptProps {
   onOpenSavedAt?: (segmentId: Id) => void;
   /** Clicking the rail's note icon, the pointer twin of `note.open`. D-055. */
   onOpenNote?: (turnId: Id) => void;
-  /** The reading surface's text size, per D-056. Percent, 100 to 250. */
-  textSizePercent?: number;
   containerRef?: React.RefObject<HTMLDivElement | null>;
   segmentsInRange?: Set<Id>;
   excerptStartSegmentId?: Id | null;
@@ -43,7 +41,6 @@ export function Transcript({
   flags = defaultFlags,
   onOpenSavedAt,
   onOpenNote,
-  textSizePercent = 100,
   containerRef,
   segmentsInRange,
   excerptStartSegmentId = null,
@@ -61,22 +58,12 @@ export function Transcript({
       <h2 id={headingId}>Transcript</h2>
 
       {/*
-        The reading surface, and the only thing text sizing touches, per D-056.
-
-        `font-size`, never `transform: scale()`. A transform zooms without
-        reflowing, so the text would run off the side and have to be panned to —
-        which is precisely the failure contract 2.5 prohibits and the reason
-        D-056 names the mechanism rather than leaving it open.
-
-        Inline because it is a user's stored preference rather than a design
-        value; everything inside sizes from it in `em` and `ch`.
+        The reading surface. Since D-061 its size comes from `--reading-scale`
+        on the root, applied by the stylesheet, rather than from an inline
+        font-size set here — the same preference now reaches surfaces this
+        component knows nothing about, including pages with no transcript.
       */}
-      <div
-        ref={containerRef}
-        data-transcript
-        data-text-size={textSizePercent}
-        style={{ fontSize: `${textSizePercent}%` }}
-      >
+      <div ref={containerRef} data-transcript>
         {/*
           A list, so a screen reader reports how many turns there are on entry
           and where the user is within them. Section 1: one focusable container

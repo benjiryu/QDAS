@@ -125,7 +125,20 @@
  * It also carries the text size, so the font-relative units in both conditions
  * resolve against the size the reader actually chose.
  */
+
+/* ---------- Reading content, per D-061 ---------- */
+
+/*
+ * Reading content scales with the reader's preference; chrome does not. That
+ * boundary is the whole of D-061 — the transcript was only ever the first
+ * surface on the reading side of it, and a coder reads code names and
+ * definitions as data too.
+ *
+ * One declaration per element that holds text, never on an ancestor of another
+ * one, so nothing compounds: two nested opt-ins would square the scale.
+ */
 [data-transcript] {
+  font-size: var(--reading-font-size);
   container-type: inline-size;
   container-name: transcript-row;
 }
@@ -309,8 +322,28 @@
 }
 
 .transcript-turn__pill {
-  padding: 0.05rem 0.5rem;
-  border-radius: var(--radius-pill);
+  /*
+     `em` since D-061, so the pill grows around its label rather than clipping
+     it. The rail's note icon already sized this way for the same reason.
+  */
+  padding: 0.05em 0.5em;
+  border-radius: 999em;
+  /*
+     A pill cannot be wider than the rail holding it. At 320px and 250 percent a
+     long code name is wider than the viewport, and the rail's `flex-wrap` moves
+     whole pills rather than breaking one — so the label breaks instead, the same
+     answer the prose takes for the same collision of contract 2.5's two
+     requirements.
+  */
+  max-width: 100%;
+  /*
+     `min-width: 0` as well as the break. A flex item's automatic minimum is its
+     min-content width, and `break-word` does not lower that — so the pill kept
+     its full unbroken width and pushed past the rail regardless of `max-width`.
+     Zeroing the floor is what lets the break actually apply.
+  */
+  min-width: 0;
+  overflow-wrap: break-word;
   border: 1px solid var(--code-strong, var(--border));
   background: var(--code-fill, var(--row-bg));
   /* Black on every shade-2 fill: 6.9:1 to 15.4:1, audited at extraction. */

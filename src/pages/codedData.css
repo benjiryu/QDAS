@@ -82,6 +82,11 @@
   background: var(--row-bg);
 }
 
+/* The code or source name inside a filter, per D-061: data on a chrome row. */
+.coded-data__filter-name {
+  font-size: var(--reading-font-size);
+}
+
 .coded-data__filter[data-selected] .coded-data__count {
   font-weight: var(--font-weight-bold);
 }
@@ -92,7 +97,9 @@
   max-width: 70ch;
 }
 
+/* The excerpt is the thing being read on this page. D-061. */
 .coded-data__excerpt {
+  font-size: var(--reading-font-size);
   margin: 0 0 0.25rem;
 }
 
@@ -119,8 +126,9 @@
 }
 
 .coded-data__pill {
-  padding: 0.05rem 0.5rem;
-  border-radius: var(--radius-pill);
+  /* `em`, so the pill grows around its label. D-061. */
+  padding: 0.05em 0.5em;
+  border-radius: 999em;
   border: 1px solid var(--code-strong, var(--border));
   background: var(--code-fill, var(--row-bg));
   /* Black on every shade-2 fill: 6.9:1 to 15.4:1, audited at extraction. */

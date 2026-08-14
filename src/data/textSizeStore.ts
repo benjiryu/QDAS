@@ -34,6 +34,25 @@ export const TEXT_SIZE_DEFAULT = TEXT_SIZE_MIN;
 
 type StoredSizes = Record<string, number>;
 
+/**
+ * Subscribers, so every reader of the preference sees one value.
+ *
+ * D-061 makes this one preference for the whole application: the control sits
+ * in the transcript header and the surfaces obeying it include pages with no
+ * transcript. A module store rather than a context because that is what the
+ * rest of this codebase's shared session state is, and because it lets a
+ * component read the preference wherever it renders without a provider above
+ * it — which the tests that mount one region on its own rely on.
+ */
+const listeners = new Set<() => void>();
+
+export function subscribeToTextSize(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
 /** Storage can be unavailable or full. Losing a preference is never fatal. */
 function readAll(): StoredSizes {
   try {
@@ -69,6 +88,7 @@ export function writeTextSize(userId: Id, percent: number): void {
   const sizes = readAll();
   sizes[userId] = clampTextSize(percent);
   writeAll(sizes);
+  for (const listener of listeners) listener();
 }
 
 /** For the between-participants reset. */
@@ -78,4 +98,5 @@ export function clearTextSizes(): void {
   } catch {
     // See writeAll.
   }
+  for (const listener of listeners) listener();
 }

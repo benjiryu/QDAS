@@ -305,6 +305,8 @@
  */
 .code-panel__note-input {
   font: inherit;
+  /* A note is reading content, written and re-read. D-061. */
+  font-size: var(--reading-font-size);
   color: inherit;
   width: 100%;
   min-height: 4.5rem;
@@ -324,6 +326,7 @@
  * part of what they wrote.
  */
 .code-panel__note-text {
+  font-size: var(--reading-font-size);
   margin: 0.35rem 0 0;
   padding: 0.35rem 0.5rem;
   max-width: 70ch;
@@ -378,8 +381,12 @@
   font-style: italic;
 }
 
+/* What the coder types, not the field around it. D-061. */
 .code-panel__search {
+  /* After the shorthand, not before: `font` resets `font-size`, so the opt-in
+     has to follow it or the field silently stays at the chrome size. */
   font: inherit;
+  font-size: var(--reading-font-size);
   padding: 0.35rem;
   width: 100%;
   max-width: 24rem;
@@ -435,8 +442,15 @@ label:has(+ .code-panel__search) {
  */
 .code-panel input[type='checkbox'] {
   accent-color: var(--checkbox-checked-bg);
-  width: 1.1em;
-  height: 1.1em;
+  /*
+     Sized against the reading scale rather than the panel's own font, per
+     D-061's "checkbox targets grow with their rows". An `em` here resolves
+     against the panel, which is chrome and does not move, so at 250 percent the
+     box would have stayed small beside a grown label — the target shrinking
+     relative to the thing it belongs to.
+  */
+  width: calc(1.1 * var(--reading-font-size));
+  height: calc(1.1 * var(--reading-font-size));
   margin: 0.15em 0 0;
   flex: none;
 }
@@ -460,8 +474,10 @@ label:has(+ .code-panel__search) {
  * load-bearing, which is the condition D-039 relies on.
  */
 .code-panel__code-name {
-  padding: 0.05rem 0.6rem;
-  border-radius: var(--radius-pill);
+  /* Data, and `em` padding so the pill grows around it. D-061. */
+  font-size: var(--reading-font-size);
+  padding: 0.05em 0.6em;
+  border-radius: 999em;
   border: var(--border-thick) solid var(--code-strong, var(--border));
   background: var(--code-fill, var(--row-bg));
   color: var(--color-black);

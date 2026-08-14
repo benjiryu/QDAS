@@ -39,7 +39,9 @@
   border-radius: var(--radius-small);
 }
 
+/* The note, and the excerpt above it, are what this page is for. D-061. */
 .notes__text {
+  font-size: var(--reading-font-size);
   margin: 0.35rem 0 0;
   white-space: pre-wrap;
 }
@@ -54,6 +56,7 @@
 }
 
 .notes__excerpt {
+  font-size: var(--reading-font-size);
   margin: 0;
 }
 

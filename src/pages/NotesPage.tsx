@@ -357,7 +357,9 @@ function FilterOption({
         onChange={() => onSelect(value)}
       />
       <span className="coded-data__filter-body">
-        {label}, <span className="coded-data__count">{count}</span>{' '}
+        {/* The source or scope name scales; the count around it does not. D-061. */}
+        <span className="coded-data__filter-name">{label}</span>,{' '}
+        <span className="coded-data__count">{count}</span>{' '}
         {count === 1 ? 'note' : 'notes'}
       </span>
     </label>

@@ -278,7 +278,12 @@ function FilterOption({
         onChange={() => onSelect(value)}
       />
       <span className="coded-data__filter-body">
-        {label}, <span className="coded-data__count">{count}</span>
+        {/* The code name is data and scales with the reading preference; the
+            count and the punctuation around it are the filter's scaffolding and
+            stay put. D-061 classifies the two apart, so they need to be two
+            elements. The accessible name is unchanged either way. */}
+        <span className="coded-data__filter-name">{label}</span>,{' '}
+        <span className="coded-data__count">{count}</span>
       </span>
     </label>
   );
