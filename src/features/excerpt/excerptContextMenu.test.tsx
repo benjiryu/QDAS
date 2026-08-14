@@ -260,12 +260,16 @@ describe('menu semantics and focus', () => {
 
     expect(menu()).toBeNull();
     expect(document.activeElement).toBe(turnElement);
-    // Escape dismissed the menu; it captured nothing, so the preview the menu
-    // was painting goes with it.
+    // Escape dismissed the menu; it captured nothing.
     expect(highlighted()).toBe('');
-    // And the drag survives, so a coder who dismissed the menu is not made to
-    // select the passage again.
-    expect(document.getSelection()?.isCollapsed).toBe(false);
+
+    /*
+      Whether the DOM selection survives is not asked here, and cannot be.
+      jsdom collapses the selection whenever anything is focused — the menu's
+      own `autoFocus` is enough — which is a jsdom behaviour and not a browser
+      one. D-060's "Selection survives the menu unchanged" is asserted in
+      tests/e2e/context-menu.spec.ts, where focus and selection are real.
+    */
   });
 });
 
@@ -341,19 +345,16 @@ describe('what the items do', () => {
   });
 });
 
-describe('the selection stays visible while the menu is open', () => {
+describe('nothing is captured until an item is chosen, per D-060', () => {
   /*
-    The regression this block exists for: between the right-click and choosing
-    an item, the only thing marking the passage was the browser's own selection.
-    The menu opens with `autoFocus`, which takes focus out of the transcript,
-    and how a browser paints an unfocused selection is its business rather than
-    ours — so the highlight disappeared in some scenarios and not others.
-
-    Section 6 says the application highlight is the only selection visual from
-    capture onward. This window sat just before that, resting on the one thing
-    the rule exists to stop relying on.
+    The ownership rule as a test rather than a comment. Before capture the range
+    is the browser's, per D-001 and D-036, and the application highlight is the
+    visual that *means* captured — so an open menu must paint nothing of its
+    own. An earlier fix had it paint its snapshot to survive the browser's
+    inactive repaint; D-060 rejected that and moved the problem to the
+    stylesheet, where an authored `::selection` keeps the native visual.
   */
-  it('paints the snapshot the menu is holding, before anything is chosen', () => {
+  it('paints no application highlight while the menu is open', () => {
     renderWorkspace();
     const [first, second] = multiSentenceTurn.segments;
 
@@ -361,31 +362,23 @@ describe('the selection stays visible while the menu is open', () => {
     rightClick(segmentElement(first.segmentId));
 
     expect(menu()).not.toBeNull();
-    expect(highlighted()).toBe(`${first.text.slice(5)}${second.text.slice(0, 7)}`);
+    expect(highlighted(), 'an uncaptured range wears no application visual').toBe('');
+    expect(document.querySelector('[data-excerpt-state="confirmed"]')).toBeNull();
+    expect(screen.queryAllByRole('dialog', { name: /code assignment/i })).toHaveLength(0);
   });
 
-  it('shows a preview, not a capture: no confirmed state and no panel', () => {
-    /*
-      The machine deliberately does not advance. A menu can still be dismissed
-      and a dismissed menu captures nothing, so the state stays `idle` — which
-      also keeps the heavier confirmed fill off, since that is keyed on
-      `[data-excerpt-state='confirmed']`. The preview reads as what the menu
-      would act on rather than as what has been captured.
-    */
+  it('paints one as soon as an item is chosen', () => {
+    // The other half of the same boundary: capture is what turns the visual on.
     renderWorkspace();
     const segment = multiSentenceTurn.segments[0];
 
     drag([segment.segmentId, 0], [segment.segmentId, 10]);
     rightClick(segmentElement(segment.segmentId));
-
-    expect(document.querySelector('[data-excerpt-state="confirmed"]')).toBeNull();
-    expect(screen.queryAllByRole('dialog', { name: /code assignment/i })).toHaveLength(0);
-
     act(() => {
       fireEvent.click(screen.getByRole('menuitem', { name: /Assign code/ }));
     });
 
+    expect(highlighted()).toBe(segment.text.slice(0, 10));
     expect(document.querySelector('[data-excerpt-state="confirmed"]')).not.toBeNull();
   });
-
 });

@@ -176,39 +176,82 @@ test('the open menu has no accessibility violations', async ({ page }) => {
   expect(results.violations).toEqual([]);
 });
 
-test('the selection stays visible while the menu is open', async ({ page }) => {
-  /*
-    The reported regression, and the layer it was reported from. Only a real
-    browser has real focus and real selection painting: the menu opens with
-    `autoFocus`, focus leaves the transcript, and what the browser then does
-    with an unfocused selection is its business — which is why the highlight
-    disappeared in some scenarios and not others.
+/** The DOM selection, as text and as its two boundary positions. */
+async function selectionState(page: Page) {
+  return page.evaluate(() => {
+    const selection = document.getSelection();
+    if (!selection || selection.rangeCount === 0) return null;
+    const range = selection.getRangeAt(0);
+    const nameOf = (node: Node) =>
+      (node.parentElement?.closest('[data-segment-id]')?.getAttribute('data-segment-id') ?? '') +
+      ':' +
+      (node.textContent ?? '').length;
+    return {
+      text: selection.toString(),
+      start: `${nameOf(range.startContainer)}@${range.startOffset}`,
+      end: `${nameOf(range.endContainer)}@${range.endOffset}`,
+    };
+  });
+}
 
-    The application paints the snapshot the menu is already holding, so the
-    passage is marked by something we control rather than by something we
-    cannot see.
+test('Selection survives the menu unchanged', async ({ page }) => {
+  /*
+    Section 7's criterion, added by D-060, and only a real browser can answer
+    it: jsdom collapses the selection whenever anything takes focus, so the
+    unit layer would be testing jsdom rather than this menu.
+
+    Checked through each path D-060 names — open, navigate, close — because a
+    selection is easiest to lose on a focus move, and this menu makes three.
   */
   const dragged = await sweepAcrossTwoSentences(page);
+  const before = await selectionState(page);
+  expect(before?.text).toBeTruthy();
 
   await page.locator('[data-segment-id]').first().click({ button: 'right' });
   await expect(page.getByRole('menu')).toBeVisible();
+  expect(await selectionState(page), 'opening the menu').toEqual(before);
 
-  expect(squashed(await highlighted(page))).toBe(squashed(dragged));
-});
+  // No application visual on a range that is not captured. The ownership split
+  // D-001 and D-036 draw, and what D-060 corrected.
+  await expect(page.locator('[data-captured]')).toHaveCount(0);
 
-test('dismissing the menu takes the highlight away and leaves the drag', async ({ page }) => {
-  // Dismissing captured nothing, so nothing stays painted. The drag survives:
-  // painting the preview collapses the native selection, and the dismissal puts
-  // it back rather than making the coder select the passage again.
-  const dragged = await sweepAcrossTwoSentences(page);
-
-  await page.locator('[data-segment-id]').first().click({ button: 'right' });
-  await expect(page.getByRole('menu')).toBeVisible();
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('ArrowUp');
+  expect(await selectionState(page), 'moving between items').toEqual(before);
 
   await page.keyboard.press('Escape');
   await expect(page.getByRole('menu')).toHaveCount(0);
+  expect(await selectionState(page), 'closing and returning focus').toEqual(before);
 
-  expect(await highlighted(page)).toBe('');
-  const stillSelected = await page.evaluate(() => document.getSelection()?.toString() ?? '');
-  expect(squashed(stillSelected)).toBe(squashed(dragged));
+  // Unchanged means usable, not merely present: the same selection still
+  // captures, and captures exactly what was dragged. Reopened by keyboard,
+  // which is the route that proves the selection is still the application's to
+  // read rather than merely still painted.
+  await page.keyboard.press('Shift+F10');
+  await expect(page.getByRole('menu')).toBeVisible();
+  await page.getByRole('menuitem', { name: /Assign code/ }).click();
+  await expect(page.getByRole('dialog', { name: /code assignment/i })).toBeVisible();
+  expect(squashed(await highlighted(page))).toBe(squashed(dragged));
+});
+
+test('the transcript paints the selection itself, so an inactive one keeps it', async ({
+  page,
+}) => {
+  /*
+    What makes the criterion above hold visually rather than only in the DOM: an
+    authored `::selection` is applied to inactive selections as well as active
+    ones, so focus moving into the menu repaints the same colour instead of the
+    browser's grey.
+
+    This asserts the rule resolves on transcript text, which is the honest limit
+    of what a browser will report — the painted pixels are not readable, so the
+    appearance itself stays a manual check.
+  */
+  const style = await page.locator('[data-segment-id]').first().evaluate((node) => {
+    const selection = getComputedStyle(node, '::selection');
+    return { background: selection.backgroundColor, color: selection.color };
+  });
+
+  expect(style.background).toBe('rgb(180, 213, 254)');
+  expect(style.color).toBe('rgb(0, 0, 0)');
 });

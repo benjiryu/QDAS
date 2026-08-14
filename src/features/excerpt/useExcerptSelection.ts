@@ -10,12 +10,7 @@ import type {
   SavedExcerptSummary,
   TranscriptSegment,
 } from '../../domain';
-import {
-  captureFromSelection,
-  clearNativeSelection,
-  resolveCapture,
-  restoreNativeSelection,
-} from './capture';
+import { captureFromSelection, clearNativeSelection, resolveCapture } from './capture';
 import type { Capture, CaptureTarget } from './capture';
 import { captured, discarded, EXCERPT_UNAVAILABLE } from './excerptAnnouncements';
 import { excerptReducer, IDLE } from './excerptMachine';
@@ -225,33 +220,23 @@ export function useExcerptSelection({
 
   /* ---------- Derived view of the range ---------- */
 
-  /**
-   * The range the transcript paints.
-   *
-   * The menu's snapshot while the menu is open, and the captured range
-   * otherwise.
-   *
-   * Between the right-click and choosing an item, the only thing marking the
-   * passage used to be the browser's own selection — and the menu opens with
-   * `autoFocus`, taking focus out of the transcript, after which how a browser
-   * paints an unfocused selection is its business rather than ours. That is why
-   * the highlight vanished in some scenarios and not others. Section 6 says the
-   * application highlight is the only selection visual from capture onward;
-   * this window sat just before it and was left resting on the one thing that
-   * rule exists to stop relying on.
-   *
-   * Painting is all this does. The machine does not advance, because a menu can
-   * still be dismissed and a dismissed menu captures nothing — so the state
-   * stays `idle`, the panel stays shut, and the confirmed-capture fill, which
-   * is keyed on `[data-excerpt-state='confirmed']`, stays off. The preview is
-   * the lighter band with its boundary bars, which is honest: it shows what the
-   * menu would act on rather than what has been captured.
-   */
-  const displayedRange = menuState?.capture.range ?? selection.range;
+  /*
+    Nothing paints before capture, per D-060.
 
+    An earlier fix had the menu paint its snapshot while it was open, to keep
+    the passage marked once focus moved into the menu. That put an application
+    visual on an uncaptured range, which the D-001 and D-036 ownership split
+    forbids: until capture the range belongs to the browser, and the
+    application highlight is what *means* captured. An uncaptured range wearing
+    it is claiming a state it is not in.
+
+    The repaint that prompted it is handled where it belongs, in the
+    stylesheet: an author `::selection` on the transcript, which browsers apply
+    to inactive selections too, so the one native visual persists unchanged.
+  */
   const rangeSegments = useMemo(
-    (): TranscriptSegment[] => (displayedRange ? excerptSegments(resolved, displayedRange) : []),
-    [displayedRange, resolved],
+    (): TranscriptSegment[] => (selection.range ? excerptSegments(resolved, selection.range) : []),
+    [resolved, selection.range],
   );
 
   const segmentsInRange = useMemo(
@@ -544,8 +529,6 @@ export function useExcerptSelection({
   );
 
   const closeMenu = useCallback(() => {
-    /* Read before the state change, which is what removes it. */
-    const dismissedRange = menuState?.capture.range ?? null;
     setMenuState(null);
     // Back where it came from. A menu that dismissed to nowhere would leave a
     // screen reader user at the top of the document.
@@ -556,20 +539,15 @@ export function useExcerptSelection({
     // otherwise lands on the positioning anchor and leaves focus on the body.
     const startSegmentId = selection.range?.startSegmentId ?? null;
     queueMicrotask(() => {
+      /*
+        Focus only. Per D-060 no path through this menu touches the DOM
+        selection — not opening it, not moving between items, and not this
+        return. The drag the coder made is still theirs to capture with.
+      */
       if (target?.isConnected) target.focus?.();
       else focusTurnOf(startSegmentId);
-
-      /*
-        And the passage goes back under the browser's own selection.
-
-        Dismissing captured nothing, so the preview goes — but painting it
-        re-rendered the turn and collapsed the drag on the way in. Restoring
-        after that render leaves the coder exactly where they were rather than
-        making them select the passage a second time.
-      */
-      if (dismissedRange) restoreNativeSelection(containerRef.current, dismissedRange);
     });
-  }, [containerRef, focusTurnOf, menuState, selection.range]);
+  }, [focusTurnOf, selection.range]);
 
   const chooseFromMenu = useCallback(
     (target: CaptureTarget) => {
@@ -669,10 +647,10 @@ export function useExcerptSelection({
     run,
     availability,
     segmentsInRange,
-    startSegmentId: displayedRange?.startSegmentId ?? null,
-    endSegmentId: displayedRange?.endSegmentId ?? null,
-    startOffset: displayedRange?.startOffset ?? null,
-    endOffset: displayedRange?.endOffset ?? null,
+    startSegmentId: selection.range?.startSegmentId ?? null,
+    endSegmentId: selection.range?.endSegmentId ?? null,
+    startOffset: selection.range?.startOffset ?? null,
+    endOffset: selection.range?.endOffset ?? null,
     openChoices,
     choiceIntent,
     chooseSavedExcerpt,

@@ -130,6 +130,35 @@
   container-name: transcript-row;
 }
 
+/*
+ * The native selection, painted by us so the browser keeps painting it.
+ *
+ * Per D-060. Moving focus into the context menu makes a browser repaint the
+ * selection in its inactive style, which is what made a drag look lost the
+ * moment the menu opened. An authored `::selection` is applied to inactive
+ * selections as well as active ones, so the one visual persists unchanged
+ * rather than being replaced by the browser's grey.
+ *
+ * The alternative — having the application draw the range itself — is what
+ * D-060 rejected: before capture the range belongs to the browser per D-001 and
+ * D-036, and the application highlight is the visual that *means* captured.
+ * This keeps one selection visual, owned by the browser, and one capture
+ * visual, owned by us.
+ *
+ * The colour is the platform's rather than the palette's, which is why the
+ * token says so: an authored rule that matches what the browser would have
+ * drawn is indistinguishable from it, and moving the brand palette should not
+ * move it. Black prose measures 11.6:1 on it, and the coded washes it covers
+ * are opaque, so the pairing is the same wherever a drag lands.
+ *
+ * Descendants, because `::selection` is not inherited: it has to match the
+ * elements whose text is actually selected.
+ */
+[data-transcript] ::selection {
+  background: var(--native-selection-bg);
+  color: var(--color-black);
+}
+
 .transcript-turn {
   padding: 0.5rem;
   border-bottom: 1px solid var(--border);

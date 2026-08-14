@@ -1010,3 +1010,27 @@ Date: 2026-08 | Workflow: navigation | Status: approved. Amends D-043's sidebar 
 **Visual, per the Figma:** the sidebar is flush to the viewport's top and left edges, unrounded, no white gap. Item underlines are replaced by the hover treatment: white pill, dark blue text (the text moves from black to the dark blue token). A hovered item and the current destination wear the same pill; this is acceptable because hover is transient and pointer-tied — keyboard and screen reader users never encounter it, and `aria-current` plus the visible focus ring carry current state. Do not diverge from the Figma to disambiguate hover.
 
 **Structural:** "Project 1 Files" ceases to be a non-focusable group label and becomes a link to a new Project overview page, reversing that part of the sidebar spec. It remains the nested source list's `aria-labelledby` target — one element, both jobs. The Project overview page is Slice 1 getting its first real surface: project name as `h1` with focus on entry, a plain-text summary line (phase, source count, codebook version — data the domain model already holds), then the sources as a linked list, each landing on that source's transcript view. Read surface, own counts, explicit empty state. Richer summary content is an open extension point owned by the team.
+
+## D-060 The native selection stays visually native through the context menu
+
+Date: 2026-08 | Workflow: excerpt capture | Status: approved. Corrects a build fix that overreached
+
+Users reported the drag selection losing its highlight when the context menu opened. The cause is browser painting, not selection loss: focus moving into the menu repaints the native selection in the browser's inactive style. The first fix applied an application-colored highlight while the menu was open — rejected, because it puts an application visual on an uncaptured range, breaching the D-001/D-036 ownership split: before capture the range is the browser's, and the application highlight is defined as the only visual after capture. An uncaptured range must never look captured.
+
+The correction: an author `::selection` style on the transcript, matching native selection appearance, which browsers also use for inactive selections — so the one native visual persists unchanged while focus is in the menu. Guards: the menu's open, navigation, and close paths never alter the DOM selection; menu mousedown is prevented from collapsing it; Escape's focus return leaves it intact. No second highlight system exists before capture.
+
+*Addendum, from implementing this.* The stated cause is incomplete, and the prescribed fix alone does not work. Measured in Chromium: React Aria's popover puts `inert` on the rest of the document while the menu is open, and inert content has its selection neither painted nor reported — `getSelection().toString()` returns empty while the range itself survives. An authored `::selection` cannot paint inside an inert subtree, so the stylesheet change is necessary and not sufficient. The menu is therefore non-modal, which removes the inert background; a menu is not a dialog, so that is the more correct treatment regardless. The `::selection` rule stays and does the job this decision describes, for the inactive repaint that remains once the background is selectable again. Both halves are load-bearing and each is covered by a test that fails without it.
+
+## D-061 Text sizing scales reading content everywhere, not surfaces
+
+Date: 2026-08 | Workflow: reading preferences | Status: approved. Extends D-056 on session evidence
+
+A magnification participant found the transcript text sizing a success and wanted it in the codebook panel. The extension is a reclassification, not a second control: D-056's real rule was that reading content scales and chrome does not, and the transcript was merely the only surface then classified as reading content. Session evidence corrects the classification — a coder reads code names and definitions as data.
+
+**Reading content, scales:** transcript text; code names wherever they appear, including pill labels in the panel, the rail, and the destination pages; codebook definitions in the companion and on the Codebook page; note text and the note panel's field; excerpt and note text on Coded Data and Notes; text the user types in search fields.
+
+**Chrome, never scales:** the sidebar, the strip, action buttons (Save, Close, New note), page headings, the position ribbon, the filter-list scaffolding around its code-name labels.
+
+**One preference.** The existing header control and its persisted value drive both; no per-surface settings.
+
+**Implementation rule:** a root `--reading-scale` custom property set by the control; reading surfaces opt in with font-size calc against it; pills use em-based padding and radius so they grow proportionally around their labels, as the rail icon already does. The panel reflows vertically at 250 percent, internal scroll, never horizontal panning; checkbox targets grow with their rows.

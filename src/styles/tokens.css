@@ -91,6 +91,21 @@
   --checkbox-border: var(--color-grey-500);
   --checkbox-checked-bg: var(--color-grey-750);
 
+  /*
+     The browser's own text-selection blue, per D-060.
+
+     Here because every colour literal in this codebase lives in this file, and
+     not because it belongs to the palette — it deliberately does not. It is the
+     platform's value, so the transcript's authored `::selection` is
+     indistinguishable from what the browser would have drawn itself, which is
+     the whole point: an authored rule is applied to inactive selections too, so
+     a drag keeps its appearance when focus moves into the context menu.
+
+     Moving the brand palette should not move this. Black text measures 11.6:1
+     on it.
+  */
+  --native-selection-bg: #b4d5fe;
+
   /* ---------- Shape ---------- */
   --radius-small: 4px;    /* checkbox */
   --radius-medium: 8px;   /* selectors, disclosure containers */

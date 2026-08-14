@@ -47,6 +47,8 @@ Per D-037. Right-click over the transcript while a selection exists opens a cust
 
 Requirements carried from D-028: the menu adds no capability, every item exists on the strip and as a chord; it opens on Shift+F10 and the applications key when a selection exists, not only on pointer; menu semantics with arrow navigation; Escape closes it and returns focus where it was. Right-click anywhere else, or with no selection, shows the untouched native browser menu.
 
+Per D-060, the menu never alters the native selection or its appearance. The transcript defines an author `::selection` style matching native selection blue, which browsers also apply to inactive selections, so the selection paints identically while focus is in the menu. No application highlight exists before capture; the menu's open, navigation, and close paths leave the DOM selection untouched, and Escape's focus return leaves it intact.
+
 ## 3. States
 
 | State | Meaning |
@@ -94,6 +96,8 @@ Boundaries are exact characters: `startSegmentId` + `startOffset` through `endSe
 **Fallback never masquerades.** Given an observable selection, when `excerpt.code` fires, then the selection announcement is used and the turn fallback does not run.
 
 **Menu parity.** Given a selection, when the menu is opened by Shift+F10, then the same items appear as on right-click, and Escape returns focus to where it was.
+
+**Selection survives the menu unchanged.** Given a drag selection, when the menu opens, then the selection's visual appearance is unchanged, no application highlight appears, and closing the menu without choosing leaves the same DOM selection ready for capture. D-060.
 
 **Native menu preserved.** Given no selection, when the user right-clicks the transcript, then the native browser menu appears.
 

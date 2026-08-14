@@ -56,6 +56,23 @@ export function ExcerptContextMenu({ excerpt }: ExcerptContextMenuProps) {
         onOpenChange={(isOpen) => {
           if (!isOpen) menu.close();
         }}
+        /*
+          Non-modal, and this is what actually fixes the reported bug.
+
+          React Aria's default treatment puts `inert` on the rest of the
+          document while the popover is open. Inert content is not selectable
+          and its selection is neither painted nor reported — with the menu
+          open, `getSelection().toString()` came back empty even though the
+          range was still there. That, measured, is why the highlight vanished:
+          not the inactive repaint D-060 names, which is a real effect but a
+          later one. An authored `::selection` cannot paint inside an inert
+          subtree, so the stylesheet alone would not have fixed this.
+
+          A menu is not a dialog, so not hiding the document behind it is also
+          the more correct treatment. Focus still enters the menu and arrow
+          navigation is unchanged; only the background's inertness goes.
+        */
+        isNonModal
         placement="bottom start"
         className="excerpt-menu__popover"
       >
@@ -64,6 +81,13 @@ export function ExcerptContextMenu({ excerpt }: ExcerptContextMenuProps) {
           aria-label="Selection"
           // Focus enters on the first item, per contract 2.4.
           autoFocus="first"
+          /*
+            A mousedown collapses the document selection before any click
+            handler runs, and this menu exists to act on that selection. The
+            strip's controls carry the same guard for the same reason. Per
+            D-060 no path through this menu alters the DOM selection.
+          */
+          onMouseDown={(event) => event.preventDefault()}
           onAction={(key) => menu.choose(key === 'note' ? 'note' : 'search')}
         >
           {ITEMS.map((item) => (
