@@ -1034,3 +1034,17 @@ A magnification participant found the transcript text sizing a success and wante
 **One preference.** The existing header control and its persisted value drive both; no per-surface settings.
 
 **Implementation rule:** a root `--reading-scale` custom property set by the control; reading surfaces opt in with font-size calc against it; pills use em-based padding and radius so they grow proportionally around their labels, as the rail icon already does. The panel reflows vertically at 250 percent, internal scroll, never horizontal panning; checkbox targets grow with their rows.
+
+## D-062 The Coded Data filter list: alphabetical by family, hierarchy in three matched channels
+
+Date: 2026-08 | Workflow: coded data | Status: approved. Amends D-049's filter list; deliberate divergence from canonical order
+
+**Ordering.** Families alphabetical by top-level code name; within a family, depth-first with siblings alphabetical, so a family is exhausted before the next begins. This diverges from the canonical authored order deliberately and only here: the codebook and panel teach the vocabulary in authored order, while the filter list is a lookup surface, and lookup wants alphabet. The divergence is scoped to this page.
+
+**Hierarchy, one channel per audience.** Visual: indentation by level, the structural channel the panel and codebook already use, reinforced by family shading — parent pill filled in the family hue, child and grandchild in progressively lighter shades from the hue's three-shade token set. Shading is reinforcement; indentation is the non-color channel, so level is never conveyed by color alone. Programmatic: D-054 reused verbatim — the accessible name stays the pure code name plus count, lineage lives in the accessible description, name first. Icons and tree glyphs rejected as noise or redundancy.
+
+**Colors restored.** Filter pills carry family hues throughout, which they had lost.
+
+**Frequency unchanged.** Counts stay visible and stay fused into the accessible name per D-049.
+
+**Own-view edge.** A child whose ancestors are unused renders at its full indentation depth with its lineage description naming the absent ancestors; no disabled placeholder rows.

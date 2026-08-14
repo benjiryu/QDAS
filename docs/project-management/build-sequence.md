@@ -1279,3 +1279,18 @@ grow with their rows. The 320-width reflow test runs at maximum scale.
 When tests pass, commit and update the progress line in the same commit.
 Do not push.
 ```
+
+### Task 40. Coded Data filter list: ordering, colors, hierarchy
+
+```
+Implement decision D-062 per the amended docs/pages/destinations.md section
+2 filter list. Families alphabetical by top-level name, depth-first within,
+siblings alphabetical; this ordering is scoped to this page and does not
+touch the codebook or panel. Indentation by level; family hue on the parent
+pill with progressively lighter shades for child and grandchild from the
+existing three-shade tokens; D-054 lineage in the accessible description
+with the name and count staying pure in the accessible name. A child with
+unused ancestors keeps full depth. Counts remain fused and visible. When
+tests pass, commit and update the progress line in the same commit. Do not
+push.
+```
