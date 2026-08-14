@@ -1307,3 +1307,18 @@ produces no color change from the native selection appearance, and that
 save produces the coded treatment. When tests pass, commit and update the
 progress line in the same commit. Do not push.
 ```
+
+### Task 42. Filter list restyle per the D-062 amendment
+
+```
+Restyle the Coded Data filter list per the D-062 amendment in the decision
+log and the amended docs/pages/destinations.md section 2. Remove
+indentation; all pills left-align. Fill treatment carries level: parent
+solid family hue, child tinted lighter shade, grandchild white fill with
+colored outline. "All codes" pill plain gray. Increase pill padding in em
+units. No behavior changes: ordering, counts, accessible names, and lineage
+descriptions are untouched, and tests must show that. Check grandchild
+outline visibility for the yellow and orange families against the gray row
+background. When tests pass, commit and update the progress line in the
+same commit. Do not push.
+```

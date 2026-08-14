@@ -1058,3 +1058,13 @@ Participants found the panel-open highlight jarring: native selection blue throu
 The confirmed-state highlight adopts the same blue token as D-060's author `::selection` style. One continuous visual from drag through menu into the open panel; the ownership handoff at capture is invisible. The same treatment applies when `excerpt.open` or `note.open` reopens a saved excerpt: while a panel addresses a range, that range wears selection blue. On save-or-commit close, the coded family-color treatment (or the note-only gray and underline) appears; that transition is meaningful and stays visible.
 
 Known collision, accepted: blue is also a family hue. Defused by the selection token being distinct from the family blue tokens, the confirmed state existing only while a panel is open, and coded highlights carrying their non-color channel. Session confusion is the reopening evidence.
+
+## D-062 amendment: flat alignment, fill-treatment hierarchy
+
+Date: 2026-08 | Status: approved. Amends D-062's visual channels; the Figma filter-list component is the visual reference
+
+Indentation is removed from the Coded Data filter list; all pills left-align. The visual hierarchy channel becomes the fill treatment the Figma shows: parent solid-filled in the family hue, child tinted in a lighter shade, grandchild white-filled with a colored outline. Fill density survives grayscale, so level is not conveyed by hue alone; the D-054 lineage description remains the programmatic channel unchanged.
+
+Recorded honestly: fill-treatment steps are subtler than indentation for low-vision users, the population this page serves. This ships as the design with a session-evidence flag; if magnification participants misread levels, indentation or a stronger non-color channel returns.
+
+Also per the Figma: the "All codes" pill is plain gray, not multicolor; pill padding increases, staying in em units so D-061 scaling preserves proportions. The four low-contrast shade-1 borders noted in tokens.css matter most at the grandchild outline level; the gray row background provides the shape contrast there, and the smoke test checks the yellow and orange families specifically.
