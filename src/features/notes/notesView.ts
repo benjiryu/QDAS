@@ -103,6 +103,28 @@ interface Input {
   filter: string;
 }
 
+/**
+ * Seeded notes with this session's records laid over them.
+ *
+ * Not a plain concatenation, because the coder's own seeded notes are editable:
+ * the fixture is a starting state rather than another coder's work, and the
+ * store is the only place an edit can be written. So an edit to a seeded note
+ * is a session note carrying its id, and a deletion is the same record with a
+ * `deleted` status.
+ *
+ * Shared since Task 46, when the Coded data page turned out to be concatenating
+ * instead — which left a deleted note in the array twice, once as the seeded
+ * original still marked active. A stale "Has a note" was the visible half; the
+ * half that mattered is that D-067's disclosure would have revealed the text of
+ * a note the coder had deleted.
+ */
+export function mergeSessionNotes(seeded: readonly Note[], session: readonly Note[]): Note[] {
+  const shadowed = new Map(session.map((note) => [note.noteId, note]));
+  const merged = seeded.map((note) => shadowed.get(note.noteId) ?? note);
+  const seededIds = new Set(seeded.map((note) => note.noteId));
+  return [...merged, ...session.filter((note) => !seededIds.has(note.noteId))];
+}
+
 export function buildNotesData({
   currentUserId,
   sources,

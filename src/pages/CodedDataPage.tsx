@@ -11,6 +11,7 @@ import type { ProjectPhase, UserRole } from '../domain';
 import { buildCodedData } from '../features/codedData/codedDataView';
 import type { CodedResult } from '../features/codedData/codedDataView';
 import { resolveCodedDataView, VIEW_LABELS } from '../features/codedData/resolveView';
+import { mergeSessionNotes } from '../features/notes/notesView';
 import './codedData.css';
 
 /**
@@ -77,7 +78,10 @@ export function CodedDataPage() {
       // excerpts live: every seeded excerpt belongs to the second coder.
       excerpts: [...fixture.excerpts, ...work.excerpts],
       assignments: [...fixture.codeAssignments, ...work.assignments],
-      notes: [...fixture.notes, ...work.notes],
+      // Merged rather than concatenated, per Task 46: a deletion is a session
+      // record carrying the seeded note's id, so a concatenation leaves the
+      // original standing beside its own tombstone.
+      notes: mergeSessionNotes(fixture.notes, work.notes),
       supersededIds: work.supersededIds,
     });
   }, [fixture, found, view]);
@@ -415,14 +419,24 @@ function FilterOption({
  */
 function ResultRow({ projectId, result }: { projectId: string; result: CodedResult }) {
   const names = result.codes.map((code) => code.name).join(', ');
+  const noteId = useId();
+  const [noteOpen, setNoteOpen] = useState(false);
 
   return (
     <article className="coded-data__result" data-excerpt-id={result.excerptId}>
-      <p className="coded-data__excerpt">
-        <Link to={`/projects/${projectId}/sources/${result.sourceId}?turn=${result.turnId}`}>
-          {result.text}
-        </Link>
-      </p>
+      {/*
+        The link is a direct child of the row rather than wrapped in a `p`,
+        so that it and the note disclosure below are literally siblings. D-067
+        asks for exactly that — "the disclosure button must be its sibling
+        within the row, never nested inside it" — and a button inside a link is
+        both invalid and unreachable.
+      */}
+      <Link
+        className="coded-data__excerpt"
+        to={`/projects/${projectId}/sources/${result.sourceId}?turn=${result.turnId}`}
+      >
+        {result.text}
+      </Link>
 
       <p className="coded-data__meta">
         <span className="coded-data__source">{result.sourceTitle}</span>
@@ -432,7 +446,6 @@ function ResultRow({ projectId, result }: { projectId: string; result: CodedResu
             <span className="coded-data__coder">{result.coderName}</span>
           </>
         ) : null}
-        {result.hasNote ? <> · Has a note</> : null}
       </p>
 
       {/*
@@ -460,6 +473,48 @@ function ResultRow({ projectId, result }: { projectId: string; result: CodedResu
         </span>
         <span className="coded-data__code-names">Codes: {names}</span>
       </p>
+
+      {/*
+        The note, per D-067. Participants who saw "Has a note" wanted the note
+        there rather than a page away.
+
+        A button and a conditionally rendered paragraph, the shape this codebase
+        already uses in the code panel, and not `details`: D-067 requires a
+        constant accessible name and `aria-expanded` carrying the state, and a
+        `summary` gives neither cleanly. Unlike those two, nothing here moves
+        focus — the decision asks for focus to stay on the button, so there is
+        no field to send it to and nothing to send it back from.
+
+        Last in the row because destinations.md section 2 lists it there, and
+        because a region that grows is better at the end than in the middle of
+        facts the reader has not finished with.
+
+        `aria-controls` only while open, per CodePanel's precedent: pointing at
+        an id that is not in the document is worse than not pointing.
+
+        There is nothing to render where `noteText` is null, which is D-067's
+        "no indicator where the viewer cannot read the note" — held by the
+        derivation rather than by a condition here.
+      */}
+      {result.noteText !== null ? (
+        <>
+          <button
+            type="button"
+            className="coded-data__note-toggle"
+            aria-expanded={noteOpen}
+            aria-controls={noteOpen ? noteId : undefined}
+            onClick={() => setNoteOpen((open) => !open)}
+          >
+            Note
+          </button>
+
+          {noteOpen ? (
+            <p id={noteId} className="coded-data__note-text">
+              {result.noteText}
+            </p>
+          ) : null}
+        </>
+      ) : null}
     </article>
   );
 }

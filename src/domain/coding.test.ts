@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildCodingRecords,
+  canReadNote,
   postCodingReturnTarget,
   savedExcerptsInTurn,
   turnCoding,
 } from './coding';
 import { deriveSegmentDisplayStates } from './segmentDisplayState';
 import { buildTestSource } from './testing/buildTestSource';
-import type { Code, CodeAssignment, Excerpt, Id } from './types';
+import type { Code, CodeAssignment, Excerpt, Id, Note } from './types';
 
 /** Specification: docs/patterns/code-selection.md sections 8, 9, 13. */
 
@@ -373,5 +374,59 @@ describe('turn coding, per D-041', () => {
     expect(turnCoding(resolved, resolved.turns[0].turn.turnId, excerpts, assignments).excerptCount)
       .toBe(0);
     expect(turnCoding(resolved, 'nope', excerpts, assignments).excerptCount).toBe(0);
+  });
+});
+
+describe('who may read a note, per D-067 and R-4', () => {
+  const note = (overrides: Partial<Note> = {}): Note => ({
+    noteId: 'nt-1',
+    authorId: 'us-mine',
+    noteType: null,
+    noteText: 'A thought.',
+    visibility: 'afterIndependentCoding',
+    status: 'active',
+    createdAt: '2026-06-01T00:00:00.000Z',
+    relatedExcerptId: 'ex-1',
+    relatedSourceId: null,
+    relatedAssignmentId: null,
+    relatedCodeId: null,
+    relatedReviewItemId: null,
+    ...overrides,
+  });
+
+  const coding = { viewerId: 'us-mine', identitiesVisible: false };
+  const review = { viewerId: 'us-mine', identitiesVisible: true };
+
+  it('lets an author read their own note', () => {
+    expect(canReadNote(note(), coding)).toBe(true);
+    expect(canReadNote(note(), review)).toBe(true);
+  });
+
+  it('lets nobody read a deleted one, its author included', () => {
+    /*
+      The rule that makes a disclosure safe to build. Deletion is written as a
+      status rather than a removal, so this is the only thing between a deleted
+      note and a surface that still reveals its text.
+    */
+    expect(canReadNote(note({ status: 'deleted' }), coding)).toBe(false);
+    expect(canReadNote(note({ status: 'deleted' }), review)).toBe(false);
+  });
+
+  it('hides another coder’s note while identities are hidden', () => {
+    // R-4, and the reason this page shows own work during independent coding.
+    expect(canReadNote(note({ authorId: 'us-theirs' }), coding)).toBe(false);
+  });
+
+  it('reveals another coder’s note once identities are visible', () => {
+    // The project-wide view, where the veil has lifted either because the
+    // viewer is the lead or because independent coding has closed.
+    expect(canReadNote(note({ authorId: 'us-theirs' }), review)).toBe(true);
+  });
+
+  it('keeps a private note private, even there', () => {
+    // `visibility` has been on the record since v0.1 and nothing read it until
+    // now. Private means the author, and no phase changes that.
+    expect(canReadNote(note({ authorId: 'us-theirs', visibility: 'private' }), review)).toBe(false);
+    expect(canReadNote(note({ visibility: 'private' }), coding)).toBe(true);
   });
 });

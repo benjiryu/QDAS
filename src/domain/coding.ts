@@ -468,3 +468,44 @@ export function noteScope(note: Note): NoteScope {
   if (note.relatedSourceId !== null) return 'source';
   return 'project';
 }
+
+/**
+ * Who may read a note.
+ *
+ * Specification: R-4, decision D-067, and the `visibility` field the domain
+ * model has carried since v0.1 and nothing has read until now.
+ *
+ * One predicate rather than three conditions remembered at a call site. It is
+ * written here because D-067 turns the note indicator into a disclosure that
+ * reveals the text, and a surface that shows a note it should not have shown is
+ * a different kind of mistake from one that shows a stale label.
+ *
+ * What it corrects: `codedDataView` computed its note indicator from every note
+ * it was handed, with no author, status, or visibility rule at all, so D-067's
+ * "no indicator renders where the viewer cannot read the note, as today" was
+ * describing something the build did not do. The Notes page had the author and
+ * status halves and never the visibility one.
+ */
+export interface NoteAudience {
+  viewerId: Id;
+  /**
+   * True once R-4 has lifted — the project-wide view's own condition, either
+   * because the viewer is the lead or because independent coding has closed.
+   */
+  identitiesVisible: boolean;
+}
+
+export function canReadNote(note: Note, audience: NoteAudience): boolean {
+  // A deleted note is nobody's to read, including its author's. Deletion is
+  // written as a status rather than a removal, so this is the only thing
+  // standing between a deleted note and a surface that still renders it.
+  if (note.status === 'deleted') return false;
+
+  if (note.authorId === audience.viewerId) return true;
+
+  // Somebody else's, so R-4 decides first. During independent coding another
+  // coder's note does not exist as far as this viewer is concerned.
+  if (!audience.identitiesVisible) return false;
+
+  return note.visibility !== 'private';
+}

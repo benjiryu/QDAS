@@ -8,7 +8,7 @@ import { AnnouncerProvider, createAnnouncer } from '../a11y';
 import type { Announcer } from '../a11y';
 import { bindingsFor, detectPlatform } from '../config/keybindings';
 import type { Command } from '../config/keybindings';
-import { clearCodingSession } from '../data/codingSessionStore';
+import { clearCodingSession, writeSavedWork } from '../data/codingSessionStore';
 import { createSeedFixture } from '../data/seed';
 import { CURRENT_CODER_ID, SECOND_CODER_ID, THIRD_CODER_ID } from '../data/seed/project';
 import { clearSimulatedSession, writeSimulatedSession } from '../data/simulatedSession';
@@ -88,8 +88,8 @@ function followSidebarLink(label: string) {
   fireEvent.click(link, { button: 0 });
 }
 
-/** Codes one excerpt on the given source as the current coder. */
-async function codeAnExcerpt(sourceId: string, codeIds: string[]) {
+/** Codes one excerpt on the given source as the current coder, optionally noting it. */
+async function codeAnExcerpt(sourceId: string, codeIds: string[], noteText?: string) {
   renderAt(`/projects/${project.projectId}/sources/${sourceId}`);
 
   const turn = document.querySelector<HTMLElement>('[data-turn-id]')!;
@@ -100,6 +100,15 @@ async function codeAnExcerpt(sourceId: string, codeIds: string[]) {
   for (const codeId of codeIds) {
     fireEvent.click(panel.querySelector(`[data-code-id="${codeId}"]`)!);
   }
+
+  if (noteText !== undefined) {
+    const region = panel.querySelector<HTMLElement>('[data-region="note"]')!;
+    fireEvent.click(within(region).getByRole('button', { name: /add note|edit note/i }));
+    fireEvent.change(within(region).getByLabelText(/note about this excerpt/i), {
+      target: { value: noteText },
+    });
+  }
+
   fireEvent.click(within(panel).getByRole('button', { name: 'Save & Close' }));
   await waitFor(() =>
     expect(screen.queryAllByRole('dialog', { name: /code assignment/i })).toHaveLength(0),
@@ -239,8 +248,153 @@ describe('the same-excerpt indicator, per D-066', () => {
     expect(codes.compareDocumentPosition(line) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
 
     expect(line).not.toHaveAttribute('aria-hidden');
+    // The line itself is not a control and is not inside one. Counting the
+    // article's controls would have said this too until D-067 put a disclosure
+    // button in the row; this says what was actually meant.
+    expect(line.closest('a, button')).toBeNull();
     expect(within(article).getAllByRole('link')).toHaveLength(1);
-    expect(within(article).queryAllByRole('button')).toHaveLength(0);
+  });
+});
+
+describe('the note disclosure, per D-067', () => {
+  /*
+    Participants who saw "Has a note" wanted the note there rather than a page
+    away. What makes it a disclosure rather than a clickable thing is the set of
+    properties below, each of which D-067 names.
+
+    Read in the project-wide view, where the seeded excerpt notes are legible:
+    every one of them belongs to another coder, so the own view has none until a
+    coder writes one, which the last test does.
+  */
+  const asLead = () => {
+    writeSimulatedSession({ role: 'qualitativeLead' });
+    renderAt(codedDataUrl);
+  };
+  const noted = fixture.notes.find((note) => note.relatedExcerptId !== null)!;
+  const rowOf = (excerptId: string) =>
+    document.querySelector<HTMLElement>(`[data-excerpt-id="${excerptId}"]`)!;
+  const toggleIn = (excerptId: string) =>
+    within(rowOf(excerptId)).getByRole('button', { name: 'Note' });
+
+  it('is a button named Note, collapsed, and stays named Note when open', () => {
+    // Never a show/hide label swap: the name is constant and `aria-expanded`
+    // carries the state, so a screen reader user who has learned the control
+    // does not have to re-read it to find out what it now does.
+    asLead();
+    const toggle = toggleIn(noted.relatedExcerptId!);
+
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+
+    fireEvent.click(toggle);
+
+    expect(toggleIn(noted.relatedExcerptId!)).toHaveAttribute('aria-expanded', 'true');
+    expect(within(rowOf(noted.relatedExcerptId!)).getByRole('button', { name: 'Note' })).toBe(
+      toggle,
+    );
+  });
+
+  it('reveals the note immediately after the button', () => {
+    asLead();
+    const toggle = toggleIn(noted.relatedExcerptId!);
+
+    expect(rowOf(noted.relatedExcerptId!).querySelector('.coded-data__note-text')).toBeNull();
+
+    fireEvent.click(toggle);
+
+    const revealed = rowOf(noted.relatedExcerptId!).querySelector('.coded-data__note-text')!;
+    expect(revealed).toHaveTextContent(noted.noteText);
+    // Immediately after, in DOM and so in reading order.
+    expect(toggle.nextElementSibling).toBe(revealed);
+    expect(toggle).toHaveAttribute('aria-controls', revealed.id);
+  });
+
+  it('is a sibling of the row’s link and never nested inside it', () => {
+    /*
+      D-067's structural rule, and the reason the link is no longer wrapped in a
+      paragraph. A button inside a link is invalid and unreachable, and the two
+      being cousins rather than siblings would satisfy the letter of neither.
+    */
+    asLead();
+    const row = rowOf(noted.relatedExcerptId!);
+    const toggle = toggleIn(noted.relatedExcerptId!);
+    const link = within(row).getByRole('link');
+
+    expect(toggle.closest('a')).toBeNull();
+    expect(toggle.parentElement).toBe(row);
+    expect(link.parentElement).toBe(row);
+  });
+
+  it('leaves focus on the button across a full toggle', () => {
+    // D-067: focus stays put. Nothing to send it to and nothing to send it back
+    // from, which is what separates this from the code panel's disclosures.
+    asLead();
+    const toggle = toggleIn(noted.relatedExcerptId!);
+    act(() => toggle.focus());
+
+    fireEvent.click(toggle);
+    expect(toggle).toHaveFocus();
+
+    fireEvent.click(toggle);
+    expect(toggle).toHaveFocus();
+    expect(rowOf(noted.relatedExcerptId!).querySelector('.coded-data__note-text')).toBeNull();
+  });
+
+  it('announces nothing, the attribute and the text being the feedback', () => {
+    asLead();
+    fireEvent.click(toggleIn(noted.relatedExcerptId!));
+
+    const revealed = rowOf(noted.relatedExcerptId!).querySelector('.coded-data__note-text')!;
+    expect(revealed.closest('[aria-live]')).toBeNull();
+  });
+
+  it('expands one row without expanding another', () => {
+    // Per row and per session, per D-067. Two rows with notes, one opened.
+    asLead();
+    const withNotes = fixture.notes
+      .filter((note) => note.relatedExcerptId !== null)
+      .map((note) => note.relatedExcerptId!);
+    const [first, second] = withNotes;
+
+    fireEvent.click(toggleIn(first));
+
+    expect(rowOf(first).querySelector('.coded-data__note-text')).not.toBeNull();
+    expect(rowOf(second).querySelector('.coded-data__note-text')).toBeNull();
+    expect(toggleIn(second)).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('renders no button at all where the note has been deleted', () => {
+    /*
+      D-067 says no indicator renders where the viewer cannot read the note.
+      That was not true of this page before Task 46: the indicator was computed
+      from every note handed to it, so it outlived its own note's deletion — and
+      a disclosure built on that would have opened onto deleted text.
+    */
+    writeSimulatedSession({ role: 'qualitativeLead' });
+    writeSavedWork(project.projectId, {
+      excerpts: [],
+      assignments: [],
+      notes: [{ ...noted, status: 'deleted' }],
+      supersededIds: [],
+    });
+    renderAt(codedDataUrl);
+
+    expect(
+      within(rowOf(noted.relatedExcerptId!)).queryByRole('button', { name: 'Note' }),
+    ).toBeNull();
+  });
+
+  it('discloses a note the coder writes in session, in their own view', () => {
+    // The own view's only route to a readable note: every seeded excerpt note
+    // belongs to another coder, so R-4 keeps them all off this view.
+    return codeAnExcerpt(fixture.sources[0].sourceId, [fixture.codes[0].codeId], 'Worth a look.')
+      .then(() => {
+        followSidebarLink('Coded data');
+
+        const toggle = screen.getByRole('button', { name: 'Note' });
+        fireEvent.click(toggle);
+
+        expect(toggle.nextElementSibling).toHaveTextContent('Worth a look.');
+      });
   });
 });
 

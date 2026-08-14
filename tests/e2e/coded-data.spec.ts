@@ -92,7 +92,67 @@ test('the page has no accessibility violations in either view', async ({ page })
   // Asserted rather than assumed: axe passing over a page that never rendered
   // the thing under test would be a green light for nothing.
   await expect(page.locator('.coded-data__also-coded').first()).toBeVisible();
+  // And the D-067 disclosure open, for the same reason: collapsed, axe never
+  // looks at the revealed region or at the button's expanded state.
+  await page.getByRole('button', { name: 'Note' }).first().click();
+  await expect(page.locator('.coded-data__note-text').first()).toBeVisible();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+});
+
+test('the disclosed note is reading content and scales, per D-067 and D-061', async ({ page }) => {
+  /*
+    In a browser because jsdom drops any declaration carrying `var()`, so the
+    reading-scale opt-in is invisible to it.
+
+    The control lives on the transcript, so the scale is raised there and the
+    page is reached by an ordinary navigation — which is also D-061's own claim,
+    that one root preference reaches routes with no transcript on them.
+
+    Measured against the button beside it rather than against a second page
+    load: at rest the two are the same size, so the note being strictly larger
+    is the opt-in, and the button being unmoved is the half a blanket scale
+    would get wrong.
+  */
+  const source = fixture.sources[0];
+  await page.goto(`/projects/${project.projectId}/sources/${source.sourceId}`);
+
+  const increase = page.getByRole('button', { name: 'Increase text size' });
+  for (let press = 0; press < 8; press += 1) {
+    if ((await increase.getAttribute('aria-disabled')) === 'true') break;
+    await increase.click();
+  }
+  expect(Number(await page.locator('html').getAttribute('data-reading-scale'))).toBe(250);
+
+  await page.goto(codedDataUrl);
+  await page.getByLabel('Role').selectOption('qualitativeLead');
+  await expect(page.locator('[data-excerpt-id]').first()).toBeVisible();
+  await page.getByRole('button', { name: 'Note' }).first().click();
+
+  const sizes = await page.evaluate(() => ({
+    note: parseFloat(
+      getComputedStyle(document.querySelector('.coded-data__note-text')!).fontSize,
+    ),
+    toggle: parseFloat(
+      getComputedStyle(document.querySelector('.coded-data__note-toggle')!).fontSize,
+    ),
+    root: parseFloat(getComputedStyle(document.documentElement).fontSize),
+  }));
+
+  expect(sizes.note).toBeGreaterThan(sizes.toggle * 2);
+  expect(sizes.toggle, 'the control is chrome').toBeCloseTo(sizes.root, 1);
+});
+
+test('the row with its note open still reflows at 320px', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 800 });
+  await asLead(page);
+
+  await page.getByRole('button', { name: 'Note' }).first().click();
+  await expect(page.locator('.coded-data__note-text').first()).toBeVisible();
+
+  const overflows = await page.evaluate(
+    () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+  );
+  expect(overflows).toBe(false);
 });
 
 test('a result link lands focus on the turn holding its excerpt', async ({ page }) => {

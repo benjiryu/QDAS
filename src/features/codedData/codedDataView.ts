@@ -10,6 +10,7 @@
 
 import {
   applySupersession,
+  canReadNote,
   excerptText,
   isStanding,
   rangeOf,
@@ -46,7 +47,15 @@ export interface CodedResult {
   turnId: Id;
   text: string;
   codes: Code[];
-  hasNote: boolean;
+  /**
+   * The note on this excerpt, where the viewer may read it. Null otherwise.
+   *
+   * Text rather than a boolean since D-067, whose disclosure reveals it. That
+   * also makes "no indicator where the viewer cannot read the note" structural
+   * rather than a rule to remember: there is nothing to disclose, so there is
+   * nothing to render.
+   */
+  noteText: string | null;
   /** Named only in the project-wide view, where R-4 has lifted. */
   coderName: string | null;
   /**
@@ -131,9 +140,25 @@ export function buildCodedData({
   const codeById = new Map(codes.map((code) => [code.codeId, code]));
   const sourceById = new Map(sources.map((source) => [source.sourceId, source]));
   const userById = new Map(users.map((user) => [user.userId, user]));
-  const notedExcerptIds = new Set(
-    notes.map((note) => note.relatedExcerptId).filter((id): id is Id => id !== null),
-  );
+  /*
+    The note on each excerpt, where this viewer may read it, per `canReadNote`.
+
+    Filtered here for the first time. Before D-067 this counted every note it
+    was handed — no author, no status, no visibility — which made "Has a note"
+    survive its own note's deletion. A disclosure cannot be built on that: it
+    would have opened onto text the coder had deleted.
+
+    `identitiesVisible` is the project-wide view's condition, the same one that
+    gates `coderName` and `alsoCodedBy` below. Own notes are readable in either
+    view; another coder's only once R-4 has lifted, and never a private one.
+  */
+  const audience = { viewerId: currentUserId, identitiesVisible: view === 'projectWide' };
+  const noteByExcerpt = new Map<Id, string>();
+  for (const note of notes) {
+    if (note.relatedExcerptId === null) continue;
+    if (!canReadNote(note, audience)) continue;
+    noteByExcerpt.set(note.relatedExcerptId, note.noteText);
+  }
 
   /* ---------- Filters ---------- */
 
@@ -265,7 +290,7 @@ export function buildCodedData({
         codes: (codesByExcerpt.get(excerpt.excerptId) ?? [])
           .slice()
           .sort(byCanonicalOrder),
-        hasNote: notedExcerptIds.has(excerpt.excerptId),
+        noteText: noteByExcerpt.get(excerpt.excerptId) ?? null,
         // Attribution belongs to the project-wide view only. Naming a coder in
         // the own view would be noise; naming one during independent coding
         // would be the leak R-4 forbids.

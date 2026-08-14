@@ -13,7 +13,12 @@ import { NotePanel } from '../features/notes/NotePanel';
 import { useNotePanel } from '../features/notes/useNotePanel';
 import type { NoteCommit, NoteScopeOption } from '../features/notes/useNotePanel';
 import { PROJECT_SCOPE } from '../features/notes/useNotePanel';
-import { ALL_NOTES, buildNotesData, PROJECT_NOTES } from '../features/notes/notesView';
+import {
+  ALL_NOTES,
+  buildNotesData,
+  mergeSessionNotes,
+  PROJECT_NOTES,
+} from '../features/notes/notesView';
 import type { NoteEntry } from '../features/notes/notesView';
 import './codedData.css';
 import './notes.css';
@@ -84,13 +89,10 @@ export function NotesPage() {
     seeded note is a session note carrying its id, and a deletion is the same
     record with a `deleted` status, which `buildNotesData` filters out.
   */
-  const allNotes = useMemo(() => {
-    const session = work?.notes ?? [];
-    const shadowed = new Map(session.map((note) => [note.noteId, note]));
-    const seeded = fixture.notes.map((note) => shadowed.get(note.noteId) ?? note);
-    const seededIds = new Set(fixture.notes.map((note) => note.noteId));
-    return [...seeded, ...session.filter((note) => !seededIds.has(note.noteId))];
-  }, [fixture.notes, work]);
+  const allNotes = useMemo(
+    () => mergeSessionNotes(fixture.notes, work?.notes ?? []),
+    [fixture.notes, work],
+  );
 
   /**
    * Writes a note the panel committed, then re-reads what the page renders.

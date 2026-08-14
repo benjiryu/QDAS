@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createSeedFixture } from '../../data/seed';
 import { CURRENT_CODER_ID, SECOND_CODER_ID, THIRD_CODER_ID } from '../../data/seed/project';
+import { mergeSessionNotes } from '../notes/notesView';
 import { buildCodedData } from './codedDataView';
 import type { CodedDataView } from './resolveView';
 
@@ -133,5 +134,55 @@ describe('what counts as somebody else having coded it', () => {
     expect(data.results.find((result) => result.excerptId === 'ex-5806e4b2')?.alsoCodedBy).toEqual(
       [],
     );
+  });
+});
+
+describe('the note on a row, per D-067', () => {
+  /*
+    `noteText` rather than a boolean, so the disclosure has something to reveal
+    and "no indicator where the viewer cannot read the note" is structural.
+
+    ex-9d27b014 is the second coder's, and carries a seeded note.
+  */
+  const seededNote = fixture.notes.find((note) => note.relatedExcerptId === 'ex-9d27b014')!;
+
+  it('carries the text where the viewer may read it', () => {
+    expect(rowFor('projectWide', 'ex-9d27b014')?.noteText).toBe(seededNote.noteText);
+  });
+
+  it('is null on an excerpt with no note at all', () => {
+    expect(rowFor('projectWide', 'ex-5806e4b2')?.noteText).toBeNull();
+  });
+
+  it('is null once the note is deleted', () => {
+    /*
+      The bug this task found, as an assertion. A deletion is a session record
+      carrying the seeded note's id and a `deleted` status, so the page sees
+      both records; before Task 46 nothing filtered either, and the indicator
+      outlived the note it described.
+    */
+    const tombstone = { ...seededNote, status: 'deleted' };
+    const data = build('projectWide', {
+      notes: mergeSessionNotes(fixture.notes, [tombstone]),
+    });
+
+    expect(data.results.find((result) => result.excerptId === 'ex-9d27b014')?.noteText).toBeNull();
+  });
+
+  it('is null for another coder’s note while identities are hidden', () => {
+    // R-4. The own view already hides the excerpt itself, so this is asserted
+    // where it can be reached: the same note, in the own view of its own coder,
+    // is readable, and it is the author rule that decides.
+    const own = build('own', { currentUserId: SECOND_CODER_ID });
+    const row = own.results.find((result) => result.excerptId === 'ex-9d27b014');
+    expect(row?.noteText).toBe(seededNote.noteText);
+
+    const notMine = build('own', {
+      currentUserId: SECOND_CODER_ID,
+      notes: [{ ...seededNote, authorId: THIRD_CODER_ID }],
+    });
+    expect(
+      notMine.results.find((result) => result.excerptId === 'ex-9d27b014')?.noteText,
+    ).toBeNull();
   });
 });
