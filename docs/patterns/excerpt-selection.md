@@ -72,7 +72,7 @@ There is no adjustment phase. Fixing a wrong range means cancelling and reselect
 | `excerpt.open` | `idle`, focused turn intersects a saved excerpt | Reopen per D-030, list disambiguation when several intersect |
 | `note.open` | `idle`, focused turn intersects an excerpt carrying a note | Open the isolated note panel loaded with the note, list disambiguation when several intersect. Pointer twin: clicking the rail's note icon |
 
-`excerpt.code` and `excerpt.note` have strip controls showing their chords. `excerpt.open` and `note.open` are context commands per D-057: discoverable through the shortcuts help and the turn's status description, with the clickable coded sentence and note icon as pointer twins. The strip stays at D-038's five controls.
+Per D-065 the command strip is removed and none of these has a visible control. `excerpt.code` and `excerpt.note` are reachable by chord and from the context menu, which is now the only pointer route to capture; `excerpt.open` and `note.open` are chords with the clickable coded sentence and note icon as their pointer twins. D-057's discoverability floor names the shortcuts help as the surface that teaches the vocabulary, and it is unbuilt — recorded under D-065 as a known gap rather than an assumption.
 
 ## 5. Storage
 

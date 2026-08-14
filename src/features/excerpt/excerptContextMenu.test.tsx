@@ -4,6 +4,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { AnnouncerProvider, createAnnouncer } from '../../a11y';
 import type { Announcer } from '../../a11y';
 import { defaultFlags } from '../../config/flags';
+import { bindingsFor, describeChord, detectPlatform } from '../../config/keybindings';
+import type { Command } from '../../config/keybindings';
 import { createSeedFixture } from '../../data/seed';
 import { clearSourcePositions } from '../../data/sourcePositionStore';
 import { resolveSource } from '../../domain';
@@ -21,6 +23,7 @@ import { TranscriptWorkspace } from '../transcript/TranscriptWorkspace';
  * business, and the end-to-end spec checks the pointer path in a real one.
  */
 
+const bindings = bindingsFor(detectPlatform());
 const fixture = createSeedFixture();
 const resolved = resolveSource({
   source: fixture.sources[0],
@@ -124,8 +127,8 @@ describe('when the menu appears', () => {
     const segment = multiSentenceTurn.segments[0];
     drag([segment.segmentId, 0], [segment.segmentId, 10]);
 
-    const strip = screen.getByRole('region', { name: 'Excerpt' });
-    expect(rightClick(strip)).toBe(false);
+    const outside = document.querySelector<HTMLElement>('.position-ribbon')!;
+    expect(rightClick(outside)).toBe(false);
 
     expect(menu()).toBeNull();
   });
@@ -135,7 +138,7 @@ describe('when the menu appears', () => {
     // to code. Checking only that the selection is non-collapsed would open a
     // menu whose items would capture the wrong thing, or nothing.
     renderWorkspace();
-    const outside = document.querySelector<HTMLElement>('.excerpt-toolbar__status')!;
+    const outside = document.querySelector<HTMLElement>('.position-ribbon')!;
     const range = document.createRange();
     range.selectNodeContents(outside);
     const selection = document.getSelection()!;
@@ -309,25 +312,34 @@ describe('what the items do', () => {
     expect(announced().join(' ')).toContain('Field focused');
   });
 
-  it('adds no capability: both items are on the strip as well', () => {
-    // D-028's condition, carried forward by D-037. A menu that could do
-    // something the strip cannot would be a pointer-only path.
+  it('adds no capability: every item is a chord as well', () => {
+    /*
+      D-028's condition, carried forward by D-037. It used to be met twice over:
+      each item was also a control on the command strip. The strip is gone, so
+      the condition now rests on the chords alone — and the menu, which adds
+      nothing a keyboard user lacks, has become the whole of what a pointer user
+      has for capture.
+
+      Asserted against the binding table rather than against a rendered control,
+      since there is no longer a rendered control to compare with.
+    */
     renderWorkspace();
-    // Read before opening: an open menu hides the rest of the document from
-    // assistive technology, which is what a menu is supposed to do.
-    const strip = screen.getByRole('region', { name: 'Excerpt' });
 
     const segment = multiSentenceTurn.segments[0];
     drag([segment.segmentId, 0], [segment.segmentId, 10]);
     rightClick(segmentElement(segment.segmentId));
 
+    const labelled: Record<string, Command> = {
+      'Assign code': 'excerpt.code',
+      'Add note': 'excerpt.note',
+    };
+
     for (const label of items()) {
       const name = label.replace(/Control.*$/, '').trim();
-      expect(
-        Array.from(strip.querySelectorAll('button')).some((button) =>
-          (button.textContent ?? '').startsWith(name),
-        ),
-      ).toBe(true);
+      const command = labelled[name];
+      expect(command, `${name} is not one of the menu's two items`).toBeDefined();
+      // And the chord it advertises is the one the table holds for it.
+      expect(label).toContain(describeChord(bindings[command], detectPlatform()));
     }
   });
 

@@ -16,67 +16,30 @@
  *   excerpt range    a tinted band with a bar at each boundary
  */
 
-.excerpt-toolbar {
+/*
+ * The chooser, and nothing else: the strip that used to sit here went with its
+ * five controls. Present only while a choice is pending, so the page is clear
+ * the rest of the time.
+ */
+.excerpt-choices {
   padding: 0.5rem 0.75rem;
   margin-bottom: 1rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-small);
+}
+
+.excerpt-choices p {
+  margin: 0 0 0.35rem;
+}
+
+.excerpt-choices__list {
+  list-style: none;
+  margin: 0 0 0.35rem;
+  padding: 0;
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 1rem;
-  align-items: center;
-}
-
-.excerpt-toolbar__status {
-  margin: 0;
-  flex: 1 1 100%;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 1rem;
-}
-
-.excerpt-toolbar__state {
-  font-weight: var(--font-weight-bold);
-}
-
-/* The state is spelled out, so it is never carried by styling alone. */
-.excerpt-toolbar__state[data-state='idle'] {
-  color: var(--text-muted);
-  font-weight: var(--font-weight-regular);
-}
-
-.excerpt-toolbar__size {
-  color: var(--text-muted);
-}
-
-.excerpt-toolbar__group {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-}
-
-.excerpt-toolbar__button {
-  display: inline-flex;
   flex-direction: column;
+  gap: 0.25rem;
   align-items: flex-start;
-  gap: 0.15rem;
-  padding: 0.4rem 0.6rem;
-  font: inherit;
-  color: inherit;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-small);
-  cursor: pointer;
-}
-
-.excerpt-toolbar__chord {
-  font-size: 0.75em;
-  color: var(--text-muted);
-}
-
-.excerpt-toolbar__button[aria-disabled='true'] {
-  border-style: dashed;
-  opacity: 0.7;
 }
 
 /* ---------- The range in the transcript ---------- */

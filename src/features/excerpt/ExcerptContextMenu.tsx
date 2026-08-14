@@ -14,9 +14,14 @@ import './excerptMenu.css';
  * typeahead, arrow wrapping, and dismiss behaviour are exactly the things a
  * hand-rolled version gets subtly wrong on one screen reader out of three.
  *
- * The menu adds no capability. Both items exist on the strip and as chords, per
- * D-028's conditions carried forward by D-037, and each shows the chord that
- * does the same thing without opening a menu at all.
+ * The menu adds no capability: both items exist as chords, per D-028's
+ * condition carried forward by D-037, and each shows the chord that does the
+ * same thing without opening a menu at all.
+ *
+ * That condition used to be met twice over, since both items were also on the
+ * command strip. The strip is gone, so this menu is now the only pointer route
+ * to capture — it adds no capability a keyboard user lacks, but it is the whole
+ * of what a pointer user has.
  */
 
 const ITEMS = [
@@ -84,7 +89,7 @@ export function ExcerptContextMenu({ excerpt }: ExcerptContextMenuProps) {
           /*
             A mousedown collapses the document selection before any click
             handler runs, and this menu exists to act on that selection. The
-            strip's controls carry the same guard for the same reason. Per
+            strip's controls carried the same guard for the same reason. Per
             D-060 no path through this menu alters the DOM selection.
           */
           onMouseDown={(event) => event.preventDefault()}
@@ -93,8 +98,9 @@ export function ExcerptContextMenu({ excerpt }: ExcerptContextMenuProps) {
           {ITEMS.map((item) => (
             <MenuItem key={item.target} id={item.target} className="excerpt-menu__item">
               {item.label}
-              {/* The same chord the strip shows, so the menu teaches the way
-                  that does not need the menu. */}
+              {/* The chord, so the menu teaches the way that does not need the
+                  menu. With the strip gone this is the only place either chord
+                  appears on screen. */}
               <kbd className="excerpt-menu__chord" aria-hidden="true">
                 {describeChord(bindings[item.command], platform)}
               </kbd>

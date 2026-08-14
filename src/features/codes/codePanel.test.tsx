@@ -434,8 +434,8 @@ describe('commands, per section 2.1', () => {
     press({ key: 'Escape' });
     await act(async () => {});
 
-    expect(document.querySelector('.excerpt-toolbar__state')).toHaveAttribute(
-      'data-state',
+    expect(document.querySelector('[data-saved-excerpts]')).toHaveAttribute(
+      'data-excerpt-state',
       'idle',
     );
     expect(document.querySelector('[data-excerpt]')).toBeNull();

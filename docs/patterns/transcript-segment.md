@@ -4,7 +4,7 @@
 
 The navigation command layer described in sections 2 and 4 is retired. Movement belongs to the browser and the screen reader: Tab and Shift+Tab between focusable turns, browse-mode navigation, scrolling. Clicking a turn focuses it and draws nothing beyond the focus ring; click-to-set-active-segment and the active segment visual are removed.
 
-Three orientation commands survive, with visible strip controls, answering from the focused speaker turn: `segment.speaker`, `segment.timestamp`, and `position.report`. Position reports turn N of M and percentage; the ribbon derives from the same source, so spoken and visible reports cannot disagree. `SourcePosition` records the focused turn for restoration only.
+Three orientation commands survive, chord-only since D-065 removed the strip, answering from the focused speaker turn: `segment.speaker`, `segment.timestamp`, and `position.report`. Position reports turn N of M and percentage; the ribbon derives from the same source, so spoken and visible reports cannot disagree. `SourcePosition` records the focused turn for restoration only.
 
 Sections 1 (segmentation model and identity), 7 (visual and reflow, minus the active segment indicator), 8, and 9 remain in force. Sections 2 through 6 below describe the v0.1 model and are retained as history; where they conflict with this banner, the banner governs. The full v0.1 pattern is at tag `v0.1`.
 
@@ -183,7 +183,7 @@ Reading through a coded range is not in this table, because nothing in the build
 - Coded segments carry a non-color indicator in addition to color. Color alone fails the contract, and code color is already load-bearing in the codebook.
 - `coded-multiple` is visually distinct from `coded`. Overlapping highlights that simply layer color become unreadable at high zoom and unparseable by screen reader.
 - The speaker and timestamp column collapses into the turn's leading text at narrow width, preserving reading order rather than requiring horizontal panning.
-- Page-level reflow follows D-033: the narrow stack is primary, sidebar collapsed to a disclosure, command strip, transcript, code panel below. The wide layout is the same sequence with the panel alongside.
+- Page-level reflow follows D-033: the narrow stack is primary, sidebar collapsed to a disclosure, transcript, code panel below. The wide layout is the same sequence with the panel alongside. The command strip that used to sit above the transcript was removed by D-065.
 - Scroll position is preserved when returning from any overlay or panel.
 
 ## 8. Persistence

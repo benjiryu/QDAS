@@ -107,7 +107,7 @@ const highlighted = () =>
 const announced = () => announcer.getHistory().map((entry) => entry.message);
 const lastAnnouncement = () => announcer.getLast()?.message ?? '';
 const excerptState = () =>
-  document.querySelector('.excerpt-toolbar__state')?.getAttribute('data-state') ?? '';
+  document.querySelector('[data-saved-excerpts]')?.getAttribute('data-excerpt-state') ?? '';
 const panelIsOpen = () => screen.queryAllByRole('dialog', { name: /code assignment/i }).length > 0;
 
 function savedCounts() {
@@ -224,8 +224,9 @@ describe('nothing to capture', () => {
     renderWorkspace();
     act(() => {
       // Any control outside the transcript: step 3 is reached by focus being
-      // somewhere the capture rule cannot resolve a turn from.
-      document.querySelector<HTMLButtonElement>('[data-command="excerpt.note"]')!.focus();
+      // somewhere the capture rule cannot resolve a turn from. The strip's
+      // controls used to serve; the text size control is what is left.
+      document.querySelector<HTMLButtonElement>('.text-size__button')!.focus();
     });
 
     chord('excerpt.code');
@@ -291,22 +292,29 @@ describe('the two capture commands', () => {
   });
 });
 
-describe('the strip control route', () => {
+describe('the pointer route, which is the context menu now', () => {
   it('captures the selection a pointer just made', () => {
+    /*
+      The strip's Assign code control was this route and has been removed with
+      the rest of the strip, so the menu is the whole of what a pointer user
+      has. Its own mousedown guard is what keeps the selection alive long enough
+      to act on — a mousedown collapses the document selection unless the
+      default is suppressed, which would leave the command nothing to capture
+      and send it silently into the turn fallback.
+    */
     renderWorkspace();
     const segment = multiSentenceTurn.segments[0];
     drag([segment.segmentId, 5], [segment.segmentId, 14]);
 
-    const control = document.querySelector<HTMLButtonElement>('[data-command="excerpt.code"]')!;
-    // A button's mousedown collapses the document selection unless the default
-    // is suppressed, which would leave the command nothing to capture and send
-    // it silently into the turn fallback.
     act(() => {
-      // fireEvent reports false when a handler called preventDefault. Left
-      // unprevented, the browser would collapse the selection here.
-      const wentThrough = fireEvent.mouseDown(control);
+      fireEvent.contextMenu(segmentElement(segment.segmentId), { clientX: 40, clientY: 40 });
+    });
+
+    const item = screen.getByRole('menuitem', { name: /Assign code/ });
+    act(() => {
+      const wentThrough = fireEvent.mouseDown(item);
       if (wentThrough) document.getSelection()?.removeAllRanges();
-      fireEvent.click(control);
+      fireEvent.click(item);
     });
 
     expect(highlighted()).toBe(segment.text.slice(5, 14));

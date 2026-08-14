@@ -93,9 +93,9 @@ test('right-clicking outside the transcript leaves the browser menu alone', asyn
   await sweepAcrossTwoSentences(page);
 
   const prevented = await page.evaluate(() => {
-    const strip = document.querySelector('.excerpt-toolbar')!;
+    const outside = document.querySelector('.position-ribbon')!;
     const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
-    strip.dispatchEvent(event);
+    outside.dispatchEvent(event);
     return event.defaultPrevented;
   });
 
@@ -142,7 +142,7 @@ test('Escape closes the menu and returns focus, capturing nothing', async ({ pag
 
   await expect(page.getByRole('menu')).toHaveCount(0);
   expect(await highlighted(page)).toBe('');
-  await expect(page.locator('.excerpt-toolbar__state')).toHaveAttribute('data-state', 'idle');
+  await expect(page.locator('[data-saved-excerpts]')).toHaveAttribute('data-excerpt-state', 'idle');
   // Focus is back on something in the transcript, not lost to the body.
   expect(
     await page.evaluate(() => document.activeElement?.closest('[data-transcript]') !== null),

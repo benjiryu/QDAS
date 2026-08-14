@@ -177,7 +177,8 @@ export function CodedDataPage() {
         /* Named route out, never a blank region. Shared rules. */
         <p>
           {view === 'own'
-            ? 'You have not coded anything in this project yet. Open a source from the project navigation, select some text, and choose Assign code.'
+            ? 'You have not coded anything in this project yet. Open a source from the project navigation, select some text, and either \
+                right-click it and choose Assign code, or press the Assign code shortcut.'
             : 'Nothing has been coded in this project yet.'}{' '}
           <Link to={`/projects/${projectId}`}>Back to the project</Link>
         </p>

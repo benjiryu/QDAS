@@ -1049,6 +1049,22 @@ Date: 2026-08 | Workflow: coded data | Status: approved. Amends D-049's filter l
 
 **Own-view edge.** A child whose ancestors are unused renders at its full indentation depth with its lineage description naming the absent ancestors; no disabled placeholder rows.
 
+## D-065 The transcript command strip is removed
+
+Date: 2026-08 | Workflow: transcript display | Status: approved. Decided by Benji directly as the prototype tidies up for real use; recorded here so the change carries its author and its cost. Reverses D-038's five-control strip and D-057's preservation clause
+
+The command strip and its five controls — Speaker, Timestamp, Where am I, Assign code, Add note — are removed from the transcript page. Every command they carried keeps its chord, and capture is also on the context menu, which becomes the only pointer route to it.
+
+Two things survive the removal. The disambiguation chooser stays, because D-030 forbids guessing which of several overlapping excerpts was meant, so `excerpt.open`, `note.open` and a click on a coded passage all have to ask; it renders nothing until there is a choice pending. The excerpt state readout goes: the selection-blue band is the visible representation of a capture and the announcement is the programmatic one, so contract 2.6 holds without a line of text restating it.
+
+**The cost, recorded rather than discovered in a session.** D-057 retired the blanket visible-control rule and replaced it with a discoverability floor whose first item is that `help.shortcuts` "lists every command with its platform-correct chord" and is "the canonical visible surface for the command vocabulary". That command has a chord in the binding table, no handler, and no user interface. So after this change **nothing on screen teaches any command on the transcript page**: a participant who does not already know the chords has the context menu for capture and nothing at all for the three orientation commands.
+
+D-057 also said explicitly that "commands that initiate primary work keep their strip controls as designed, five per D-038 plus the panel's own controls; nothing built is removed." This reverses that clause knowingly.
+
+Two consequences that follow and are implemented with it: D-028's condition that the menu adds no capability, carried forward by D-037, used to be satisfied twice over because every item was also on the strip — it now rests on the chords alone, and the menu is load-bearing in a way D-037 did not assume. And the Coded data empty state, which told a coder to "choose Assign code", now names the routes that exist.
+
+Building the shortcuts help is the obvious next step, and until it exists this is a session gate rather than a tidy-up: a participant briefed on the chords will manage, and one who is not cannot code at all by keyboard.
+
 ## D-064 The Coded Data filter list drops pills for underlines, and gains a search
 
 Date: 2026-08 | Workflow: coded data | Status: approved. Decided by Benji directly; recorded here so the change carries its author and rationale. Reverses the visual half of D-062 and its amendment
@@ -1090,3 +1106,11 @@ Also per the Figma: the "All codes" pill is plain gray, not multicolor; pill pad
 *Measured on implementing this, and the last sentence does not hold.* The gray row background does not provide the shape contrast: a white pill is **1.21:1** against the selected row's grey-100, and against the white page behind an unselected row it has no boundary at all. So the grandchild pill's shape rests on its outline alone, and four families' shade-1 outlines are under the 3:1 a non-text indicator needs — yellow **1.69:1**, light green **2.00:1**, sea green **2.37:1**, orange **2.41:1**. For those four the grandchild level has no reliable visual, and since this amendment also removes indentation there is no second visual channel to fall back on.
 
 Shipped as designed under this amendment's own session-evidence flag rather than quietly adjusted, so the design reaches a session intact. Two things bound the risk: the D-054 lineage description carries level programmatically whatever the pills do, and a browser test records the per-family figures, so a token change is reported rather than absorbed. If magnification participants misread levels, these numbers are the first place to look.
+
+## D-059 addendum: one pill shape, and the user title block
+
+Date: 2026-08 | Status: approved
+
+The build gave hover a rounded rectangle and current-page fully circular sides. D-059 says the two wear the same pill; the shapes unify on the hover treatment, the rounded rectangle, so the earlier hover-equals-current acceptance is literally true.
+
+A user title block is added at the top of the nav landmark: static text, not a link and not a heading, reading the seeded user's title, "AFB Researcher" in the prototype, with the divider below it per the Figma. The string comes from the seed user record, never hardcoded in the component. The Figma's home icon remains unspecified and is not built.

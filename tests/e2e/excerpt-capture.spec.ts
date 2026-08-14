@@ -135,20 +135,21 @@ test('a mid-sentence drag is captured exactly', async ({ page }) => {
   // And it really did begin mid-sentence.
   const firstSentence = await page.locator('[data-segment-id]').first().textContent();
   expect(squashed(firstSentence ?? '')).not.toBe(squashed(dragged.split(/(?<=\.)\s/)[0] ?? ''));
-  await expect(page.locator('.excerpt-toolbar__state')).toHaveAttribute('data-state', 'confirmed');
+  await expect(page.locator('[data-saved-excerpts]')).toHaveAttribute('data-excerpt-state', 'confirmed');
   await expect.poll(async () => await polite(page)).toMatch(/coding your selection/i);
 });
 
-test('the strip control captures the selection a drag just made', async ({ page }) => {
+test('the pointer route captures the selection a drag just made', async ({ page }) => {
   const dragged = await sweepAcrossTwoSentences(page);
 
-  // The sighted route in section 1: drag, then reach for the control. Chromium
-  // leaves the selection readable inside the click handler either way, so what
-  // this asserts is the route, not the mousedown guard the strip carries for
-  // engines that do not. The guard is covered in excerptCapture.test.tsx.
-  const control = page.getByRole('button', { name: /Assign code/ });
-  await control.scrollIntoViewIfNeeded();
-  await control.click();
+  /*
+    The sighted route in section 1. It used to be the strip's Assign code
+    control; with the strip removed the context menu is the whole of it, which
+    is why that menu is now more load-bearing than D-037 assumed rather than
+    less.
+  */
+  await page.locator('[data-segment-id]').first().click({ button: 'right' });
+  await page.getByRole('menuitem', { name: /Assign code/ }).click();
 
   expect(squashed(await highlighted(page))).toBe(squashed(dragged));
   await expect.poll(async () => await polite(page)).toMatch(/coding your selection/i);

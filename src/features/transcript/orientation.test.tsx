@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { act } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AnnouncerProvider, createAnnouncer } from '../../a11y';
@@ -189,34 +189,7 @@ describe('the three orientation commands', () => {
     expect(lastAnnouncement()).toMatch(/tab/i);
   });
 
-  it('has a visible control for each, showing its chord', () => {
-    renderWorkspace();
-    const strip = screen.getByRole('group', { name: 'Orientation' });
-    const buttons = Array.from(strip.querySelectorAll('button'));
 
-    expect(buttons).toHaveLength(3);
-    expect(buttons.map((button) => button.textContent)).toEqual([
-      expect.stringContaining('Speaker'),
-      expect.stringContaining('Timestamp'),
-      expect.stringContaining('Where am I'),
-    ]);
-    for (const button of buttons) {
-      expect(button.querySelector('kbd')?.textContent).toBeTruthy();
-    }
-  });
-
-  it('answers the same way from the control as from the chord', () => {
-    renderWorkspace();
-    focusTurn(3);
-
-    fireEvent.click(screen.getByRole('button', { name: /^Speaker/ }));
-    const viaControl = lastAnnouncement();
-
-    focusTurn(3);
-    pressChord('segment.speaker');
-
-    expect(lastAnnouncement()).toBe(viaControl);
-  });
 });
 
 describe('what the movement commands left behind', () => {
@@ -228,14 +201,6 @@ describe('what the movement commands left behind', () => {
     expect(container.querySelectorAll('[data-segment-id][tabindex]')).toHaveLength(0);
   });
 
-  it('offers no movement controls on the strip', () => {
-    renderWorkspace();
-    const strip = screen.getByRole('group', { name: 'Orientation' });
-
-    for (const gone of [/next sentence/i, /previous sentence/i, /next turn/i, /repeat/i]) {
-      expect(within(strip).queryByRole('button', { name: gone })).toBeNull();
-    }
-  });
 
   it('offers no return-to-position control, since focus never left', () => {
     renderWorkspace();
@@ -245,51 +210,43 @@ describe('what the movement commands left behind', () => {
   });
 });
 
-describe('what the strip holds afterwards', () => {
-  it('carries exactly the five controls D-038 names, in order', () => {
-    /*
-      Scoped to the two strip groups since D-056, which put a text size control
-      in the transcript header. Unscoped this collected every button on the
-      page, so what it actually pinned was "the workspace has five buttons" —
-      a stronger claim than D-038 makes and one that fails the first time
-      anything else legitimately appears.
-
-      D-038 is about the strip. The header is not the strip, and the D-056
-      addendum is explicit that the size control belongs there.
-    */
+describe('the strip is gone, and every command it carried is a chord', () => {
+  /*
+    The five controls D-038 named were removed as the prototype tidied up. What
+    replaced them is nothing: each command keeps its chord, and capture is also
+    on the context menu. D-057's discoverability floor named `help.shortcuts` as
+    the surface that would teach them, and that command is still unbuilt — a gap
+    recorded in the decision log rather than papered over here.
+  */
+  it('renders no command buttons on the transcript page', () => {
     renderWorkspace();
 
-    const strips = [
-      screen.getByRole('group', { name: 'Orientation' }),
-      screen.getByRole('group', { name: 'Excerpt' }),
-    ];
-    const labels = strips
-      .flatMap((strip) => within(strip).getAllByRole('button'))
-      .map((button) => (button.textContent ?? '').replace(/(Control|Shift|Alt).*$/, '').trim())
-      .filter((label) => label !== '');
+    expect(screen.queryByRole('group', { name: 'Orientation' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Excerpt' })).toBeNull();
 
-    expect(labels).toEqual([
-      'Speaker',
-      'Timestamp',
-      'Where am I',
-      'Assign code',
-      'Add note',
-    ]);
+    const labels = screen
+      .getAllByRole('button')
+      .map((button) => (button.textContent ?? '').replace(/(Control|Shift|Alt).*$/, '').trim());
+
+    for (const gone of ['Speaker', 'Timestamp', 'Where am I', 'Assign code', 'Add note']) {
+      expect(labels, `${gone} still has a control`).not.toContain(gone);
+    }
   });
 
-  it('keeps the text size control out of the strip, per the D-056 addendum', () => {
-    // Product features are never homed in a strip D-038 pins, nor in the
-    // prototype-support surface that carries the role and phase controls.
+  it('still answers each orientation command from its chord', () => {
+    // The commands did not go with their controls, which is the whole basis on
+    // which removing the controls was acceptable.
     renderWorkspace();
+    focusTurn(3);
 
-    const orientation = screen.getByRole('group', { name: 'Orientation' });
-    const excerpt = screen.getByRole('group', { name: 'Excerpt' });
-    const size = screen.getByRole('group', { name: 'Transcript text size' });
-
-    expect(orientation.contains(size)).toBe(false);
-    expect(excerpt.contains(size)).toBe(false);
+    for (const command of ['segment.speaker', 'segment.timestamp', 'position.report'] as const) {
+      const before = announcer.getHistory().length;
+      pressChord(command);
+      expect(announcer.getHistory().length, command).toBeGreaterThan(before);
+    }
   });
 });
+
 
 describe('position restoration', () => {
   it('records the focused turn, by its first sentence', () => {
@@ -336,31 +293,5 @@ describe('position restoration', () => {
 
     expect(announced()[0]).toContain('No saved position');
     expect(ribbonText()).toContain('No speaker turn focused');
-  });
-});
-
-/**
- * The strip is prototype scaffolding, not a product surface: it exists so a
- * sighted observer can see which chords are available and what the screen
- * reader can do, during a session. It is deliberately unstyled.
- *
- * What has to hold is that the chords are actually on it. Coverage above is
- * for the three orientation controls only, and the two capture controls carry
- * chords the strip exists to reveal just as much.
- */
-describe('the strip as a prototype affordance', () => {
-  it('shows a chord on every one of the five controls', () => {
-    renderWorkspace();
-
-    const buttons = Array.from(
-      document.querySelectorAll<HTMLElement>(
-        '.transcript-toolbar__button, .excerpt-toolbar__button',
-      ),
-    );
-
-    expect(buttons).toHaveLength(5);
-    for (const button of buttons) {
-      expect(button.querySelector('kbd')?.textContent).toBeTruthy();
-    }
   });
 });

@@ -102,7 +102,7 @@ test('a failed save loses nothing, and the retry succeeds', async ({ page }) => 
     ).toBeChecked();
   }
   await expect(await noteField(page)).toHaveValue(NOTE);
-  await expect(page.locator('.excerpt-toolbar__state')).toHaveAttribute('data-state', 'confirmed');
+  await expect(page.locator('[data-saved-excerpts]')).toHaveAttribute('data-excerpt-state', 'confirmed');
   await expect(page.getByRole('dialog', { name: /code assignment/i })).toBeVisible();
 
   // Nothing was written.
@@ -135,7 +135,7 @@ test('a failed save loses nothing, and the retry succeeds', async ({ page }) => 
     '2',
   );
   await expect(page.locator('[data-saved-notes]')).toHaveAttribute('data-saved-notes', '1');
-  await expect(page.locator('.excerpt-toolbar__state')).toHaveAttribute('data-state', 'saved');
+  await expect(page.locator('[data-saved-excerpts]')).toHaveAttribute('data-excerpt-state', 'saved');
 
   // And the sentences now read as coded.
   await expect(page.locator('[data-display-state^="coded"]').first()).toBeVisible();

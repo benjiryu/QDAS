@@ -488,7 +488,7 @@ test('the transcript grows and the chrome does not', async ({ page }) => {
   const before = {
     prose: await sizeOf('.transcript-turn__prose'),
     sidebar: await sizeOf('.project-nav'),
-    strip: await sizeOf('.excerpt-toolbar'),
+    ribbon2: await sizeOf('.position-ribbon__title'),
     ribbon: await sizeOf('.position-ribbon'),
   };
 
@@ -498,13 +498,13 @@ test('the transcript grows and the chrome does not', async ({ page }) => {
   const after = {
     prose: await sizeOf('.transcript-turn__prose'),
     sidebar: await sizeOf('.project-nav'),
-    strip: await sizeOf('.excerpt-toolbar'),
+    ribbon2: await sizeOf('.position-ribbon__title'),
     ribbon: await sizeOf('.position-ribbon'),
   };
 
   expect(parseFloat(after.prose)).toBeGreaterThan(parseFloat(before.prose) * 2);
   expect(after.sidebar, 'the sidebar is chrome').toBe(before.sidebar);
-  expect(after.strip, 'and so is the strip').toBe(before.strip);
+  expect(after.ribbon2, 'and so is the ribbon’s own text').toBe(before.ribbon2);
   expect(after.ribbon, 'and the ribbon').toBe(before.ribbon);
 });
 

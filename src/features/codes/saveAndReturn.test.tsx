@@ -153,7 +153,7 @@ function checkedCodeIds(): string[] {
 }
 
 const excerptState = () =>
-  document.querySelector('.excerpt-toolbar__state')?.getAttribute('data-state') ?? '';
+  document.querySelector('[data-saved-excerpts]')?.getAttribute('data-excerpt-state') ?? '';
 
 describe('acceptance: multiple codes in one pass', () => {
   it('holds three codes with the panel still open', () => {

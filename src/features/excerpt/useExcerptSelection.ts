@@ -31,7 +31,7 @@ import type { ExcerptSelection } from './excerptMachine';
  * it a boundary at a time.
  */
 
-/** Section 4. Each carries a chord and a visible strip control. */
+/** Section 4. Each carries a chord; the strip that also carried them is gone. */
 const CHORD_COMMANDS = [
   'excerpt.code',
   'excerpt.note',
@@ -45,8 +45,10 @@ const CHORD_COMMANDS = [
  * Not in `CHORD_COMMANDS`, because it invokes nothing: it opens a menu whose
  * two items are the two capture commands above. Contract 2.2 asks that every
  * command be keyboard-operable and every keyboard command have a visible
- * control; the strip's Assign code and Add note controls are this menu's
- * visible equivalent, which is exactly what D-037 requires of it.
+ * control. That equivalence used to be the strip's Assign code and Add note
+ * buttons; with the strip removed the menu is the only pointer route to
+ * capture, which makes it more load-bearing than D-037 assumed rather than
+ * less.
  */
 const MENU_COMMAND: Command = 'excerpt.menu';
 

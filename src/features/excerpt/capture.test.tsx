@@ -205,14 +205,17 @@ describe('step 2: the focused turn', () => {
 describe('step 3: nothing to capture', () => {
   it('returns nothing with focus outside the transcript and no selection', () => {
     const container = renderTranscript();
-    document.querySelector<HTMLButtonElement>('[data-command="excerpt.code"]')!.focus();
+    // A focusable control outside the transcript. This used to be the strip's
+    // Assign code button; with the strip gone the text size control is the
+    // nearest chrome that still takes focus.
+    document.querySelector<HTMLButtonElement>('.text-size__button')!.focus();
 
     expect(resolveCapture(container, resolved)).toBeNull();
   });
 
   it('returns nothing when the selection is entirely outside the transcript', () => {
     const container = renderTranscript();
-    const outside = document.querySelector<HTMLElement>('.excerpt-toolbar__status')!;
+    const outside = document.querySelector<HTMLElement>('.position-ribbon')!;
 
     const range = document.createRange();
     range.selectNodeContents(outside);

@@ -76,7 +76,7 @@ const panel = () => screen.getByRole('dialog', { name: /code assignment/i });
 const region = (name: string) => panel().querySelector<HTMLElement>(`[data-region="${name}"]`)!;
 const announced = () => announcer.getHistory().map((entry) => entry.message);
 const excerptState = () =>
-  document.querySelector('.excerpt-toolbar__state')?.getAttribute('data-state') ?? '';
+  document.querySelector('[data-saved-excerpts]')?.getAttribute('data-excerpt-state') ?? '';
 
 /**
  * A seeded excerpt that nothing overlaps and that carries more than one code,

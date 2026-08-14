@@ -116,13 +116,22 @@ test('clicking a turn focuses it and draws nothing else', async ({ page }) => {
   await expect(page.locator('[data-captured]')).toHaveCount(0);
 });
 
-test('a visible control does the same thing as its chord', async ({ page }) => {
+test('the orientation commands have no controls, only chords', async ({ page }) => {
+  /*
+    The strip's three controls were removed as the prototype tidied up. This
+    used to assert that a control and its chord did the same thing; there is no
+    control now, so what is left to hold is that nothing on the page offers
+    these commands and the chords still answer.
+
+    D-057 named `help.shortcuts` as the surface that would teach them once the
+    strip went. It is unbuilt, and that gap is recorded in the decision log.
+  */
   await turns(page).nth(2).click();
 
-  await page.getByRole('button', { name: /^Speaker/ }).click();
-  await expect.poll(async () => await spoken(page)).toMatch(/speaker:/i);
+  for (const label of [/^Speaker/, /^Timestamp/, /^Where am I/]) {
+    await expect(page.getByRole('button', { name: label })).toHaveCount(0);
+  }
 
-  await turns(page).nth(2).click();
   await press(page, 'segment.speaker');
   await expect.poll(async () => await spoken(page)).toMatch(/speaker:/i);
 });

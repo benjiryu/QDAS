@@ -44,12 +44,11 @@ import { CodePanel } from '../codes/CodePanel';
 import { useCodePanel } from '../codes/useCodePanel';
 import type { SaveOutcome } from '../codes/useCodePanel';
 import { ExcerptContextMenu } from '../excerpt/ExcerptContextMenu';
-import { ExcerptToolbar } from '../excerpt/ExcerptToolbar';
+import { ExcerptChoices } from '../excerpt/ExcerptChoices';
 import type { CaptureTarget } from '../excerpt/capture';
 import { useExcerptSelection } from '../excerpt/useExcerptSelection';
 import { PositionRibbon } from './PositionRibbon';
 import { Transcript } from './Transcript';
-import { TranscriptToolbar } from './TranscriptToolbar';
 import { useTranscriptOrientation } from './useTranscriptOrientation';
 
 /**
@@ -968,6 +967,14 @@ export function TranscriptWorkspace({
         data-saved-excerpts={savedSummary.excerpts}
         data-saved-assignments={savedSummary.assignments}
         data-saved-notes={savedSummary.notes}
+        /*
+          The capture state, kept observable after the strip's readout went with
+          the strip. Not a visible representation and not meant to be one — the
+          blue band is that, and the announcement is the programmatic one — but
+          a test needs a way to ask which state the machine is in that does not
+          depend on a surface the product no longer has.
+        */
+        data-excerpt-state={excerpt.selection.state}
         hidden
       />
       {/*
@@ -979,8 +986,14 @@ export function TranscriptWorkspace({
         <PositionRibbon orientation={orientation} />
         <TextSizeControl />
       </div>
-      <TranscriptToolbar orientation={orientation} />
-      <ExcerptToolbar excerpt={excerpt} resolved={resolved} />
+      {/*
+        All that remains of the command strip: the chooser, and only while there
+        is a choice pending. The five controls were removed as the prototype
+        tidied up; every command they carried is a chord, and capture is also on
+        the context menu. D-030 keeps this, because overlapping excerpts must be
+        asked about rather than guessed between.
+      */}
+      <ExcerptChoices excerpt={excerpt} />
       {/* Section 2: opens over the transcript on a selection, and nowhere
           else. It renders nothing until then. */}
       <ExcerptContextMenu excerpt={excerpt} />
