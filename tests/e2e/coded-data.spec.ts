@@ -172,21 +172,152 @@ test('every filter pill reads, at every level', async ({ page }) => {
   }
 });
 
-test('level survives greyscale: indentation, not hue alone', async ({ page }) => {
-  // D-062 makes indentation the non-colour channel. A reader with a colour
-  // vision difference, or one at forced colours, still sees the hierarchy.
+test('the list is flat: every pill shares a left edge', async ({ page }) => {
+  // The D-062 amendment removes indentation. Level moves entirely to the fill
+  // treatment, which the next test measures.
   await asLead(page);
 
-  const levels = await page.evaluate(() =>
+  const lefts = await page.evaluate(() =>
     Array.from(document.querySelectorAll<HTMLElement>('.coded-data__filter')).map((row) => ({
       level: row.dataset.level ?? '0',
-      left: row.getBoundingClientRect().left,
+      left: Math.round(row.getBoundingClientRect().left),
     })),
   );
 
-  const leftAt = (level: string) =>
-    Math.min(...levels.filter((row) => row.level === level).map((row) => row.left));
+  expect(new Set(lefts.map((row) => row.level)).size).toBeGreaterThanOrEqual(3);
+  expect(new Set(lefts.map((row) => row.left)).size, 'one left edge for every level').toBe(1);
+});
 
-  expect(leftAt('1')).toBeGreaterThan(leftAt('0'));
-  expect(leftAt('2')).toBeGreaterThan(leftAt('1'));
+test('level survives greyscale: fill density, not hue alone', async ({ page }) => {
+  /*
+    The channel that replaced indentation, and the claim the amendment makes for
+    it. Asserted in luminance rather than colour: three steps a reader sees as
+    dark, pale and white are three steps in greyscale too, which is what makes
+    this legitimate as the level channel at all.
+  */
+  await asLead(page);
+
+  const byLevel = await page.evaluate(
+    ([luminanceSource]) => {
+      const luminance = eval(luminanceSource) as (colour: string) => number;
+      /*
+        Within one family, so the comparison is levels rather than hues: a red
+        parent against a yellow child would measure the palette, not the
+        channel. The family is chosen for having all three levels on screen
+        rather than named, since which codes are used is the fixture's business.
+      */
+      const byToken = new Map<string, Map<string, number>>();
+
+      for (const row of Array.from(
+        document.querySelectorAll<HTMLElement>('.coded-data__filter[data-level]'),
+      )) {
+        const pill = row.querySelector<HTMLElement>('.coded-data__filter-name')!;
+        const token = pill.dataset.colorToken;
+        if (!token) continue;
+        const levels = byToken.get(token) ?? new Map<string, number>();
+        const level = row.dataset.level ?? '0';
+        if (!levels.has(level)) {
+          levels.set(level, luminance(getComputedStyle(pill).backgroundColor));
+        }
+        byToken.set(token, levels);
+      }
+
+      const complete = [...byToken.values()].find((levels) => levels.size >= 3);
+      return complete ? Object.fromEntries(complete) : {};
+    },
+    [
+      `(colour) => {
+        const [r, g, b] = colour.match(/\\d+/g).slice(0, 3).map((v) => {
+          const s = Number(v) / 255;
+          return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+        });
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+      }`,
+    ],
+  );
+
+  // Solid, tinted, white: each step lighter than the last.
+  expect(byLevel['0']).toBeLessThan(byLevel['1']);
+  expect(byLevel['1']).toBeLessThan(byLevel['2']);
+});
+
+test('the grandchild outline, measured per family', async ({ page }) => {
+  /*
+    The check Task 42 asks for, and it records a shortfall rather than asserting
+    one away.
+
+    The amendment says "the gray row background provides the shape contrast" at
+    this level. It does not: a white pill is 1.21:1 against the selected row's
+    grey and has no boundary at all against the white page behind an unselected
+    one, so the pill's shape rests on its outline alone. Four families' shade-1
+    outlines are under the 3:1 a non-text indicator needs.
+
+    Shipped as designed under the amendment's own session-evidence flag. This
+    test pins what is true today — including which families fall short — so a
+    token change is reported rather than absorbed, and so the session has the
+    numbers instead of rediscovering them.
+  */
+  await asLead(page);
+
+  const outlines = await page.evaluate(
+    ([contrastSource]) => {
+      const contrast = eval(contrastSource) as (a: string, b: string) => number;
+      const probe = document.createElement('span');
+      document.body.append(probe);
+
+      const measured = Object.fromEntries(
+        ['yellow', 'orange', 'l-green', 's-green', 'red', 'blue'].map((family) => {
+          probe.style.color = `var(--${family}-1)`;
+          const border = getComputedStyle(probe).color;
+          return [family, contrast(border, 'rgb(255, 255, 255)')];
+        }),
+      );
+      probe.remove();
+      return measured;
+    },
+    [
+      `(a, b) => {
+        const lum = (c) => {
+          const [r, g, b] = c.match(/\\d+/g).slice(0, 3).map((v) => {
+            const s = Number(v) / 255;
+            return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+          });
+          return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        };
+        const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
+        return (hi + 0.05) / (lo + 0.05);
+      }`,
+    ],
+  );
+
+  // The four the amendment's note is about, named as the task names them.
+  expect(outlines.yellow).toBeLessThan(3);
+  expect(outlines.orange).toBeLessThan(3);
+  expect(outlines['l-green']).toBeLessThan(3);
+  expect(outlines['s-green']).toBeLessThan(3);
+
+  // And the ones that do clear it, so this is a per-family record rather than a
+  // blanket claim that the outline never works.
+  expect(outlines.red).toBeGreaterThan(3);
+  expect(outlines.blue).toBeGreaterThan(3);
+});
+
+test('"All codes" is plain grey, carrying no family hue', async ({ page }) => {
+  // It belongs to no family, so it wears none. Per the amendment.
+  await asLead(page);
+
+  const first = await page.evaluate(() => {
+    const pill = document
+      .querySelector<HTMLElement>('.coded-data__filter')!
+      .querySelector<HTMLElement>('.coded-data__filter-name')!;
+    return {
+      text: pill.textContent,
+      token: pill.dataset.colorToken ?? null,
+      background: getComputedStyle(pill).backgroundColor,
+    };
+  });
+
+  expect(first.text).toBe('All codes');
+  expect(first.token).toBeNull();
+  expect(first.background).toBe('rgb(233, 233, 233)');
 });

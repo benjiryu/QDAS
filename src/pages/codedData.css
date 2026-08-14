@@ -88,14 +88,16 @@
 }
 
 /*
- * The filter pill carries its family's hue again, per D-062, and its level with
- * it.
+ * The filter pill carries its family's hue, per D-062, and its level with it.
  *
- * `em` padding and radius so the pill grows around a name the reader has
- * scaled, the same treatment D-061 gave every other pill.
+ * Flat since the D-062 amendment: every pill shares a left edge and the fill
+ * treatment carries level on its own, where indentation used to. Padding is
+ * roomier per the amendment and stays in `em`, so a reader who has scaled the
+ * names keeps the same proportions rather than watching the text outgrow its
+ * pill. D-061.
  */
 .coded-data__filter[data-level] .coded-data__filter-name {
-  padding: 0.05em 0.5em;
+  padding: 0.2em 0.75em;
   border-radius: 999em;
   border: 1px solid var(--code-strong, var(--border));
   background: var(--code-fill, var(--row-bg));
@@ -103,36 +105,49 @@
 }
 
 /*
- * Level 1 takes the lighter shade, level 2 and deeper no fill at all.
+ * "All codes" belongs to no family, so it wears none — plain grey per the
+ * amendment, rather than falling through to a hue it has no claim on.
  *
- * Only two of the family's three shades take black text: shade-1 measures
- * 3.43:1 at worst, where 4.5:1 is the floor, so it cannot hold a label. Rather
- * than invent a fourth colour, the third level is the pill's border alone —
- * progressively lighter carried to its end. Black on shade-2 is 6.95:1 at
- * worst and on shade-3 is 13.34:1, so every level reads.
+ * Selected by the absence of a colour token rather than by a class of its own:
+ * one condition, and it cannot come apart from the thing it describes.
+ */
+.coded-data__filter .coded-data__filter-name:not([data-color-token]) {
+  background: var(--row-bg);
+  border-color: var(--color-grey-750);
+}
+
+/*
+ * Three fills for three levels: solid, tinted, white with a coloured outline.
+ *
+ * The channel is fill *density* rather than hue, which is what makes it survive
+ * greyscale — the three steps differ in luminance, so a reader with a colour
+ * vision difference still sees three levels. That is the claim the amendment
+ * makes for it, and a browser test measures the luminances rather than trusting
+ * the intent.
+ *
+ * Only two of the family's three shades can hold black text — shade-1 is 3.43:1
+ * at worst against a 4.5:1 floor — so the third level is white rather than a
+ * darker shade. Black on shade-2 is 6.95:1 at worst, on shade-3 13.34:1, and on
+ * white 21:1.
+ *
+ * Recorded, because it is measured and not true: the amendment says "the gray
+ * row background provides the shape contrast" at this level, and it does not.
+ * A white pill is 1.21:1 against the selected row's grey and has no boundary at
+ * all against the white page behind an unselected one, so the pill's shape
+ * rests on the outline — which is 1.69:1 for yellow, 2.00:1 for light green,
+ * 2.37:1 for sea green and 2.41:1 for orange, all under the 3:1 a non-text
+ * indicator needs. Those four families have no reliable grandchild boundary.
+ * Shipped as designed under the amendment's own session-evidence flag; the
+ * numbers are in the decision log and on the progress line so the session can
+ * act on them. The lineage description carries level regardless, for anyone
+ * reading with a screen reader.
  */
 .coded-data__filter[data-level='1'] .coded-data__filter-name {
   background: var(--code-wash, var(--row-bg));
 }
 
 .coded-data__filter[data-level='2'] .coded-data__filter-name {
-  background: none;
-}
-
-/*
- * Indentation is the non-colour channel, per D-062: level is never carried by
- * hue alone, and this is what survives greyscale and a colour vision
- * difference.
- *
- * In `em` so it tracks the reading scale rather than drifting away from the
- * names it indents as they grow. D-061.
- */
-.coded-data__filter[data-level='1'] {
-  margin-left: 1.25em;
-}
-
-.coded-data__filter[data-level='2'] {
-  margin-left: 2.5em;
+  background: var(--color-white);
 }
 
 .coded-data__filter[data-selected] .coded-data__count {
