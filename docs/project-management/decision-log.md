@@ -1176,3 +1176,13 @@ After the flatten the rotor shows one navigation landmark, the sidebar, which is
 **Built by Task 47, and it amended the accessibility contract.** Contract section 2.1 required "one `navigation` for application-level navigation, a second labeled `navigation` for project-level navigation", which this decision contradicts and did not say it was amending — unlike D-051, which carries the clause for the same section. Amended by the task that built this, since the contract outranks the decision log in this repository's source-of-truth order and a contract line the build knowingly violates is worse than either.
 
 Two tests carried the old structure as their assertion and now carry the new one: the shell's landmark test, which counted two navigation landmarks, and the list-naming test, which named the wrapper's list. `.nav-list` was used by nothing else and went with the element. Nothing about tab order or pointer behaviour moved: the removed wrappers held no tab stop, and the banner was already a flex row whose three items are the same three.
+
+## D-069 Notes page entries: two voices, each named in both channels
+
+Date: 2026-08 | Workflow: notes | Status: approved. Session finding: readers could not tell excerpt text from note text
+
+The excerpt disclosure is removed; the excerpt renders in full. An entry interleaves two voices — the participant's quoted words and the coder's own — and each now carries identity in both channels rather than styling alone.
+
+Visual: the excerpt keeps its gray background block; the note keeps the edge-bar card. Programmatic: the excerpt is a `blockquote`, which is semantically true and announced at default verbosity; the note text is preceded by a visually-hidden "Note:" prefix. Since blockquote announcements ride the user's verbosity setting, the prefix is the load-bearing programmatic marker: plain text, cannot be turned off. The speaker name continues to head the excerpt.
+
+Removing the disclosure also removes a control from the middle of every entry, per D-068's cost principle. Long excerpts render whole; the turn fallback's whole-turn captures are accepted as the cost.

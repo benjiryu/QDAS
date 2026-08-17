@@ -1391,3 +1391,15 @@ document has exactly one navigation landmark, the sidebar; the existing
 role="application" guard stays. When tests pass, commit and update the
 progress line in the same commit. Do not push.
 ```
+
+### Task 48. Notes entries name their two voices
+
+```
+Implement decision D-069 per the amended docs/pages/destinations.md section
+3. Remove the excerpt disclosure; render the excerpt in full as a blockquote
+on the gray background block. Prefix the note text with visually-hidden
+"Note:" inside the edge-bar card. Entry order: speaker, excerpt, note,
+codes. Tests: no disclosure control remains in entries; the excerpt is a
+blockquote; the accessible text of the note begins with "Note:". When tests
+pass, commit and update the progress line in the same commit. Do not push.
+```
