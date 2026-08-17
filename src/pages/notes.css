@@ -55,20 +55,25 @@
   font-size: 0.9em;
 }
 
+/*
+ * The participant's voice, per D-069: one grey block holding the whole passage,
+ * where a disclosure used to hold a truncated one.
+ *
+ * `margin: 0` is not tidiness. A `blockquote` carries a user-agent
+ * `margin: 1em 40px`, and eighty pixels of horizontal margin inside a 320px
+ * column is precisely the reflow failure contract 2.5 forbids and the Notes
+ * stacking test exists to catch.
+ *
+ * Long words break for the same reason. Nothing truncates any more, so a URL or
+ * a long unbroken token in a captured passage now reaches this box whole.
+ */
 .notes__excerpt {
   font-size: var(--reading-font-size);
   margin: 0;
-}
-
-.notes__excerpt summary {
-  cursor: pointer;
-}
-
-.notes__excerpt-full {
-  margin: 0.35rem 0 0;
   padding: 0.35rem 0.5rem;
   background: var(--row-bg);
   border-radius: var(--radius-small);
+  overflow-wrap: break-word;
 }
 
 .notes__codes {

@@ -387,8 +387,6 @@ function NoteCard({
   onOpen: (entry: NoteEntry) => void;
   registerEntry: RegisterEntry;
 }) {
-  const excerptId = useId();
-
   return (
     <article className="notes__card" data-note-id={entry.noteId} data-scope={entry.scope}>
       {entry.excerpt ? (
@@ -418,18 +416,39 @@ function NoteCard({
           </p>
 
           {/*
-            The passage itself. Truncated on screen with the whole of it behind
-            a disclosure: a note about a long passage should not make the reader
-            scroll past the passage to reach the note.
+            The participant's voice, per D-069, and a `blockquote` because that
+            is what it is: quoted words from someone who is not the coder. The
+            element is announced at default verbosity, so the visual grey block
+            and the semantics say the same thing.
+
+            Whole, with no truncation and no disclosure. Readers could not tell
+            excerpt from note, and a control in the middle of every entry was
+            being operated on every visit just to read past it — D-068's cost
+            principle. Long excerpts render long; whole-turn captures from the
+            turn fallback are the accepted cost.
 
             The speaker is not repeated here. It is in the link above, and one
             fact rendering twice in the same channel is the defect the D-058
             addendum removes.
           */}
-          <details className="notes__excerpt">
-            <summary id={excerptId}>{truncate(entry.excerpt.text)}</summary>
-            <p className="notes__excerpt-full">{entry.excerpt.text}</p>
-          </details>
+          <blockquote className="notes__excerpt">{entry.excerpt.text}</blockquote>
+
+          {/*
+            The coder's voice, and the marker that carries it programmatically.
+
+            The prefix is the load-bearing half of D-069 rather than a belt to
+            the blockquote's braces: a blockquote announcement rides the
+            reader's verbosity setting and can be turned off, and plain text
+            cannot. So an entry names both of its voices whatever the settings.
+
+            Only on this branch. A file-wide or project note is one voice with
+            nothing to distinguish itself from, and destinations.md amends only
+            the excerpt-note bullet.
+          */}
+          <p className="notes__text">
+            <span className="visually-hidden">Note: </span>
+            {entry.text}
+          </p>
 
           {/*
             One channel each, the treatment the transcript rail already carries.
@@ -462,7 +481,6 @@ function NoteCard({
             </p>
           ) : null}
 
-          <p className="notes__text">{entry.text}</p>
         </>
       ) : (
         <>
@@ -494,8 +512,3 @@ function NoteCard({
   );
 }
 
-/** Enough to recognise the passage, with the rest behind the disclosure. */
-function truncate(text: string): string {
-  const limit = 90;
-  return text.length <= limit ? text : `${text.slice(0, limit).trimEnd()}…`;
-}

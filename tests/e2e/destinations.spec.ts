@@ -361,6 +361,78 @@ test('the sidebar reflows at 320px without scrolling sideways', async ({ page })
 
 /* ---------- The Notes page, per D-058 ---------- */
 
+/**
+ * Codes and notes a turn, so the Notes page has an excerpt entry to render.
+ *
+ * The fixture seeds none the current coder can read — every seeded excerpt note
+ * is another coder's and R-4 hides it — so the only route to one is to write
+ * it, which is also the route a participant takes.
+ */
+async function noteAnExcerpt(page: import('@playwright/test').Page, text: string) {
+  await page.goto(`${projectUrl}/sources/${source.sourceId}`);
+  await page.locator('[data-turn-id]').first().click();
+  await page.keyboard.press(
+    (await page.evaluate(() => /Mac|iPhone|iPad/.test(navigator.userAgent)))
+      ? 'Control+Shift+Enter'
+      : 'Control+Alt+Enter',
+  );
+
+  const panel = page.getByRole('dialog', { name: /code assignment/i });
+  await expect(panel).toBeVisible();
+  await panel.locator('[data-code-id]').first().check();
+  await panel.getByRole('button', { name: /add note/i }).click();
+  await page.getByLabel(/note about this excerpt/i).fill(text);
+  await panel.getByRole('button', { name: 'Save & Close' }).click();
+  await expect(panel).toHaveCount(0);
+
+  /*
+    To the Notes page by following the sidebar, not by `goto`. The session's
+    work lives in a module store, so a full page load throws it away and the
+    page renders only the seeded notes — which is exactly the state that would
+    have made these tests pass while looking at nothing.
+  */
+  await page.getByRole('link', { name: 'Notes' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Notes' })).toBeVisible();
+}
+
+test('the excerpt reads whole and stays inside 320px, per D-069', async ({ page }) => {
+  /*
+    The blockquote is new box model on a surface that already reflows tightly: a
+    user agent gives it `margin: 1em 40px`, and eighty pixels of horizontal
+    margin in a 320px column is the failure contract 2.5 forbids. jsdom cannot
+    answer this — it has no layout — and the excerpt is no longer truncated, so
+    a whole captured turn is what has to fit.
+  */
+  await page.setViewportSize({ width: 320, height: 900 });
+  await noteAnExcerpt(page, 'A thought about this passage.');
+
+  const quote = page.locator('.notes__excerpt').first();
+  await expect(quote).toBeVisible();
+
+  const geometry = await page.evaluate(() => {
+    const node = document.querySelector('.notes__excerpt')!;
+    const card = node.closest('.notes__card')!;
+    return {
+      overflows: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+      spills: node.getBoundingClientRect().right > card.getBoundingClientRect().right + 1,
+      quoted: node.tagName.toLowerCase(),
+    };
+  });
+
+  expect(geometry.quoted).toBe('blockquote');
+  expect(geometry.overflows, 'the page scrolls sideways at 320px').toBe(false);
+  expect(geometry.spills, 'the quote reaches past its card').toBe(false);
+});
+
+test('the notes page with an excerpt entry has no accessibility violations', async ({ page }) => {
+  // The existing axe run sees only the two scoped notes, so it never looks at
+  // the blockquote or the hidden "Note:" prefix. This one does.
+  await noteAnExcerpt(page, 'A thought about this passage.');
+
+  await expect(page.locator('.notes__excerpt').first()).toBeVisible();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+});
+
 test('the notes columns stack in reading order at 320px', async ({ page }) => {
   /*
     D-033: the narrow stack is the layout that is designed and the wide one

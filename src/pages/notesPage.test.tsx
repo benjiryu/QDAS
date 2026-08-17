@@ -299,37 +299,40 @@ describe('an excerpt note entry, per section 3', () => {
   });
 });
 
+
+/**
+ * Codes a fresh turn and writes a note on it in one save.
+ *
+ * The code panel rather than the isolated one, because this needs an excerpt
+ * carrying both — which is the entry that has codes to render, and the route
+ * a coder actually takes to produce one.
+ */
+async function codeAndNoteFreshTurn(text: string) {
+  const turn = Array.from(document.querySelectorAll<HTMLElement>('[data-turn-id]')).find(
+    (candidate) => candidate.querySelector('[data-coded-run]') === null,
+  )!;
+  act(() => turn.focus());
+  chord('excerpt.code');
+
+  const panel = await screen.findByRole('dialog', { name: /code assignment/i });
+  fireEvent.click(panel.querySelector(`[data-code-id="${fixture.codes[0].codeId}"]`)!);
+  fireEvent.click(within(panel).getByRole('button', { name: /add note/i }));
+  fireEvent.change(
+    within(panel).getByRole('textbox', { name: /note about this excerpt/i }),
+    { target: { value: text } },
+  );
+  fireEvent.click(within(panel).getByRole('button', { name: 'Save & Close' }));
+  await waitFor(() =>
+    expect(screen.queryAllByRole('dialog', { name: /code assignment/i })).toHaveLength(0),
+  );
+
+  const speaker = turn.querySelector('.transcript-turn__speaker')!.textContent!;
+  return { turnId: turn.dataset.turnId!, speaker };
+}
+
+
+
 describe('one channel per fact, per the D-058 addendum', () => {
-  /**
-   * Codes a fresh turn and writes a note on it in one save.
-   *
-   * The code panel rather than the isolated one, because this needs an excerpt
-   * carrying both — which is the entry that has codes to render, and the route
-   * a coder actually takes to produce one.
-   */
-  async function codeAndNoteFreshTurn(text: string) {
-    const turn = Array.from(document.querySelectorAll<HTMLElement>('[data-turn-id]')).find(
-      (candidate) => candidate.querySelector('[data-coded-run]') === null,
-    )!;
-    act(() => turn.focus());
-    chord('excerpt.code');
-
-    const panel = await screen.findByRole('dialog', { name: /code assignment/i });
-    fireEvent.click(panel.querySelector(`[data-code-id="${fixture.codes[0].codeId}"]`)!);
-    fireEvent.click(within(panel).getByRole('button', { name: /add note/i }));
-    fireEvent.change(
-      within(panel).getByRole('textbox', { name: /note about this excerpt/i }),
-      { target: { value: text } },
-    );
-    fireEvent.click(within(panel).getByRole('button', { name: 'Save & Close' }));
-    await waitFor(() =>
-      expect(screen.queryAllByRole('dialog', { name: /code assignment/i })).toHaveLength(0),
-    );
-
-    const speaker = turn.querySelector('.transcript-turn__speaker')!.textContent!;
-    return { turnId: turn.dataset.turnId!, speaker };
-  }
-
   const excerptCard = () =>
     document.querySelector('[data-scope="excerpt"]')!.closest('[data-note-id]') as HTMLElement;
 
@@ -448,5 +451,107 @@ describe('the empty state names both routes', () => {
     const empty = screen.getByText(/have not written any notes/i);
     expect(empty, 'names noting a passage').toHaveTextContent(/Add note/);
     expect(empty, 'and the New note button').toHaveTextContent(/New note button/);
+  });
+});
+
+describe('an entry names its two voices, per D-069', () => {
+  /*
+    A session found that readers could not tell excerpt text from note text.
+    Each voice now carries identity in both channels: the participant's words
+    are a `blockquote` on the grey block, the coder's are preceded by a
+    visually-hidden "Note:".
+
+    The prefix rather than the blockquote is what these tests lean on hardest.
+    A blockquote announcement rides the reader's verbosity setting; plain text
+    does not, so the prefix is the part that cannot be turned off.
+  */
+  const excerptCard = () =>
+    document.querySelector('[data-scope="excerpt"]')!.closest('[data-note-id]') as HTMLElement;
+
+  /** Renders a coded and noted turn, then the Notes page showing it. */
+  async function noteOnAFreshTurn(text: string) {
+    const { unmount } = renderAt(`/projects/${project.projectId}/sources/${sourceA.sourceId}`);
+    const { turnId } = await codeAndNoteFreshTurn(text);
+    unmount();
+
+    renderAt(notesUrl);
+    return { card: excerptCard(), turnId };
+  }
+
+  it('leaves no disclosure in the entry, and no control but its link', async () => {
+    /*
+      D-069 removes the disclosure, which is D-068's cost principle applied
+      again: a control in the middle of every entry is operated on every visit
+      just to read past it.
+    */
+    const { card } = await noteOnAFreshTurn('A thought about this passage.');
+
+    expect(card.querySelector('details')).toBeNull();
+    expect(card.querySelector('summary')).toBeNull();
+    expect(within(card).queryAllByRole('button')).toHaveLength(0);
+    expect(within(card).getAllByRole('link')).toHaveLength(1);
+  });
+
+  it('renders the excerpt whole, as a blockquote', async () => {
+    // Whole is the point: the old treatment cut at 90 characters. Checked
+    // against the turn's own first and last sentences rather than a length,
+    // so this fails if either end goes missing rather than only if both do.
+    const { card, turnId } = await noteOnAFreshTurn('A thought about this passage.');
+
+    const quote = card.querySelector('blockquote')!;
+    expect(quote).not.toBeNull();
+
+    const segmentIds = fixture.turns.find((turn) => turn.turnId === turnId)!.segmentIds;
+    const textOf = (segmentId: string) =>
+      fixture.segments.find((segment) => segment.segmentId === segmentId)!.text;
+
+    expect(quote).toHaveTextContent(textOf(segmentIds[0]));
+    expect(quote).toHaveTextContent(textOf(segmentIds[segmentIds.length - 1]));
+    expect(quote.textContent).not.toContain('…');
+  });
+
+  it('begins the note’s accessible text with "Note:"', async () => {
+    // Read off the rendered element rather than the prefix span, because what
+    // is being asserted is what a reader hears, not that a span exists.
+    const { card } = await noteOnAFreshTurn('A thought about this passage.');
+
+    const note = card.querySelector('.notes__text')!;
+    expect(note.textContent).toMatch(/^Note:\s*A thought about this passage\.$/);
+
+    // Off the screen and in the tree, per D-069: identity in both channels
+    // means the visible entry is not changed by it.
+    expect(note.querySelector('.visually-hidden')).toHaveTextContent('Note:');
+  });
+
+  it('reads speaker, excerpt, note, codes, in that order', async () => {
+    const { card } = await noteOnAFreshTurn('A thought about this passage.');
+
+    const order = [
+      card.querySelector('.notes__link')!,
+      card.querySelector('blockquote')!,
+      card.querySelector('.notes__text')!,
+      card.querySelector('.notes__codes')!,
+    ];
+
+    for (let i = 0; i < order.length - 1; i += 1) {
+      expect(
+        order[i].compareDocumentPosition(order[i + 1]) & Node.DOCUMENT_POSITION_FOLLOWING,
+        `part ${i + 1} should precede part ${i + 2}`,
+      ).toBeTruthy();
+    }
+  });
+
+  it('says nothing of two voices where there is only one', async () => {
+    /*
+      Scoped to excerpt entries deliberately. destinations.md amends only that
+      bullet, a project note has no quoted words to be distinguished from, and
+      the prefix would land inside the button's accessible name, which the
+      D-058 addendum composed as "[text], [source]".
+    */
+    renderAt(notesUrl);
+
+    const card = document.querySelector<HTMLElement>('[data-scope="project"]')!;
+    expect(card.querySelector('blockquote')).toBeNull();
+    expect(card.textContent).not.toContain('Note:');
   });
 });

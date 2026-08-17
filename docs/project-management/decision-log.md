@@ -1186,3 +1186,11 @@ The excerpt disclosure is removed; the excerpt renders in full. An entry interle
 Visual: the excerpt keeps its gray background block; the note keeps the edge-bar card. Programmatic: the excerpt is a `blockquote`, which is semantically true and announced at default verbosity; the note text is preceded by a visually-hidden "Note:" prefix. Since blockquote announcements ride the user's verbosity setting, the prefix is the load-bearing programmatic marker: plain text, cannot be turned off. The speaker name continues to head the excerpt.
 
 Removing the disclosure also removes a control from the middle of every entry, per D-068's cost principle. Long excerpts render whole; the turn fallback's whole-turn captures are accepted as the cost.
+
+**Built by Task 48.** Entry order is speaker, excerpt, note, codes: the note moved up from last, so the two voices are adjacent and the codes read as a coda to both rather than as an interruption between them.
+
+**The prefix is scoped to excerpt entries**, which this decision implies and does not say. Its own reasoning is two voices; a file-wide or project note has one, with nothing to distinguish itself from. There is a second reason in the build: a non-excerpt entry renders its text inside the button that opens it, so a prefix there would land in an accessible name the D-058 addendum composed as "[text], [source]" — announcing a distinction that is not being drawn while changing a name that was.
+
+The `blockquote` needs `margin: 0`. A user agent gives it `margin: 1em 40px`, and eighty pixels of horizontal margin in a 320px column is the reflow failure contract 2.5 forbids; long words break for the same reason, since nothing truncates any more and a captured passage can now carry an unbroken token to the page whole. Both are held by a browser test, jsdom having no layout to answer with.
+
+Nothing tested the entry's structure before this: no assertion anywhere touched the disclosure, the truncation, or the excerpt's rendered text. The tests added here are coverage rather than repair.
