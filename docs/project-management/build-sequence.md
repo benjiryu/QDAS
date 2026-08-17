@@ -1403,3 +1403,34 @@ codes. Tests: no disclosure control remains in entries; the excerpt is a
 blockquote; the accessible text of the note begins with "Note:". When tests
 pass, commit and update the progress line in the same commit. Do not push.
 ```
+
+### Task 49. The code editor panel
+
+```
+Implement the codebook editing half of decision D-070 per the amended
+docs/pages/destinations.md section 1. Create new code button and
+per-provisional Accept, both rendered only for the qualitative lead during
+setup, review, or recoding. The editor panel: name required and unique
+codebook-wide case-insensitive; definition; parent combobox with D-054
+lineage offering only families and children; color pick from unused named
+hues only when no parent. Explicit Save; any other exit discards; validation
+blocks save, never close; focus entry to the name field, focus return to the
+invoker. Accept opens the editor prefilled and save moves the provisional
+into the canonical hierarchy, assignments following. New codes append after
+siblings. Editing an existing code reuses the panel with parent and color
+immutable. Version bumps at the phase boundary when edits occurred. When
+tests pass, commit and update the progress line in the same commit. Do not
+push.
+```
+
+### Task 50. Propose a code from the empty search
+
+```
+Implement the coder-proposal half of decision D-070 per the new section in
+docs/patterns/code-selection.md. The empty search result in the coding panel
+offers Propose '[query]' as a new code: creates it provisional, checks it
+for the current capture, returns focus to the search field, announces
+discretely. No standing control outside the empty state. Provisional marking
+in both channels wherever codes render. When tests pass, commit and update
+the progress line in the same commit. Do not push.
+```

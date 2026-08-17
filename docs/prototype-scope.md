@@ -51,7 +51,7 @@ Present enough to keep the workflow coherent, not built.
 ## Out of scope for v0.1
 
 - Survey response coding. The data model accommodates it; no interface is built.
-- Codebook editing, approval, versioning, and change propagation.
+- Codebook merge and reject resolution, re-parenting of canonical codes, and change propagation. (Creation, coder proposal, and Accept resolution became real per D-070; version numbering bumps at phase boundaries but full version machinery stays simulated.)
 - Audio playback and transcript-audio synchronization. Docked per D-014 when it is built.
 - Administrator dashboard.
 - Home and dashboard beyond a minimal route into a project.

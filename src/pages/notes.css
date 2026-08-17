@@ -66,9 +66,15 @@
  *
  * Long words break for the same reason. Nothing truncates any more, so a URL or
  * a long unbroken token in a captured passage now reaches this box whole.
+ *
+ * Italic, the conventional treatment for quoted speech, and a third channel on
+ * top of D-069's two rather than a replacement for either: the grey block and
+ * the `blockquote` still carry the distinction on their own, so a reader who
+ * cannot make out the slant loses nothing.
  */
 .notes__excerpt {
   font-size: var(--reading-font-size);
+  font-style: italic;
   margin: 0;
   padding: 0.35rem 0.5rem;
   background: var(--row-bg);

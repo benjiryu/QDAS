@@ -329,3 +329,7 @@ Owner: Benji. Evidence needed: magnification session. Temporary assumption: inde
 
 **Can a coder mark an assignment uncertain, and does uncertainty raise review priority?**
 Owner: Angie. Evidence needed: qualitative lead interview. Temporary assumption: `uncertaintyFlag` exists in the model and is settable, and does not yet affect review ordering. Implementation can proceed.
+
+## Propose a code from the empty search
+
+Per D-070. When a search in the coding panel yields no results, the empty state offers one action: "Propose '[query]' as a new code". Activating it creates the code as provisional, name from the query, checks it for the current capture, returns focus to the search field, and announces the result discretely ("Proposed and checked: [name]"). The affordance renders only in the empty-result state, so the panel carries no standing chrome for it. Provisional codes are marked in both channels wherever they render and are fully usable until resolved on the Codebook page.
