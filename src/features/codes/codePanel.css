@@ -104,31 +104,51 @@
 }
 
 /*
- * The region's heading became this, per D-048. Styled as the create row is, so
- * the panel reads as one kind of surface rather than two, and so it does not
- * look like the heading it replaced.
+ * The panel's three disclosure rows: Open Codebook, Create new code, Add note.
+ *
+ * One treatment, stated once. Each of them expands something rather than doing
+ * something, which is the distinction this carries — grey rows expand, the
+ * footer's blue buttons act, and Save & Close is the panel's one primary.
+ *
+ * Open Codebook was grey first, per D-048, because "this opens a reference view
+ * and the blue treatment reads as a second primary action beside Save & Close".
+ * The same is true of the other two, and the radius here was already saying so:
+ * these take the disclosure radius rather than the footer's pill, because a row
+ * that expands is not the same kind of thing as a button that acts. Colour said
+ * the opposite until now.
+ *
+ * Grey-750 for the border and black for the text, deliberately not the grey-500
+ * pair, which is the disabled treatment. An enabled control wearing the
+ * disabled colours is worse than a blue one. Measured on these tokens: black
+ * text 17.3:1 on the fill, the border 6.96:1 against that fill and 8.45:1
+ * against the panel's white behind it, so neither is what a dead control looks
+ * like and the outline holds on both of its sides.
+ *
+ * Two consequences, measured rather than reasoned about. A drafted note's
+ * collapsed preview below the Edit note row now carries the same fill as the
+ * row: they stay distinct because the row keeps its border, 6.96:1 against that
+ * preview, and 5.6px of the panel's white sits between them. And `--row-bg` is
+ * scoped in the token file to selection states, so a third and fourth borrow of
+ * it here is flagged the way index.css flags its own rather than answered with
+ * a new token.
  */
-.code-panel__companion-toggle {
+.code-panel__companion-toggle,
+.code-panel__create-row {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
   font: inherit;
   padding: 0.4rem 0.9rem;
-  margin-bottom: 0.35rem;
   border-radius: var(--radius-medium);
-  /*
-     Grey rather than the secondary blue: this opens a reference view, and the
-     blue treatment reads as a second primary action beside Save & Close.
-
-     Grey-750 for the border and black for the text, deliberately not the
-     grey-500 pair, which is the disabled treatment. An enabled control wearing
-     the disabled colours is worse than a blue one. Black text sits at 17.3:1
-     here and the border at 6.96:1, so neither is what a dead control looks like.
-  */
   border: var(--border-thick) solid var(--color-grey-750);
   background: var(--row-bg);
   color: var(--color-black);
   cursor: pointer;
+}
+
+/* Only this one stands above a region rather than opening one. */
+.code-panel__companion-toggle {
+  margin-bottom: 0.35rem;
 }
 
 /*
@@ -335,25 +355,7 @@
   white-space: pre-wrap;
 }
 
-/*
- * Create code and Add note, each collapsed to one row. D-039.
- *
- * Secondary, like the other controls, but with the radius the tokens list for
- * disclosure containers rather than the pill the footer buttons take: a row
- * that expands is not the same kind of thing as a button that acts.
- */
-.code-panel__create-row {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  font: inherit;
-  padding: 0.4rem 0.9rem;
-  border-radius: var(--radius-medium);
-  border: var(--border-thick) solid var(--button-secondary-border);
-  background: var(--button-secondary-bg);
-  color: var(--button-secondary-text);
-  cursor: pointer;
-}
+/* Create code and Add note, each collapsed to one row. D-039. Styled above. */
 
 .code-panel__create-plus {
   font-size: 1.1em;

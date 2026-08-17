@@ -334,3 +334,101 @@ test('the open dialog has no accessibility violations', async ({ page }) => {
   const results = await new AxeBuilder({ page }).include('[role="dialog"]').analyze();
   expect(results.violations).toEqual([]);
 });
+
+/* ---------- The panel's three disclosure rows ---------- */
+
+/** WCAG relative luminance, so the thresholds are measured and not asserted. */
+const RATIO = `(a, b) => {
+  const lum = (c) => {
+    const [r, g, b] = c.match(/\\d+/g).slice(0, 3).map((v) => {
+      const s = Number(v) / 255;
+      return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}`;
+
+test('the three disclosure rows wear one treatment, and the footer does not', async ({ page }) => {
+  /*
+    Open Codebook, Create new code and Add note all expand something rather than
+    doing something, and since they share a treatment the panel says so: grey
+    rows expand, the footer's blue buttons act, Save & Close is the one primary.
+
+    In a browser because jsdom drops any declaration carrying `var()`, so every
+    colour here is invisible to it.
+  */
+  const treatmentOf = (selector: string) =>
+    page
+      .locator(selector)
+      .first()
+      .evaluate((node) => {
+        const style = getComputedStyle(node);
+        return {
+          background: style.backgroundColor,
+          border: style.borderTopColor,
+          text: style.color,
+        };
+      });
+
+  const codebook = await treatmentOf('.code-panel__companion-toggle');
+  const rows = await page
+    .locator('.code-panel__create-row')
+    .evaluateAll((nodes) =>
+      nodes.map((node) => {
+        const style = getComputedStyle(node);
+        return {
+          background: style.backgroundColor,
+          border: style.borderTopColor,
+          text: style.color,
+        };
+      }),
+    );
+
+  // Both of them: Create new code and Add note, not whichever comes first.
+  expect(rows).toHaveLength(2);
+  for (const row of rows) expect(row).toEqual(codebook);
+
+  /*
+    And distinct from a button that acts, which is the point of the treatment.
+
+    By name and exact, the way the primary-treatment test above does it, and not
+    by taking the footer's first button: Save & Close is disabled until
+    something is pending, and the disabled fill is grey-100 too — so measuring
+    it would have compared the new treatment against a coincidence.
+  */
+  const close = await page
+    .getByRole('button', { name: 'Close', exact: true })
+    .evaluate((node) => getComputedStyle(node).backgroundColor);
+  expect(close).not.toBe(codebook.background);
+});
+
+test('the disclosure rows clear contrast on both sides of their border', async ({ page }) => {
+  /*
+    Measured rather than trusted to the token audit, which speaks for other
+    pairings. The border has two sides — the row's own fill and the panel behind
+    it — and a control outlined against only one of them is outlined against
+    neither in practice.
+  */
+  const measured = await page.evaluate(
+    ([ratio]) => {
+      const contrast = eval(ratio) as (a: string, b: string) => number;
+      const row = document.querySelector('.code-panel__create-row')!;
+      const panel = document.querySelector('.code-panel')!;
+      const style = getComputedStyle(row);
+      const behind = getComputedStyle(panel).backgroundColor;
+
+      return {
+        text: contrast(style.color, style.backgroundColor),
+        borderInside: contrast(style.borderTopColor, style.backgroundColor),
+        borderOutside: contrast(style.borderTopColor, behind),
+      };
+    },
+    [RATIO],
+  );
+
+  expect(measured.text).toBeGreaterThanOrEqual(4.5);
+  expect(measured.borderInside).toBeGreaterThanOrEqual(3);
+  expect(measured.borderOutside).toBeGreaterThanOrEqual(3);
+});
