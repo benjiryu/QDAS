@@ -1194,3 +1194,19 @@ Removing the disclosure also removes a control from the middle of every entry, p
 The `blockquote` needs `margin: 0`. A user agent gives it `margin: 1em 40px`, and eighty pixels of horizontal margin in a 320px column is the reflow failure contract 2.5 forbids; long words break for the same reason, since nothing truncates any more and a captured passage can now carry an unbroken token to the page whole. Both are held by a browser test, jsdom having no layout to answer with.
 
 Nothing tested the entry's structure before this: no assertion anywhere touched the disclosure, the truncation, or the excerpt's rendered text. The tests added here are coverage rather than repair.
+
+## D-070 The codebook becomes editable: creation, coder proposal, and acceptance
+
+Date: 2026-08 | Workflow: codebook formation | Status: approved. Supersedes the prototype-scope exclusion of codebook editing; team answers by Benji
+
+The most drag-and-drop-bound workflow in commercial QDAS becomes keyboard-first: every major tool edits hierarchy by dragging, which is exactly what blind researchers cannot do. Hierarchy here is chosen, not dragged.
+
+**Gating.** Editing belongs to the qualitative lead role, only while no coding round is open: setup, review, recoding. The codebook version bumps at the phase boundary when edits occurred, so a round always references one stable version. Mid-round vocabulary drift is structurally impossible.
+
+**The editor panel.** A "Create new code" button at the top of the Codebook page opens a code editor panel; the page itself never edits, per the read-surface rule. Fields: name, required, unique codebook-wide case-insensitive; definition, open-ended per D-046; parent, a combobox of eligible codes carrying the D-054 lineage treatment, offering only families and children so depth caps at grandchild; color, present only when no parent is chosen, a pick from the unused named token hues, never a free color wheel. New codes append after their siblings in canonical order. **Close model, a recorded exception to D-042:** explicit Save creates; closing any other way discards; validation blocks save, never close. A half-defined code is nothing, unlike a half-written note.
+
+**Coder proposal.** During coding, the panel's empty search result offers "Propose '[query]' as a new code": name prefilled from the query, created provisional, and checked for the current excerpt in one action. The affordance lives at the failure point rather than as standing chrome, so the validated panel gains nothing participants must learn unless the vocabulary fails them. Provisionals are marked in both channels, sit in their labeled section, and are fully usable for coding until resolved.
+
+**Resolution: Accept only.** Each provisional entry offers Accept to the gated lead, opening the editor prefilled; save moves it into the canonical hierarchy, its assignments following automatically since the code keeps its identity. Merge and reject migrate other coders' assignments and are registered as Slice 3 work.
+
+**Contained deliberately:** no re-parenting of existing canonical codes, since moving a code across families changes its hue and every existing pill — a version-migration problem, deferred. Family cards keep their read-only color display; color is assigned only in the editor. Editing an existing code's name and definition uses the same panel; parent and color are immutable there.

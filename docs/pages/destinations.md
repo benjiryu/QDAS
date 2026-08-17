@@ -23,7 +23,7 @@ Content order: a **project files group**, then Code book, Coded data, Notes. No 
 
 **Own work only.** Coded data and Notes show the current coder's work. Other coders' assignments and notes stay invisible during independent coding per R-4; the seeded second coder's material does not appear on these pages.
 
-**Read surfaces, restated per D-058.** These pages edit nothing themselves; all editing routes through a panel — the coding panel via `excerpt.open`, or the isolated note panel via `note.open`, a note entry, or the Notes page's New note button. Codebook editing remains out of scope per prototype-scope.
+**Read surfaces, restated per D-058.** These pages edit nothing themselves; all editing routes through a panel — the coding panel via `excerpt.open`, or the isolated note panel via `note.open`, a note entry, or the Notes page's New note button, or the code editor panel via the Codebook page's Create new code button and per-provisional Accept, per D-070. The editor panel is the one panel with explicit-save close semantics, a recorded D-042 exception.
 
 **Empty, loading, and error states** are explicit: an empty Coded data page says the coder has not coded anything in this project yet and names the route to start; it is never a blank region.
 
@@ -53,7 +53,7 @@ The destination D-035 pointed definition lookup at. Its job: let a coder read an
 - Each card carries its family color as a read-only labeled value, "Color: [name]" with the swatch — not a control, per D-047. Card borders use the family shade-1 token; the four low-contrast hues noted in tokens.css apply here too, mitigated by the color name being text.
 - Deep-linkable: each code has a stable fragment id.
 - Search is retained per the standing structure rule even though the frame omits it: matches name, parent path, and definition; results in their own region above the unchanged canonical cards; query persists within the session.
-- Provisional codes appear in a separate labeled section after the canonical list, never interleaved.
+- Provisional codes appear in a separate labeled section after the canonical list, never interleaved. Per D-070 each provisional entry offers Accept to the qualitative lead during setup, review, or recoding, opening the code editor prefilled; the Create new code button at the top of the page is gated identically. Outside the gate neither control renders.
 
 **Acceptance criteria.**
 Given a captured excerpt with two codes checked, when the coder visits the Codebook and returns, then the capture, the checked codes, and any draft note are exactly as left (D-044).
