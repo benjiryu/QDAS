@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useSyncExternalStore } from 'react';
 import { useParams } from 'react-router';
 import { mergeSessionCodes, readCodebookEdits } from '../data/codebookStore';
 import { readProvisionalCodes } from '../data/codingSessionStore';
 import { createSeedFixture } from '../data/seed';
-import { readSimulatedSession } from '../data/simulatedSession';
+import { readSimulatedSession, subscribeToSimulatedSession } from '../data/simulatedSession';
 import { CodebookContent } from '../features/codebook/CodebookContent';
 import { CodeEditorPanel } from '../features/codebook/CodeEditorPanel';
 import { canEditCodebook } from '../features/codebook/resolveCodebookEditing';
@@ -40,7 +40,18 @@ export function CodebookPage() {
     nothing to subscribe to, which is how the rest of this build reads them.
   */
   const [revision, setRevision] = useState(0);
-  const session = readSimulatedSession();
+  /*
+    Subscribed since D-071 put a role switcher in the sidebar. A render-time
+    read was enough while the only role control lived on another route, so
+    changing it always meant a remount; from a control mounted beside this page,
+    nothing would have told it to look again and the Create button would simply
+    not appear.
+  */
+  const session = useSyncExternalStore(
+    subscribeToSimulatedSession,
+    readSimulatedSession,
+    readSimulatedSession,
+  );
   const mayEdit = canEditCodebook(session.role, session.phase);
 
   /*

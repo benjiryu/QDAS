@@ -341,7 +341,7 @@ test('the colour value needs no pan to the card edge at 400 percent', async ({ p
 /** Puts the facilitator scenario into a phase where the codebook may be edited. */
 async function asEditingLead(page: import('@playwright/test').Page) {
   await page.goto(`${projectUrl}/coded-data`);
-  await page.getByLabel('Role').selectOption('qualitativeLead');
+  await page.getByLabel('Role', { exact: true }).selectOption('qualitativeLead');
   await page.getByLabel('Project phase').selectOption('setup');
   // By the sidebar, not by `goto`: the scenario lives in a module store and a
   // full load would throw it away.
@@ -685,21 +685,46 @@ test('hover and the current destination wear one shape, per the D-059 addendum',
   );
 });
 
-test('the user title block sits at the top of the nav and is not a control', async ({ page }) => {
+test('the role switcher sits at the top of the nav and is readable on the blue', async ({
+  page,
+}) => {
+  /*
+    D-071 turned this block from static text into a control, reversing the D-059
+    addendum for it. What survives from that addendum is the placement and the
+    divider — drawn by the block's own border rather than by a separator
+    element, so a line stays decoration.
+
+    The contrast is the half jsdom cannot answer. The nav redefines its text to
+    white for the blue it paints on, so a select inheriting that without a
+    background of its own would be white on white.
+  */
   await page.goto(`/projects/${project.projectId}`);
 
   const block = page.locator('.project-nav__user');
   await expect(block).toBeVisible();
 
-  // Static text: nothing to click, nothing to tab to, and a divider drawn by
-  // its own border rather than by a separator element.
-  const shape = await block.evaluate((node) => ({
-    tag: node.tagName.toLowerCase(),
-    borderBottom: parseFloat(getComputedStyle(node).borderBottomWidth),
-    separators: node.parentElement?.querySelectorAll('hr').length ?? 0,
-  }));
+  const shape = await block.evaluate((node) => {
+    const select = node.querySelector('select')!;
+    const style = getComputedStyle(select);
+    return {
+      borderBottom: parseFloat(getComputedStyle(node).borderBottomWidth),
+      separators: node.parentElement?.querySelectorAll('hr').length ?? 0,
+      color: style.color,
+      background: style.backgroundColor,
+    };
+  });
 
-  expect(shape.tag).toBe('p');
   expect(shape.borderBottom).toBeGreaterThan(0);
   expect(shape.separators).toBe(0);
+  expect(shape.color).not.toBe(shape.background);
+
+  const ratio = await page.evaluate(
+    ([colours, contrast]) => {
+      const measure = eval(contrast as string) as (a: string, b: string) => number;
+      const [text, background] = colours as string[];
+      return measure(text, background);
+    },
+    [[shape.color, shape.background], CONTRAST] as const,
+  );
+  expect(ratio).toBeGreaterThanOrEqual(4.5);
 });

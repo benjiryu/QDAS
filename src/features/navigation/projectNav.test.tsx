@@ -1,10 +1,12 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act } from 'react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import App from '../../App';
 import { AnnouncerProvider, createAnnouncer } from '../../a11y';
 import { createSeedFixture } from '../../data/seed';
+import { writeSimulatedSession } from '../../data/simulatedSession';
 import { CURRENT_CODER_ID } from '../../data/seed/project';
 import { assignedSources } from './assignedSources';
 
@@ -29,9 +31,16 @@ const sources = assignedSources(
   project.activeCodingRoundId,
 );
 
+/** Held, so a test can read what was spoken. */
+let announcer = createAnnouncer();
+
+beforeEach(() => {
+  announcer = createAnnouncer();
+});
+
 function renderAt(path: string) {
   return render(
-    <AnnouncerProvider announcer={createAnnouncer()}>
+    <AnnouncerProvider announcer={announcer}>
       <MemoryRouter initialEntries={[path]}>
         <App />
       </MemoryRouter>
@@ -181,45 +190,108 @@ describe('the content order the rule fixes', () => {
   });
 });
 
-describe('the user title block, per the D-059 addendum', () => {
+describe('the role switcher, per D-071', () => {
   const block = () => document.querySelector<HTMLElement>('.project-nav__user');
+  const roleSelect = () => screen.getByLabelText('Role') as HTMLSelectElement;
 
-  it('reads the seeded user record rather than a string written here', () => {
+  it('offers the seeded titles rather than strings written here', () => {
     /*
-      The addendum's own condition: "the string comes from the seed user record,
-      never hardcoded in the component." Compared against the fixture, so
-      hardcoding the same words in the component would still fail the moment the
-      seed changed — which is the property being protected.
+      D-071 makes the select's value the displayed title, so the options are the
+      seeded records' own — compared against the fixture, so hardcoding the same
+      words in the component would still fail the moment the seed changed.
+
+      This replaces the D-059 addendum's static-text assertion. The block was a
+      paragraph and is a control now; the reversal is D-071's and is asserted
+      rather than deleted.
     */
     renderAt(`/projects/${project.projectId}`);
 
-    const seeded = fixture.users.find((user) => user.userId === CURRENT_CODER_ID)!;
-    expect(seeded.title).toBeTruthy();
-    expect(block()?.textContent).toBe(seeded.title);
+    const coder = fixture.users.find((user) => user.role === 'coder')!;
+    const lead = fixture.users.find((user) => user.role === 'qualitativeLead')!;
+    expect(coder.title).toBeTruthy();
+
+    const options = Array.from(roleSelect().options).map((option) => option.textContent);
+    expect(options).toEqual([coder.title, lead.title]);
   });
 
-  it('is neither a link nor a heading nor a tab stop', async () => {
-    // Static text, per the addendum. The reasoning D-043 gave the files label
-    // before D-059 made that one a destination: a stop that leads nowhere is
-    // worse than no stop, in the tab order or in the heading outline.
-    const user = userEvent.setup();
+  it('offers two roles and not the third', () => {
+    // Reviewer stays unoffered per D-071, and left the prototype-support
+    // surface with it, so no control can name a state another cannot show.
     renderAt(`/projects/${project.projectId}`);
 
-    const text = block()!;
-    expect(text.tagName.toLowerCase()).toBe('p');
-    expect(text.closest('a, button')).toBeNull();
-    expect(text).not.toHaveAttribute('tabindex');
-    expect(
-      screen.queryByRole('heading', { name: text.textContent ?? '' }),
-      'and it opens no section',
-    ).toBeNull();
+    const values = Array.from(roleSelect().options).map((option) => option.value);
+    expect(values).toEqual(['coder', 'qualitativeLead']);
+  });
 
-    const sidebar = screen.getByRole('navigation', { name: 'Project' });
-    const stops = within(sidebar).getAllByRole('link').length;
-    for (let index = 0; index < stops + 3; index += 1) {
-      await user.tab();
-      expect(document.activeElement).not.toBe(text);
-    }
+  it('is a labelled control, and the label is visible', () => {
+    // D-051 wants a label associated and present. A facilitator's control that
+    // hides what it does is the wrong thing to be subtle about.
+    renderAt(`/projects/${project.projectId}`);
+
+    const label = block()!.querySelector('label')!;
+    expect(label).toHaveTextContent('Role');
+    expect(label).not.toHaveClass('visually-hidden');
+    expect(label.getAttribute('for')).toBe(roleSelect().id);
+  });
+
+  it('announces the change once and leaves focus alone', () => {
+    /*
+      D-071: role change announces discretely and focus stays on the select.
+      Once per change — announced from the handler rather than an effect, which
+      would speak again on every re-render the store caused.
+    */
+    renderAt(`/projects/${project.projectId}`);
+    const select = roleSelect();
+    act(() => select.focus());
+
+    fireEvent.change(select, { target: { value: 'qualitativeLead' } });
+
+    const lead = fixture.users.find((user) => user.role === 'qualitativeLead')!;
+    const spoken = announcer.getHistory().filter((entry) => entry.message.startsWith('Role:'));
+    expect(spoken).toHaveLength(1);
+    expect(spoken[0].message).toBe(`Role: ${lead.title}`);
+    expect(select).toHaveFocus();
+  });
+
+  it('says nothing when the role does not change', () => {
+    renderAt(`/projects/${project.projectId}`);
+
+    fireEvent.change(roleSelect(), { target: { value: 'coder' } });
+
+    expect(announcer.getHistory().filter((entry) => entry.message.startsWith('Role:'))).toEqual([]);
+  });
+
+  it('reveals a gated control elsewhere without taking focus, and hides it again', async () => {
+    /*
+      Task 51's own acceptance, and the reason the store had to become
+      subscribable. Until D-071 the only role control lived on another route, so
+      switching always meant a remount and a fresh read; from a control mounted
+      beside every page, a reader holding a snapshot would simply not learn.
+
+      And the half that is easy to lose: controls appearing and vanishing
+      elsewhere never take focus. The facilitator is standing on the select, and
+      that is where they stay.
+    */
+    renderAt(`/projects/${project.projectId}/codebook`);
+    writeSimulatedSession({ phase: 'setup' });
+
+    const select = roleSelect();
+    act(() => select.focus());
+    expect(screen.queryByRole('button', { name: 'Create new code' })).toBeNull();
+
+    fireEvent.change(select, { target: { value: 'qualitativeLead' } });
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Create new code' })).toBeInTheDocument(),
+    );
+    expect(select).toHaveFocus();
+
+    fireEvent.change(select, { target: { value: 'coder' } });
+
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Create new code' })).toBeNull(),
+    );
+    expect(select).toHaveFocus();
   });
 
   it('is there with no project in context, since the landmark is', () => {

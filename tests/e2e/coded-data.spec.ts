@@ -17,7 +17,7 @@ const codedDataUrl = `/projects/${project.projectId}/coded-data`;
 /** The lead's view, so there is work on the page without coding any first. */
 async function asLead(page: import('@playwright/test').Page) {
   await page.goto(codedDataUrl);
-  await page.getByLabel('Role').selectOption('qualitativeLead');
+  await page.getByLabel('Role', { exact: true }).selectOption('qualitativeLead');
   await expect(page.locator('[data-excerpt-id]').first()).toBeVisible();
 }
 
@@ -86,7 +86,7 @@ test('the page has no accessibility violations in either view', async ({ page })
   await page.goto(codedDataUrl);
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
-  await page.getByLabel('Role').selectOption('qualitativeLead');
+  await page.getByLabel('Role', { exact: true }).selectOption('qualitativeLead');
   await expect(page.locator('[data-excerpt-id]').first()).toBeVisible();
   // The D-066 line only exists in this view, so this is the run that sees it.
   // Asserted rather than assumed: axe passing over a page that never rendered
@@ -124,7 +124,7 @@ test('the disclosed note is reading content and scales, per D-067 and D-061', as
   expect(Number(await page.locator('html').getAttribute('data-reading-scale'))).toBe(250);
 
   await page.goto(codedDataUrl);
-  await page.getByLabel('Role').selectOption('qualitativeLead');
+  await page.getByLabel('Role', { exact: true }).selectOption('qualitativeLead');
   await expect(page.locator('[data-excerpt-id]').first()).toBeVisible();
   await page.getByRole('button', { name: 'Note' }).first().click();
 

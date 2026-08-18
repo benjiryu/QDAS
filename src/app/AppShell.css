@@ -131,10 +131,41 @@ main {
  * to see rides on it, which is why it can be quiet.
  */
 .project-nav__user {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem;
   margin: 0 0 0.5rem;
   padding: 0.35rem 0.5rem 0.6rem;
   font-weight: var(--font-weight-bold);
   border-bottom: var(--border-thin) solid var(--color-blue-50);
+}
+
+/*
+ * The role switcher, per D-071.
+ *
+ * Its own colours rather than inherited ones: this subtree redefines `--text`
+ * to white for the blue it paints on, and a select taking that without a
+ * background of its own would be white on white. The white pill the nav's links
+ * already wear, so the one control here reads as belonging to it.
+ */
+.project-nav__role {
+  font: inherit;
+  padding: 0.15rem 0.4rem;
+  color: var(--color-blue-100);
+  background: var(--color-white);
+  border: var(--border-thin) solid var(--color-white);
+  border-radius: var(--radius-small);
+}
+
+/*
+ * And its own ring. The nav's focus rule is scoped to `a`, and section 1 of
+ * destinations.md forbids assuming the user agent's default is visible on this
+ * background — which on blue it is not.
+ */
+.project-nav__role:focus-visible {
+  outline: var(--border-thick) solid var(--focus);
+  outline-offset: 2px;
 }
 
 /*

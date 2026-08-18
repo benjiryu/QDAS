@@ -1242,3 +1242,13 @@ Role-dependent behavior is now part of what the prototype tests — D-049's view
 Recorded honestly: this is scaffolding placed in product chrome, the inverse of the D-056 addendum's rule, allowed because role switching is a facilitator's session tool, not a product feature — a real deployment takes the role from authentication and returns this block to static text per the D-059 addendum. The select is marked as simulation in the prototype-scope sense.
 
 Behavior: role change announces discretely ("Role: Qualitative Lead"); focus stays on the select; controls appearing or vanishing elsewhere never take focus. D-070's gate remains role and phase together — a lead mid-round still cannot edit, which is the design working. Phase switching stays in the prototype-support surface deliberately.
+
+**Built by Task 51.** Three things this decision left for the build.
+
+*The session store became subscribable.* It was a module value read at render, which was enough only because the one role control lived on a page: switching it always meant a remount and a fresh read. From a control mounted on every route it is a live defect — change the role while sitting on the Codebook page and Create new code simply would not appear. Both readers subscribe now, the shape the reading scale and the shortcuts help already have, and for the argument `useReadingScale` already makes: held in component state the surfaces would drift, subscribed they cannot.
+
+*The two controls carry distinct names.* A select labelled "Role" already existed in the prototype-support surface, and the sidebar renders on every route — two controls with one accessible name on one page, which is a screen reader user unable to tell which of them they are in. The support surface's is "Simulated role" now; the sidebar's keeps the name this decision fixes. D-053 settled the same shape for the panel's and companion's search fields.
+
+*Reviewer left the support surface.* This decision leaves it unoffered in the sidebar and says nothing about the surface that still offered it, which would have let a facilitator reach a state the sidebar could only misreport — a native select whose value matches no option renders as its first, so the sidebar would have claimed "AFB Researcher" while the role was reviewer. Two roles everywhere instead. The cost, recorded rather than absorbed: the prototype can no longer put a participant in the case `resolveCodedDataView` reasons about, a reviewer during independent coding, which D-049 does not name and that comment exists to flag.
+
+The option labels are read from the seeded users' `title` fields rather than written in the component, which is what the D-059 addendum asked of the static text this replaces.

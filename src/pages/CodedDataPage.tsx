@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { lineageDescription, matchCode } from '../features/codes/codeTree';
 import { useAnnouncer } from '../a11y';
 import { Link, useParams } from 'react-router';
@@ -12,8 +12,12 @@ import { mergeSessionCodes, readCodebookEdits } from '../data/codebookStore';
 import { changePhase } from '../features/codebook/phaseBoundary';
 import { createSeedFixture } from '../data/seed';
 import { CURRENT_CODER_ID } from '../data/seed/project';
-import { readSimulatedSession, writeSimulatedSession } from '../data/simulatedSession';
-import { PHASE_LABELS } from '../domain';
+import {
+  readSimulatedSession,
+  subscribeToSimulatedSession,
+  writeSimulatedSession,
+} from '../data/simulatedSession';
+import { PHASE_LABELS, ROLE_LABELS } from '../domain';
 import type { Code, ProjectPhase, UserRole } from '../domain';
 import { buildCodedData } from '../features/codedData/codedDataView';
 import type { CodedResult } from '../features/codedData/codedDataView';
@@ -43,12 +47,6 @@ import './codedData.css';
 
 const ALL_CODES = 'all';
 
-const ROLE_LABELS: Record<UserRole, string> = {
-  coder: 'Coder',
-  reviewer: 'Reviewer',
-  qualitativeLead: 'Qualitative lead',
-};
-
 export function CodedDataPage() {
   const { projectId } = useParams();
   const roleId = useId();
@@ -58,10 +56,18 @@ export function CodedDataPage() {
   const resultsId = useId();
 
   /*
-    Role and phase, from the simulated session. Held in component state as well
-    so a change re-renders; the store is what survives the navigation.
+    Role and phase, from the simulated session, subscribed since D-071.
+
+    A snapshot in component state was enough while the only role control was the
+    one below it. It is not now: the sidebar's switcher is mounted on every
+    route, and a page holding its own copy would not learn that the facilitator
+    had changed the role from there.
   */
-  const [session, setSession] = useState(() => readSimulatedSession());
+  const session = useSyncExternalStore(
+    subscribeToSimulatedSession,
+    readSimulatedSession,
+    readSimulatedSession,
+  );
 
   const fixture = useMemo(() => createSeedFixture(), []);
   const found = fixture.project.projectId === projectId;
@@ -290,14 +296,18 @@ export function CodedDataPage() {
         </p>
 
         <div className="coded-data__scenario-field">
-          <label htmlFor={roleId}>Role</label>
+          {/*
+            "Simulated role", not "Role": the sidebar's switcher carries that
+            name since D-071, and two controls with one accessible name on one
+            page leaves a screen reader user unable to tell which is which.
+            D-053 settled the same shape for the two search fields.
+          */}
+          <label htmlFor={roleId}>Simulated role</label>
           <select
             id={roleId}
             value={session.role}
             onChange={(event) => {
-              const role = event.target.value as UserRole;
-              writeSimulatedSession({ role });
-              setSession(readSimulatedSession());
+              writeSimulatedSession({ role: event.target.value as UserRole });
             }}
           >
             {Object.entries(ROLE_LABELS).map(([value, label]) => (
@@ -322,7 +332,6 @@ export function CodedDataPage() {
                 always references one stable version.
               */
               changePhase(projectId ?? '', phase, fixture.codebookVersion.versionLabel);
-              setSession(readSimulatedSession());
             }}
           >
             {Object.entries(PHASE_LABELS).map(([value, label]) => (

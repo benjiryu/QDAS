@@ -2,6 +2,8 @@ import { useId, useMemo } from 'react';
 import { NavLink, useParams } from 'react-router';
 import { createSeedFixture } from '../../data/seed';
 import { CURRENT_CODER_ID } from '../../data/seed/project';
+import type { UserRole } from '../../domain';
+import { SWITCHABLE_ROLES, useRoleSwitcher } from './useRoleSwitcher';
 import { assignedSources } from './assignedSources';
 
 /**
@@ -51,10 +53,8 @@ export function ProjectNav() {
     Outside the project lookup below, because the block belongs to the person
     rather than to the project — it is there on `/projects` too.
   */
-  const userTitle = useMemo(() => {
-    const fixture = createSeedFixture();
-    return fixture.users.find((user) => user.userId === CURRENT_CODER_ID)?.title ?? null;
-  }, []);
+  const roleId = useId();
+  const roles = useRoleSwitcher();
 
   const view = useMemo(() => {
     const fixture = createSeedFixture();
@@ -74,18 +74,39 @@ export function ProjectNav() {
   return (
     <nav aria-label="Project" className="project-nav">
       {/*
-        Who is signed in, at the top of the landmark, per the D-059 addendum.
+        Who is signed in, at the top of the landmark — and since D-071, the
+        control that decides it.
 
-        Static text: not a link, because it goes nowhere, and not a heading,
-        because it opens no section — a stop in either list that leads nowhere
-        is worse than no stop, which is the reasoning D-043 gave the files label
-        before D-059 made that one a destination.
+        This reverses the D-059 addendum's static-text rule for this block, and
+        the reversal is the point rather than a side effect: role-dependent
+        behaviour is part of what the prototype tests, and until now the only
+        way to change role was a select at the bottom of one page. D-071 records
+        what this is — scaffolding in product chrome, which a real deployment
+        replaces with the role its authentication reports.
 
-        The divider beneath it is drawn with a border rather than an `hr`, so it
-        stays decoration instead of putting a separator in the accessibility
-        tree for something that draws a line.
+        Labelled visibly rather than by `aria-label`. D-051 wants a label
+        associated and present, and a facilitator's control that hides what it
+        does is the wrong thing to be subtle about.
+
+        The divider is still this block's own bottom border rather than an `hr`,
+        so it stays decoration instead of putting a separator in the
+        accessibility tree for something that draws a line.
       */}
-      {userTitle ? <p className="project-nav__user">{userTitle}</p> : null}
+      <div className="project-nav__user">
+        <label htmlFor={roleId}>Role</label>
+        <select
+          id={roleId}
+          className="project-nav__role"
+          value={roles.role}
+          onChange={(event) => roles.setRole(event.target.value as UserRole)}
+        >
+          {SWITCHABLE_ROLES.map((entry) => (
+            <option key={entry.role} value={entry.role}>
+              {entry.title}
+            </option>
+          ))}
+        </select>
+      </div>
 
       {view === null ? (
         /*

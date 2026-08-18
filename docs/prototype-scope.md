@@ -38,7 +38,7 @@ Implemented with genuine state and genuine consequences.
 
 Present enough to keep the workflow coherent, not built.
 
-- Authentication. A role and user switcher stands in.
+- Authentication. A role and user switcher stands in. Since D-071 the role half sits in the sidebar rather than only in the prototype-support surface — scaffolding in product chrome, allowed because switching role is a facilitator's session tool; a real deployment takes the role from authentication and returns that block to static text.
 - File import. Sources are converted offline and loaded as seeded data. Per D-012, import is not a control in the coding toolbar. A simulated feature given a primary control invites participants to try it and produces findings about something that does not exist.
 - Automatic segmentation. Segmentation is produced by the offline conversion step.
 - Live collaboration and cloud sync. A second coder's work is seeded.
