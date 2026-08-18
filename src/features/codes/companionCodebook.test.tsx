@@ -9,6 +9,7 @@ import { bindingsFor, detectPlatform } from '../../config/keybindings';
 import type { Command } from '../../config/keybindings';
 import { clearCodingSession } from '../../data/codingSessionStore';
 import { createSeedFixture } from '../../data/seed';
+import { writeSimulatedSession } from '../../data/simulatedSession';
 import { clearSourcePositions } from '../../data/sourcePositionStore';
 
 /**
@@ -181,6 +182,23 @@ describe('the companion adds no capability', () => {
 
     expect(companion()!.querySelectorAll('input[type="checkbox"]')).toHaveLength(0);
     expect(within(companion()!).queryAllByRole('checkbox')).toHaveLength(0);
+  });
+
+  it('offers no Accept, even to a lead who could accept one on the page', async () => {
+    /*
+      D-070 puts Accept on the Codebook page, and this surface renders the same
+      component. The action is a slot the page fills and the companion does not,
+      so resolving a provisional mid-capture is not something this build offers
+      — which is what "adds no capability" has to keep meaning as the page
+      gains actions.
+    */
+    writeSimulatedSession({ role: 'qualitativeLead', phase: 'review' });
+    renderAt(sourceUrl);
+    openPanel();
+    fireEvent.click(toggle());
+    await waitFor(() => expect(companion()).not.toBeNull());
+
+    expect(within(companion()!).queryAllByRole('button', { name: /accept/i })).toHaveLength(0);
   });
 
   it('leaves the pending assignment untouched across an open and close', async () => {

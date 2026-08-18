@@ -1,5 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useAnnouncer } from '../../a11y';
+import { mergeSessionCodes, readCodebookEdits } from '../../data/codebookStore';
 import { readCodebookQuery, readProvisionalCodes, writeCodebookQuery } from '../../data/codingSessionStore';
 import { createSeedFixture } from '../../data/seed';
 import type { Code, Id } from '../../domain';
@@ -41,24 +42,47 @@ interface CodebookContentProps {
   headingLevel: number;
   /** Callback ref for the search field, so a container can focus it on open. */
   searchRef?: (node: HTMLInputElement | null) => void;
+  /**
+   * An action to render beneath each provisional record, per D-070.
+   *
+   * A slot rather than a flag, so this component stays unaware of who may
+   * resolve a provisional and when. The Codebook page passes Accept; the
+   * companion passes nothing and is unchanged.
+   */
+  renderProvisionalAction?: (code: Code) => React.ReactNode;
 }
 
-export function CodebookContent({ projectId, headingLevel, searchRef }: CodebookContentProps) {
+export function CodebookContent({
+  projectId,
+  headingLevel,
+  searchRef,
+  renderProvisionalAction,
+}: CodebookContentProps) {
   const announcer = useAnnouncer();
   const searchId = useId();
   const resultsId = useId();
   const provisionalId = useId();
 
+  /*
+    Read once per render, like the provisional codes below and for the same
+    reason: the editor writes these while this component is elsewhere on the
+    page, so state seeded at mount would go stale. D-070.
+  */
+  const session = readCodebookEdits(projectId);
+
   const view = useMemo(() => {
     const fixture = createSeedFixture();
     if (fixture.project.projectId !== projectId) return null;
 
+    const codes = mergeSessionCodes(fixture.codes, session.codes);
     return {
-      codes: fixture.codes,
-      tree: buildCodeTree(fixture.codes),
-      version: fixture.codebookVersion,
+      codes,
+      tree: buildCodeTree(codes),
+      /* The label moves only at a phase boundary, per D-070, so a round always
+         references one stable version. */
+      versionLabel: session.versionLabel ?? fixture.codebookVersion.versionLabel,
     };
-  }, [projectId]);
+  }, [projectId, session.codes, session.versionLabel]);
 
   /*
     Session-scoped, per section 1: a coder who searches, leaves to code, and
@@ -127,7 +151,7 @@ export function CodebookContent({ projectId, headingLevel, searchRef }: Codebook
         through. A deviation from section 1's field list, in the task report.
       */}
       <p className="codebook__summary">
-        {view.codes.length} codes · {view.version.versionLabel}
+        {view.codes.length} codes · {view.versionLabel}
       </p>
 
       {/* Search. No region heading: the field's own label names it. */}
@@ -209,6 +233,13 @@ export function CodebookContent({ projectId, headingLevel, searchRef }: Codebook
             {provisional.map((code) => (
               <li key={code.codeId}>
                 <CodeRecord code={code} headingLevel={childLevel} />
+                {/*
+                  Accept, per D-070, and only where the page passes one. The
+                  companion renders this same component beside the coding panel,
+                  and D-048 keeps that surface capability-free: a lead resolving
+                  a provisional mid-capture is not a thing this build offers.
+                */}
+                {renderProvisionalAction?.(code)}
               </li>
             ))}
           </ul>

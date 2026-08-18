@@ -6,6 +6,7 @@ import {
   writeCodedDataFilter,
   writeSavedWork,
 } from '../data/codingSessionStore';
+import { mergeSessionCodes, readCodebookEdits } from '../data/codebookStore';
 import { createSeedFixture } from '../data/seed';
 import { CURRENT_CODER_ID } from '../data/seed/project';
 import type { Note } from '../domain';
@@ -179,7 +180,10 @@ export function NotesPage() {
       segments: fixture.segments,
       turns: fixture.turns,
       speakers: fixture.speakers,
-      codes: [...fixture.codes],
+      codes: mergeSessionCodes(
+        fixture.codes,
+        readCodebookEdits(fixture.project.projectId).codes,
+      ),
       excerpts: [...fixture.excerpts, ...(work?.excerpts ?? [])],
       assignments: [...fixture.codeAssignments, ...(work?.assignments ?? [])],
       notes: allNotes,

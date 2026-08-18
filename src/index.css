@@ -187,6 +187,36 @@ h1:focus {
   --code-fill: var(--purple-2);
   --code-wash: var(--purple-3);
 }
+/*
+ * The three hues a new family can be given, per D-070.
+ *
+ * Named for the ramp they draw, unlike the six above, where `code-color-moss`
+ * renders red — an inconsistency `familyHues.ts` already records and which is
+ * cheaper to leave standing than to add three more names that lie.
+ *
+ * Only three. Seven ramps are unclaimed, but orange, yellow, light green and
+ * sea green carry "border fails 3:1 on white" in the token audit, and a picker
+ * on this instrument does not offer a hue whose boundary a reader cannot see.
+ */
+[data-color-token='code-color-violet'],
+.code-panel__code:has([data-color-token='code-color-violet']) {
+  --code-strong: var(--violet-1);
+  --code-fill: var(--violet-2);
+  --code-wash: var(--violet-3);
+}
+[data-color-token='code-color-pink'],
+.code-panel__code:has([data-color-token='code-color-pink']) {
+  --code-strong: var(--pink-1);
+  --code-fill: var(--pink-2);
+  --code-wash: var(--pink-3);
+}
+[data-color-token='code-color-rose'],
+.code-panel__code:has([data-color-token='code-color-rose']) {
+  --code-strong: var(--rose-1);
+  --code-fill: var(--rose-2);
+  --code-wash: var(--rose-3);
+}
+
 /* A proposed code is marked in words, never by colour alone. */
 [data-color-token='code-color-provisional'],
 .code-panel__code:has([data-color-token='code-color-provisional']) {

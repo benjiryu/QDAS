@@ -1209,4 +1209,16 @@ The most drag-and-drop-bound workflow in commercial QDAS becomes keyboard-first:
 
 **Resolution: Accept only.** Each provisional entry offers Accept to the gated lead, opening the editor prefilled; save moves it into the canonical hierarchy, its assignments following automatically since the code keeps its identity. Merge and reject migrate other coders' assignments and are registered as Slice 3 work.
 
+**The codebook half is built by Task 49.** Four things this decision left to the build, recorded rather than left in code alone.
+
+*The parent field is a native `select`.* It maps to role `combobox`, carries typeahead without recreating it, and is what three other fields in this build already use; React Aria has never supplied a form control here and a combobox would have been the first. The cost is that the D-054 lineage rides in each option's text rather than in a description, because an `option` has no description channel — the wording is still `lineageDescription`'s, so the two surfaces cannot word the relation differently.
+
+*The canonical index of a new code is a fraction.* The seeded order is dense, global and depth-first, so "append after their siblings" read literally would renumber thirty-six records to add one. Nothing requires that: `byCanonicalOrder` is a subtraction, so the new index only has to fall between the last index in its parent's subtree and the next index outside it. Worth knowing which half of this is visible — the cards are built from the tree and each sibling list sorts independently, so a child renders inside its family whatever index it carries. The flat order is what the fraction protects.
+
+*Three hues are offered, not seven.* The `code-color-*` namespace was closed at the six families in use, so "the unused named token hues" meant new tokens. Violet, pink and rose are added and measured; orange, yellow, light green and sea green are withheld, their shade-1 borders being under the 3:1 a non-text boundary needs on white, which is not a hue to offer in a picker on this instrument. The three are named for the ramp they draw, unlike the six legacy tokens where `code-color-moss` renders red — a wart `familyHues.ts` already records and which three more lies would have deepened.
+
+*On Accept the placement fields are offered; on an edit they are not.* This decision's immutability clause names editing a code already in the hierarchy. A provisional is not in it yet, and choosing a parent is precisely how it enters — so Accept can place, and only a canonical edit is frozen.
+
+**Left unbuilt, for the team to place.** Editing an existing canonical code's name and definition works and has no entry point: destinations.md section 1 describes only Create and Accept, and a control on every code card is a visible change to a read surface D-047 keeps read-only. Accept exercises the same path meanwhile.
+
 **Contained deliberately:** no re-parenting of existing canonical codes, since moving a code across families changes its hue and every existing pill — a version-migration problem, deferred. Family cards keep their read-only color display; color is assigned only in the editor. Editing an existing code's name and definition uses the same panel; parent and color are immutable there.

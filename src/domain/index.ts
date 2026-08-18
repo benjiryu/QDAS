@@ -13,4 +13,5 @@ export * from './excerpt';
 export * from './segmentDisplayState';
 export * from './coding';
 export * from './sameExcerpt';
+export * from './codebook';
 export * from './labels';

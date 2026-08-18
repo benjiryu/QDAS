@@ -9,6 +9,7 @@ import type { Announcer } from '../a11y';
 import { bindingsFor, detectPlatform } from '../config/keybindings';
 import type { Command } from '../config/keybindings';
 import { clearCodingSession } from '../data/codingSessionStore';
+import { writeSimulatedSession } from '../data/simulatedSession';
 import { createSeedFixture } from '../data/seed';
 import { clearSourcePositions } from '../data/sourcePositionStore';
 import { buildCodeTree, searchCodes } from '../features/codes/codeTree';
@@ -475,5 +476,316 @@ describe('provisional codes, per section 1', () => {
     expect(
       region('codebook')!.compareDocumentPosition(section) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
+  });
+});
+
+describe('the code editor, per D-070', () => {
+  /*
+    The codebook becomes editable, keyboard-first, where every commercial tool
+    edits hierarchy by dragging. Two things are load-bearing here: the gate,
+    which makes mid-round vocabulary drift structurally impossible rather than
+    discouraged; and the close model, the one recorded exception to D-042 —
+    explicit Save writes, every other exit discards, because a half-defined code
+    is nothing.
+  */
+  const asLead = (phase: 'setup' | 'review' | 'recoding' = 'setup') => {
+    writeSimulatedSession({ role: 'qualitativeLead', phase });
+    renderAt(codebookUrl);
+  };
+
+  const createButton = () => screen.queryByRole('button', { name: 'Create new code' });
+  const editorPanel = () => screen.queryByRole('dialog', { name: /new code|accept code/i });
+  const nameField = () => screen.getByLabelText('Code name');
+  const saveButton = () => within(screen.getByRole('dialog')).getByRole('button', { name: 'Save' });
+
+  /** Fills the editor for a new family and saves it. */
+  function createFamily(name: string) {
+    fireEvent.change(nameField(), { target: { value: name } });
+    fireEvent.change(screen.getByLabelText('Definition'), { target: { value: 'A definition.' } });
+    fireEvent.change(screen.getByLabelText('Colour'), { target: { value: 'code-color-violet' } });
+    fireEvent.click(saveButton());
+  }
+
+  describe('the gate', () => {
+    it('offers nothing to a coder mid independent coding', () => {
+      // The seeded scenario, so this is what a participant meets by default.
+      renderAt(codebookUrl);
+      expect(createButton()).toBeNull();
+    });
+
+    it('offers nothing to the lead while a round could be open', () => {
+      /*
+        The structural half: a codebook that cannot change while a round is open
+        means the round references one stable version throughout.
+      */
+      writeSimulatedSession({ role: 'qualitativeLead', phase: 'independentCoding' });
+      renderAt(codebookUrl);
+
+      expect(createButton()).toBeNull();
+    });
+
+    it('offers Create to the lead in a phase with no round open', () => {
+      asLead();
+      expect(createButton()).toBeInTheDocument();
+    });
+  });
+
+  describe('creating a code', () => {
+    it('opens the editor with focus in the name field', async () => {
+      asLead();
+      fireEvent.click(createButton()!);
+
+      await waitFor(() => expect(editorPanel()).toBeInTheDocument());
+      await waitFor(() => expect(nameField()).toHaveFocus());
+    });
+
+    it('writes the code on Save, and it joins the codebook', async () => {
+      asLead();
+      fireEvent.click(createButton()!);
+      await waitFor(() => expect(nameField()).toHaveFocus());
+
+      createFamily('Compost queue');
+
+      await waitFor(() => expect(editorPanel()).toBeNull());
+      expect(within(region('codebook')!).getByText('Compost queue')).toBeInTheDocument();
+    });
+
+    it('renders a new child inside its family, after the siblings it joins', async () => {
+      /*
+        The visible half of D-070's "append after their siblings". Where the
+        code sits in the stored canonical order is the domain's test, and only
+        that one bites: the cards are built from the tree and each sibling list
+        is sorted independently, so a child renders in its family whatever
+        global index it carries. What this checks is the part a reader sees.
+      */
+      asLead();
+      const family = fixture.codes.find((code) => code.parentCodeId === null)!;
+
+      fireEvent.click(createButton()!);
+      await waitFor(() => expect(nameField()).toHaveFocus());
+      fireEvent.change(nameField(), { target: { value: 'Compost queue' } });
+      fireEvent.change(screen.getByLabelText('Parent code'), { target: { value: family.codeId } });
+      fireEvent.click(saveButton());
+
+      await waitFor(() => expect(editorPanel()).toBeNull());
+
+      // Positions in the rendered canonical list, which is what a reader scans.
+      const records = Array.from(region('codebook')!.querySelectorAll('[data-code-id]'));
+      const positionOf = (codeId: string) =>
+        records.findIndex((node) => node.getAttribute('data-code-id') === codeId);
+      const added = records.findIndex((node) => node.textContent?.includes('Compost queue'));
+
+      expect(added).toBeGreaterThan(positionOf(family.codeId));
+      // Inside that family's card, not merely somewhere below its heading.
+      const card = records[added].closest('[data-family-id]');
+      expect(card).toBe(records[positionOf(family.codeId)].closest('[data-family-id]'));
+
+      // And last among the siblings it joined, which is what "append" means.
+      const siblings = fixture.codes.filter((code) => code.parentCodeId === family.codeId);
+      for (const sibling of siblings) {
+        expect(added).toBeGreaterThan(positionOf(sibling.codeId));
+      }
+    });
+
+    it('offers only families and their children as a parent', () => {
+      /*
+        How D-070 caps depth at grandchild: a control that cannot express the
+        mistake, rather than one that reports it afterwards.
+      */
+      asLead();
+      fireEvent.click(createButton()!);
+
+      const options = Array.from(
+        screen.getByLabelText('Parent code').querySelectorAll('option'),
+      ).map((option) => option.getAttribute('value'));
+
+      const tree = buildCodeTree([...fixture.codes]);
+      const grandchild = fixture.codes.find((code) => {
+        const parent = fixture.codes.find((candidate) => candidate.codeId === code.parentCodeId);
+        return parent?.parentCodeId != null;
+      })!;
+
+      expect(tree.length).toBeGreaterThan(0);
+      expect(options).not.toContain(grandchild.codeId);
+    });
+
+    it('asks for a colour only where there is no parent to inherit one from', () => {
+      asLead();
+      fireEvent.click(createButton()!);
+      expect(screen.getByLabelText('Colour')).toBeInTheDocument();
+
+      const family = fixture.codes.find((code) => code.parentCodeId === null)!;
+      fireEvent.change(screen.getByLabelText('Parent code'), { target: { value: family.codeId } });
+
+      expect(screen.queryByLabelText('Colour')).toBeNull();
+    });
+  });
+
+  describe('the close model, a recorded exception to D-042', () => {
+    it('discards on Escape and creates nothing', async () => {
+      /*
+        The inversion. Everywhere else in this build leaving keeps your work; a
+        half-defined code is not work, it is a fragment that would then appear in
+        every coder's panel.
+      */
+      asLead();
+      fireEvent.click(createButton()!);
+      await waitFor(() => expect(nameField()).toHaveFocus());
+      fireEvent.change(nameField(), { target: { value: 'Compost queue' } });
+
+      act(() => void fireEvent.keyDown(document, { key: 'Escape' }));
+
+      await waitFor(() => expect(editorPanel()).toBeNull());
+      expect(within(region('codebook')!).queryByText('Compost queue')).toBeNull();
+    });
+
+    it('discards on the close control, which says Discard rather than Close', async () => {
+      asLead();
+      fireEvent.click(createButton()!);
+      await waitFor(() => expect(nameField()).toHaveFocus());
+      fireEvent.change(nameField(), { target: { value: 'Compost queue' } });
+
+      fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Discard' }));
+
+      await waitFor(() => expect(editorPanel()).toBeNull());
+      expect(within(region('codebook')!).queryByText('Compost queue')).toBeNull();
+    });
+
+    it('returns focus to the control that opened it', async () => {
+      asLead();
+      const invoker = createButton()!;
+      act(() => invoker.focus());
+      fireEvent.click(invoker);
+      await waitFor(() => expect(nameField()).toHaveFocus());
+
+      act(() => void fireEvent.keyDown(document, { key: 'Escape' }));
+
+      await waitFor(() => expect(createButton()).toHaveFocus());
+    });
+  });
+
+  describe('validation blocks Save and never blocks closing', () => {
+    it('keeps the panel open on an empty name and says why', async () => {
+      asLead();
+      fireEvent.click(createButton()!);
+      await waitFor(() => expect(nameField()).toHaveFocus());
+
+      fireEvent.click(saveButton());
+
+      expect(editorPanel()).toBeInTheDocument();
+      expect(screen.getByText(/A code needs a name/)).toBeInTheDocument();
+      await waitFor(() => expect(nameField()).toHaveFocus());
+    });
+
+    it('refuses a name another code already has, whatever its case', async () => {
+      asLead();
+      fireEvent.click(createButton()!);
+      await waitFor(() => expect(nameField()).toHaveFocus());
+
+      fireEvent.change(nameField(), { target: { value: fixture.codes[0].name.toUpperCase() } });
+      fireEvent.change(screen.getByLabelText('Colour'), { target: { value: 'code-color-violet' } });
+      fireEvent.click(saveButton());
+
+      expect(editorPanel()).toBeInTheDocument();
+      expect(screen.getByText(/Names are unique across the codebook/)).toBeInTheDocument();
+    });
+
+    it('marks Save unavailable without disabling it, so pressing it explains', () => {
+      // The treatment Save & Close already uses: a disabled control with no
+      // explanation is a dead end, per contract 2.6.
+      asLead();
+      fireEvent.click(createButton()!);
+
+      const save = saveButton();
+      expect(save).toHaveAttribute('aria-disabled', 'true');
+      expect(save).not.toBeDisabled();
+    });
+
+    it('still closes on Escape with the form invalid', async () => {
+      // "Validation blocks save, never close": nobody is stranded in a panel
+      // they opened by mistake, which is the half of D-042 that survives here.
+      asLead();
+      fireEvent.click(createButton()!);
+      await waitFor(() => expect(nameField()).toHaveFocus());
+      fireEvent.click(saveButton());
+
+      act(() => void fireEvent.keyDown(document, { key: 'Escape' }));
+
+      await waitFor(() => expect(editorPanel()).toBeNull());
+    });
+  });
+});
+
+describe('accepting a provisional code, per D-070', () => {
+  /**
+   * Proposes a code in the coding panel and saves it onto an excerpt, which is
+   * the only route a provisional exists by.
+   */
+  async function proposeAndCode(name: string) {
+    renderAt(sourceUrl);
+
+    const turn = document.querySelector<HTMLElement>('[data-turn-id]')!;
+    act(() => turn.focus());
+    chord('excerpt.code');
+
+    const panel = () => screen.getByRole('dialog', { name: /code assignment/i });
+    const create = panel().querySelector<HTMLElement>('[data-region="create"]')!;
+    fireEvent.click(within(create).getByRole('button', { name: /create new code/i }));
+    fireEvent.change(within(create).getByLabelText('Code name'), { target: { value: name } });
+    fireEvent.click(within(create).getByRole('button', { name: /create provisional code/i }));
+    fireEvent.click(within(panel()).getByRole('button', { name: 'Save & Close' }));
+    await waitFor(() =>
+      expect(screen.queryAllByRole('dialog', { name: /code assignment/i })).toHaveLength(0),
+    );
+  }
+
+  it('offers no Accept outside the gate', async () => {
+    await proposeAndCode('Compost queue');
+    followSidebarLink('Code book');
+
+    expect(within(region('provisional')!).queryByRole('button', { name: /accept/i })).toBeNull();
+  });
+
+  it('moves the code into the hierarchy, keeping its identity', async () => {
+    /*
+      The reason Accept costs nothing: the provisional's assignments already
+      name this `codeId`, so placing it carries them without touching one
+      assignment record. That is what "assignments following automatically"
+      means in D-070.
+    */
+    await proposeAndCode('Compost queue');
+
+    writeSimulatedSession({ role: 'qualitativeLead', phase: 'review' });
+    followSidebarLink('Code book');
+
+    const provisionalRecord = region('provisional')!.querySelector('[data-code-id]')!;
+    const codeId = provisionalRecord.getAttribute('data-code-id');
+
+    fireEvent.click(within(region('provisional')!).getByRole('button', { name: /accept/i }));
+    await waitFor(() => expect(screen.getByLabelText('Code name')).toHaveFocus());
+
+    // Prefilled, and placed: choosing a parent is how it enters the hierarchy.
+    expect(screen.getByLabelText('Code name')).toHaveValue('Compost queue');
+    const family = fixture.codes.find((code) => code.parentCodeId === null)!;
+    fireEvent.change(screen.getByLabelText('Parent code'), { target: { value: family.codeId } });
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Save' }));
+
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: /accept code/i })).toBeNull(),
+    );
+
+    const canonical = region('codebook')!;
+    expect(canonical.querySelector(`[data-code-id="${codeId}"]`)).not.toBeNull();
+    expect(within(canonical).getByText('Compost queue')).toBeInTheDocument();
+  });
+
+  it('names each Accept by its code, so a list of them is not one word repeated', async () => {
+    await proposeAndCode('Compost queue');
+    writeSimulatedSession({ role: 'qualitativeLead', phase: 'review' });
+    followSidebarLink('Code book');
+
+    expect(
+      within(region('provisional')!).getByRole('button', { name: 'Accept, Compost queue' }),
+    ).toBeInTheDocument();
   });
 });

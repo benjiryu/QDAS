@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useParams, useSearchParams } from 'react-router';
 import { defaultFlags, resolveFlags } from '../config/flags';
+import { mergeSessionCodes, readCodebookEdits } from '../data/codebookStore';
 import { createSeedFixture } from '../data/seed';
 import { CURRENT_CODER_ID } from '../data/seed/project';
 import { resolveSource } from '../domain';
@@ -72,7 +73,10 @@ export function SourcePage() {
       seedAssignments: fixture.codeAssignments,
       codingRoundId: fixture.codingRound.codingRoundId,
       codebookVersionId: fixture.codebookVersion.codebookVersionId,
-      codes: fixture.codes,
+      codes: mergeSessionCodes(
+        fixture.codes,
+        readCodebookEdits(fixture.project.projectId).codes,
+      ),
       projectId: fixture.project.projectId,
     };
   }, [sourceId]);

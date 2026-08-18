@@ -336,6 +336,101 @@ test('the colour value needs no pan to the card edge at 400 percent', async ({ p
   expect(geometry.belowTheName, 'the value should wrap under the name at this width').toBe(true);
 });
 
+/* ---------- The code editor, per D-070 ---------- */
+
+/** Puts the facilitator scenario into a phase where the codebook may be edited. */
+async function asEditingLead(page: import('@playwright/test').Page) {
+  await page.goto(`${projectUrl}/coded-data`);
+  await page.getByLabel('Role').selectOption('qualitativeLead');
+  await page.getByLabel('Project phase').selectOption('setup');
+  // By the sidebar, not by `goto`: the scenario lives in a module store and a
+  // full load would throw it away.
+  await page.getByRole('link', { name: 'Code book' }).click();
+  await expect(page.getByRole('button', { name: 'Create new code' })).toBeVisible();
+}
+
+test('the code editor has no accessibility violations', async ({ page }) => {
+  await asEditingLead(page);
+  await page.getByRole('button', { name: 'Create new code' }).click();
+  await expect(page.getByRole('dialog', { name: 'New code' })).toBeVisible();
+
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+});
+
+test('the code editor needs no horizontal panning at 320px', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 800 });
+  await asEditingLead(page);
+  await page.getByRole('button', { name: 'Create new code' }).click();
+  await expect(page.getByRole('dialog', { name: 'New code' })).toBeVisible();
+
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+    ),
+  ).toBe(false);
+});
+
+/** WCAG relative luminance, so the thresholds are measured and not asserted. */
+const CONTRAST = `(a, b) => {
+  const lum = (c) => {
+    const [r, g, b] = c.match(/\\d+/g).slice(0, 3).map((v) => {
+      const s = Number(v) / 255;
+      return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}`;
+
+test('every hue the editor offers clears 3:1 against white', async ({ page }) => {
+  /*
+    D-070 says "a pick from the unused named token hues". Seven ramps are
+    unclaimed and only three are offered: the token audit measures orange,
+    yellow, light green and sea green under the 3:1 a non-text boundary needs on
+    white, and a picker on this instrument does not offer a hue whose edge a
+    reader cannot see.
+
+    Measured off a rendered border rather than trusted to the audit, which
+    speaks for other pairings.
+  */
+  await asEditingLead(page);
+  await page.getByRole('button', { name: 'Create new code' }).click();
+
+  const offered = await page
+    .getByLabel('Colour')
+    .locator('option')
+    .evaluateAll((options) =>
+      options.map((option) => (option as HTMLOptionElement).value).filter(Boolean),
+    );
+  expect(offered.length).toBe(3);
+
+  const ratios = await page.evaluate(
+    ([tokens, contrast]) => {
+      const ratio = eval(contrast as string) as (a: string, b: string) => number;
+      const probe = document.createElement('span');
+      // Through a border, so the value read back is always an rgb triple
+      // rather than whatever the custom property happens to hold.
+      probe.style.borderStyle = 'solid';
+      probe.style.borderColor = 'var(--code-strong)';
+      document.body.append(probe);
+
+      const measured = (tokens as string[]).map((token) => {
+        probe.setAttribute('data-color-token', token);
+        return { token, ratio: ratio(getComputedStyle(probe).borderTopColor, 'rgb(255, 255, 255)') };
+      });
+
+      probe.remove();
+      return measured;
+    },
+    [offered, CONTRAST] as const,
+  );
+
+  for (const { token, ratio } of ratios) {
+    expect(ratio, `${token} against white`).toBeGreaterThanOrEqual(3);
+  }
+});
+
 test('the codebook has no violations with a query active', async ({ page }) => {
   // The static scan above covers the page at rest. The results region only
   // exists while a query does, so it needs a scan of its own.

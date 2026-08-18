@@ -3,6 +3,8 @@ import { lineageDescription, matchCode } from '../features/codes/codeTree';
 import { useAnnouncer } from '../a11y';
 import { Link, useParams } from 'react-router';
 import { readCodedDataFilter, readSavedWork, writeCodedDataFilter } from '../data/codingSessionStore';
+import { mergeSessionCodes, readCodebookEdits } from '../data/codebookStore';
+import { changePhase } from '../features/codebook/phaseBoundary';
 import { createSeedFixture } from '../data/seed';
 import { CURRENT_CODER_ID } from '../data/seed/project';
 import { readSimulatedSession, writeSimulatedSession } from '../data/simulatedSession';
@@ -73,7 +75,10 @@ export function CodedDataPage() {
       turns: fixture.turns,
       speakers: fixture.speakers,
       users: fixture.users,
-      codes: [...fixture.codes],
+      codes: mergeSessionCodes(
+        fixture.codes,
+        readCodebookEdits(fixture.project.projectId).codes,
+      ),
       // Seeded work and this session's, which is the only place the coder's own
       // excerpts live: every seeded excerpt belongs to the second coder.
       excerpts: [...fixture.excerpts, ...work.excerpts],
@@ -300,7 +305,13 @@ export function CodedDataPage() {
             value={session.phase}
             onChange={(event) => {
               const phase = event.target.value as ProjectPhase;
-              writeSimulatedSession({ phase });
+              /*
+                Through `changePhase` rather than straight to the session,
+                because the codebook version bumps here: D-070 puts the bump at
+                the phase boundary and only when edits occurred, so a round
+                always references one stable version.
+              */
+              changePhase(projectId ?? '', phase, fixture.codebookVersion.versionLabel);
               setSession(readSimulatedSession());
             }}
           >

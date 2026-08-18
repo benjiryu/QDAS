@@ -1,0 +1,65 @@
+/*
+ * The code editor panel, per D-070.
+ *
+ * The container is the code panel's, reused rather than restated. Only what
+ * this panel needs of its own is here.
+ */
+
+/*
+ * Narrower than the code panel: four short fields, not a codebook. `min()` so
+ * it still fits a 320px viewport, where a fixed width would not.
+ */
+.code-editor__modal {
+  width: min(30rem, 100%);
+  max-height: 85vh;
+}
+
+/* The fields stack with room between them rather than the panel's list gaps. */
+.code-editor .code-panel__field {
+  margin-bottom: 0.75rem;
+}
+
+.code-editor .code-panel__field select,
+.code-editor .code-panel__field textarea {
+  /* What the lead types and picks is content, per D-061. */
+  font: inherit;
+  font-size: var(--reading-font-size);
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.35rem;
+}
+
+/* The Create new code control, above the count. */
+.codebook__actions {
+  margin: 0 0 0.5rem;
+}
+
+/*
+ * Its own rule rather than the Notes page's New note class. The two look alike
+ * on purpose, but borrowing a class across features means one page's stylesheet
+ * has to be loaded for another page's control to be visible.
+ */
+.codebook__create {
+  font: inherit;
+  padding: 0.4rem 0.9rem;
+  color: var(--color-black);
+  background: var(--row-bg);
+  border: var(--border-thick) solid var(--color-grey-750);
+  border-radius: var(--radius-medium);
+  cursor: pointer;
+}
+
+/*
+ * Accept, beneath each provisional record. Sized like the disclosure rows in
+ * the code panel, since it is the same kind of thing: a control on a card.
+ */
+.codebook__accept {
+  font: inherit;
+  margin-top: 0.35rem;
+  padding: 0.2rem 0.7rem;
+  color: inherit;
+  background: var(--row-bg);
+  border: var(--border-thick) solid var(--color-grey-750);
+  border-radius: var(--radius-medium);
+  cursor: pointer;
+}

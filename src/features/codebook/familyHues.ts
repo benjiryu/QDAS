@@ -33,9 +33,30 @@ const HUE_NAMES: Record<string, string> = {
   'code-color-amber': 'Cerulean',
   'code-color-slate': 'Blue',
   'code-color-rust': 'Purple',
+  /* The three a new family can be given, per D-070. Named for the hue they
+     actually draw, which the six above stopped doing. */
+  'code-color-violet': 'Violet',
+  'code-color-pink': 'Pink',
+  'code-color-rose': 'Rose',
   /* Provisional codes draw in the muted grey, not a family hue. */
   'code-color-provisional': 'Not assigned',
 };
+
+/**
+ * The hues a new family may be given, per D-070's "a pick from the unused named
+ * token hues, never a free color wheel".
+ *
+ * The six in use are absent because a hue identifies a family, and two families
+ * drawing the same one would make the transcript's family highlight ambiguous.
+ * The other four unclaimed ramps — orange, yellow, light green, sea green — are
+ * absent because the token audit measures their shade-1 borders under the 3:1 a
+ * non-text boundary needs on white.
+ */
+export const ASSIGNABLE_HUES: readonly { colorToken: string; name: string }[] = [
+  { colorToken: 'code-color-violet', name: 'Violet' },
+  { colorToken: 'code-color-pink', name: 'Pink' },
+  { colorToken: 'code-color-rose', name: 'Rose' },
+];
 
 /**
  * The hue name for a token, or null where there is none to state.

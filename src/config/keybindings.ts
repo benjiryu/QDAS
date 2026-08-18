@@ -138,6 +138,10 @@ export function alternatesFor(command: Command): Chord[] {
  * - **The shortcuts help**, which closes and leaves everything beneath it
  *   untouched. It can open over the code panel, and closing the help must not
  *   commit or discard the panel's work.
+ * - **The code editor**, per D-070, where Escape discards. That is the most
+ *   destructive Escape in the build, so it is the one that least deserves to
+ *   race: with the help open above it, the help gets the key and the draft is
+ *   still there afterwards.
  * - **The code panel**, where Escape closes and per D-042 commits the pending
  *   codes and the note rather than discarding them.
  * - **Nobody.** D-036 removed the in-progress range, so with no panel open
@@ -148,13 +152,15 @@ export function alternatesFor(command: Command): Chord[] {
  * `codes.close` there, and the collision guard would reject the pair — so the
  * owner is the honest thing to return and needs no fictional command to say it.
  */
-export type EscapeOwner = 'help' | 'codePanel' | null;
+export type EscapeOwner = 'help' | 'codeEditor' | 'codePanel' | null;
 
 export function resolveEscape(layers: {
   helpOpen?: boolean;
+  editorOpen?: boolean;
   panelOpen: boolean;
 }): EscapeOwner {
   if (layers.helpOpen) return 'help';
+  if (layers.editorOpen) return 'codeEditor';
   return layers.panelOpen ? 'codePanel' : null;
 }
 
