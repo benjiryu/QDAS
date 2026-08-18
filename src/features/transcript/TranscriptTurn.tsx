@@ -349,7 +349,7 @@ export function TranscriptTurn({
               className="transcript-turn__pill"
               data-color-token={code.colorToken}
             >
-              {code.name}
+              {code.status === 'provisional' ? `${code.name} (provisional)` : code.name}
             </span>
           ))}
           {coding?.hasNote ? (

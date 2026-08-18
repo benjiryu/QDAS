@@ -9,7 +9,6 @@ import {
 import type { PrototypeFlags } from '../../config/flags';
 import type { Code } from '../../domain';
 import { CodebookContent } from '../codebook/CodebookContent';
-import { CreateCodeDisclosure } from './CreateCodeDisclosure';
 import { NoteDisclosure } from './NoteDisclosure';
 import type { CodeNode } from './codeTree';
 import type { CodePanelApi } from './useCodePanel';
@@ -245,7 +244,27 @@ export function CodePanel({ panel, flags, excerptText }: CodePanelProps) {
             {results.length} {results.length === 1 ? 'result' : 'results'} for “{query.trim()}”
           </h3>
           {results.length === 0 ? (
-            <p>No codes match. The codebook below is unchanged.</p>
+            <>
+              <p>No codes match. The codebook below is unchanged.</p>
+              {/*
+                The one action the empty state offers, per D-070 and Task 50.
+                It lives here rather than in standing chrome so the panel gains
+                nothing a coder has to learn until the vocabulary fails them —
+                and when it does, the fix is one press from where they noticed.
+
+                Under the same flag as the region the proposal lands in: a build
+                that hides proposed codes must not offer a way to make one.
+              */}
+              {flags.allowProvisionalCodes ? (
+                <button
+                  type="button"
+                  className="code-panel__propose"
+                  onClick={panel.proposeFromQuery}
+                >
+                  Propose “{query.trim()}” as a new code
+                </button>
+              ) : null}
+            </>
           ) : (
             /* Named by its own heading, so a list-jump lands on "3 results for
                water" rather than on "list, 3 items". D-051. */
@@ -347,11 +366,7 @@ export function CodePanel({ panel, flags, excerptText }: CodePanelProps) {
         </div>
       ) : null}
 
-      {/* 6. Create code, collapsed. Offered only where the project permits
-          provisional codes: a form that cannot produce one is a dead control. */}
-      {flags.allowProvisionalCodes ? <CreateCodeDisclosure panel={panel} /> : null}
-
-      {/* 7. Note, collapsed. One per excerpt, plain text, no type: types
+      {/* 6. Note, collapsed. One per excerpt, plain text, no type: types
           belong to the notes page specification, per D-020. D-032 keeps it
           here rather than on the top bar. */}
       <NoteDisclosure panel={panel} openExpanded={panel.openFocus === 'note'} />
@@ -600,7 +615,20 @@ function CodeCheckbox({
     general: the code, then its family. Speech cannot be skimmed, so the thing
     being named comes first.
   */
-  const describedBy = lineage.length > 0 ? `in ${lineage.join(', ')}` : null;
+  /*
+    And whether it is provisional, per D-070's "marked in both channels wherever
+    they render".
+
+    In the description beside the lineage rather than in the name, for exactly
+    the reason above: the name stays the code name. Grey was the only channel
+    carrying this until now, under a stylesheet comment reading "a proposed code
+    is marked in words, never by colour alone" — the words did not exist.
+  */
+  const isProvisional = code.status === 'provisional';
+  const describedBy =
+    [isProvisional ? 'Provisional' : null, lineage.length > 0 ? `in ${lineage.join(', ')}` : null]
+      .filter((part): part is string => part !== null)
+      .join(', ') || null;
 
   /*
     The label wraps the control, per D-051.
@@ -642,6 +670,17 @@ function CodeCheckbox({
           />
         </span>
       </label>
+
+      {/*
+        The visible half, outside the label so it cannot join the name. `aria-hidden`
+        because the description above already says it, and a row that said it twice
+        is the second stop D-051 removed from these rows.
+      */}
+      {isProvisional ? (
+        <span className="code-panel__provisional" aria-hidden="true">
+          Provisional
+        </span>
+      ) : null}
       {describedBy ? (
         <span id={describedById} className="visually-hidden">
           {describedBy}

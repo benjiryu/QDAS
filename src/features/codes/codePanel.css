@@ -580,26 +580,7 @@ label:has(+ .code-panel__search) {
   font-weight: var(--font-weight-regular);
 }
 
-/* ---------- Shared utilities ---------- */
 
-.code-panel__create button {
-  font: inherit;
-  color: inherit;
-  padding: 0.15rem 0.4rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-small);
-  cursor: pointer;
-}
-
-/* ---------- Creating a provisional code, per section 7 ---------- */
-
-.code-panel__create {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  align-items: flex-start;
-}
 
 .code-panel__field {
   display: flex;
@@ -654,4 +635,36 @@ label:has(+ .code-panel__search) {
 /* A proposed code is marked in words, never by colour alone. */
 .code-panel__swatch[data-color-token='code-color-provisional'] {
   --code-color: var(--text-muted);
+}
+
+/*
+ * The empty search result's one action, per D-070.
+ *
+ * The same grey as the panel's disclosure rows: it is a control on a surface
+ * rather than an action on the excerpt, and Save & Close stays the one primary.
+ */
+.code-panel__propose {
+  font: inherit;
+  margin-top: 0.35rem;
+  padding: 0.35rem 0.9rem;
+  color: var(--color-black);
+  background: var(--row-bg);
+  border: var(--border-thick) solid var(--color-grey-750);
+  border-radius: var(--radius-medium);
+  cursor: pointer;
+}
+
+/*
+ * The provisional mark, per D-070. Words, so the grey is never the only
+ * channel — which the comment beside that grey has claimed since it was
+ * written.
+ */
+.code-panel__provisional {
+  font-size: 0.8em;
+  padding: 0.05em 0.5em;
+  margin-left: 0.4rem;
+  color: var(--color-black);
+  background: var(--row-bg);
+  border: var(--border-thin) solid var(--border);
+  border-radius: 999em;
 }

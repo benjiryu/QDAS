@@ -65,6 +65,13 @@ export interface CodePanelApi {
   proposedCodes: Code[];
   createProvisionalCode: (draft: NewCodeDraft) => Code | null;
   /**
+   * The empty search result's one action, per D-070 and Task 50.
+   *
+   * Creates the code from the current query, checks it for the capture, and
+   * returns focus to the search field.
+   */
+  proposeFromQuery: () => Code | null;
+  /**
    * Seeds the pending assignment and the note when reopening a saved excerpt.
    * D-030.
    */
@@ -284,7 +291,22 @@ export function useCodePanel({
     [codes, proposedCodes],
   );
   const tree = useMemo(() => buildCodeTree(codes), [codes]);
-  const results = useMemo(() => searchCodes(tree, query), [query, tree]);
+
+  /*
+    Search covers proposed codes as well as the codebook, per Task 50; the
+    codebook region below still renders `tree`, which is canonical only.
+
+    Two trees rather than one because section 7 keeps a proposed code out of the
+    canonical list, and because a search that could not find one would offer to
+    propose it a second time — the empty state is what creates them now, so a
+    coder would end up with two codes of the same name and no way to tell them
+    apart.
+  */
+  const searchTree = useMemo(
+    () => buildCodeTree([...codes, ...proposedCodes]),
+    [codes, proposedCodes],
+  );
+  const results = useMemo(() => searchCodes(searchTree, query), [query, searchTree]);
 
   /* ---------- Opening ---------- */
 
@@ -539,16 +561,36 @@ export function useCodePanel({
       setProposedCodes((current) => [...current, code]);
       applyPending(next);
 
-      announcer.announce(
-        `${code.name} created as provisional and added to pending. ${next.length} pending.`,
-      );
-
-      // Focus is the disclosure's business: it collapses and returns focus to
-      // its row, per D-039. The pending region this used to jump to is gone.
+      // What was said here moved to `proposeFromQuery`, the only caller since
+      // Task 50 removed the standing form: one action, one sentence.
       return code;
     },
-    [announcer, applyPending, projectId],
+    [applyPending, projectId],
   );
+
+  /**
+   * Proposes the searched-for name, checks it, and goes back to the field.
+   *
+   * D-070 puts this at the failure point rather than in standing chrome: the
+   * panel gains nothing a participant has to learn unless the vocabulary fails
+   * them, and when it does the fix is one action from where they noticed.
+   *
+   * The name is the query, so there is no empty-name case to guard — the empty
+   * state only renders on a query that has already been trimmed and found
+   * non-empty.
+   */
+  const proposeFromQuery = useCallback((): Code | null => {
+    const code = createProvisionalCode({ name: query });
+    if (!code) return null;
+
+    // Discrete, and one sentence: the coder asked for one thing and got it.
+    announcer.announce(`Proposed and checked: ${code.name}`);
+    // After the render that removes the empty state this button lives in —
+    // focus would otherwise fall to the body as the button unmounts.
+    queueMicrotask(() => searchRef.current?.focus?.());
+    return code;
+  }, [announcer, createProvisionalCode, query]);
+
 
   const setUncertain = useCallback(
     (next: boolean) => {
@@ -793,6 +835,7 @@ export function useCodePanel({
     codeById,
     proposedCodes,
     createProvisionalCode,
+    proposeFromQuery,
     loadPending,
     noteText,
     setNoteText,

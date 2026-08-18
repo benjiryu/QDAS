@@ -7,9 +7,10 @@ import {
   writeSavedWork,
 } from '../data/codingSessionStore';
 import { mergeSessionCodes, readCodebookEdits } from '../data/codebookStore';
+import { readProvisionalCodes } from '../data/codingSessionStore';
 import { createSeedFixture } from '../data/seed';
 import { CURRENT_CODER_ID } from '../data/seed/project';
-import type { Note } from '../domain';
+import type { Code, Note } from '../domain';
 import { NotePanel } from '../features/notes/NotePanel';
 import { useNotePanel } from '../features/notes/useNotePanel';
 import type { NoteCommit, NoteScopeOption } from '../features/notes/useNotePanel';
@@ -180,8 +181,13 @@ export function NotesPage() {
       segments: fixture.segments,
       turns: fixture.turns,
       speakers: fixture.speakers,
+      /*
+        Proposed codes included, per Task 50. Without them an excerpt coded only
+        provisionally rendered as though it were note-only, which is a different
+        thing entirely.
+      */
       codes: mergeSessionCodes(
-        fixture.codes,
+        [...fixture.codes, ...readProvisionalCodes(fixture.project.projectId)],
         readCodebookEdits(fixture.project.projectId).codes,
       ),
       excerpts: [...fixture.excerpts, ...(work?.excerpts ?? [])],
@@ -475,12 +481,12 @@ function NoteCard({
                     className="coded-data__pill"
                     data-color-token={code.colorToken}
                   >
-                    {code.name}
+                    {codeLabel(code)}
                   </span>
                 ))}
               </span>
               <span className="visually-hidden">
-                Codes: {entry.excerpt.codes.map((code) => code.name).join(', ')}
+                Codes: {entry.excerpt.codes.map(codeLabel).join(', ')}
               </span>
             </p>
           ) : null}
@@ -516,3 +522,12 @@ function NoteCard({
   );
 }
 
+/**
+ * A code's name, saying so where it is provisional. D-070.
+ *
+ * The same words in both channels: the pill the eye reads and the line the ear
+ * does, rather than the grey that told neither.
+ */
+function codeLabel(code: Code): string {
+  return code.status === 'provisional' ? `${code.name} (provisional)` : code.name;
+}

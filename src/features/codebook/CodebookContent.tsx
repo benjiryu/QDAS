@@ -84,6 +84,8 @@ export function CodebookContent({
     };
   }, [projectId, session.codes, session.versionLabel]);
 
+
+
   /*
     Session-scoped, per section 1: a coder who searches, leaves to code, and
     comes back does not retype it. Seeded lazily so the first render already
@@ -102,7 +104,19 @@ export function CodebookContent({
     Read once per render rather than held in state: the panel writes these while
     this component is unmounted, so state seeded at mount would go stale.
   */
-  const provisional = readProvisionalCodes(projectId);
+  /*
+    Proposals the codebook has not yet taken in.
+
+    Filtered against the merged codes, because accepting one writes an approved
+    copy under the same identifier while this store keeps its original — it is
+    append-only by design, so without this an accepted code would sit in the
+    canonical list and in this section at once. Task 49 wrote the accept and
+    tested that the code arrived; it never tested that it left.
+  */
+  const canonicalIds = new Set((view?.codes ?? []).map((code) => code.codeId));
+  const provisional = readProvisionalCodes(projectId).filter(
+    (code) => !canonicalIds.has(code.codeId),
+  );
   const results = useMemo(() => (view ? searchCodebook(view.tree, query) : []), [query, view]);
 
   /*
@@ -408,6 +422,22 @@ function CodeRecord({
           <span className="codebook__pill" data-color-token={code.colorToken} aria-hidden="true" />
           {code.name}
         </Heading>
+
+        {/*
+          Provisional, in both channels at once, per D-070.
+
+          After the heading rather than inside it: the heading's accessible name
+          is the code's identity, which the fragment ids and a heading-list jump
+          both rest on. Real text rather than `aria-hidden`, so the ear gets it
+          too — and not a "Status:" row, which D-046 pared out of the record.
+
+          It matters most where the section heading is not available: a deep
+          link to a code's fragment, or a rotor jump straight to its heading,
+          arrives with no "Provisional codes" above it.
+        */}
+        {code.status === 'provisional' ? (
+          <p className="codebook__provisional">Provisional</p>
+        ) : null}
 
         {colorName ? (
           /*

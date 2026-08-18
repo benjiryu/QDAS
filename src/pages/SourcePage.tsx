@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useParams, useSearchParams } from 'react-router';
 import { defaultFlags, resolveFlags } from '../config/flags';
 import { mergeSessionCodes, readCodebookEdits } from '../data/codebookStore';
+import { readProvisionalCodes } from '../data/codingSessionStore';
 import { createSeedFixture } from '../data/seed';
 import { CURRENT_CODER_ID } from '../data/seed/project';
 import { resolveSource } from '../domain';
@@ -73,8 +74,14 @@ export function SourcePage() {
       seedAssignments: fixture.codeAssignments,
       codingRoundId: fixture.codingRound.codingRoundId,
       codebookVersionId: fixture.codebookVersion.codebookVersionId,
+      /*
+        Proposed codes are in here too, per Task 50. Without them the rail
+        resolved a provisional assignment to nothing and drew one pill fewer
+        than the turn description counted — two channels D-041 built to agree,
+        disagreeing.
+      */
       codes: mergeSessionCodes(
-        fixture.codes,
+        [...fixture.codes, ...readProvisionalCodes(fixture.project.projectId)],
         readCodebookEdits(fixture.project.projectId).codes,
       ),
       projectId: fixture.project.projectId,

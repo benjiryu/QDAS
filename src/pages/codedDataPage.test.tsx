@@ -725,3 +725,55 @@ describe('the filter list, per D-062', () => {
     }
   });
 });
+
+describe('a provisionally coded excerpt reaches this page, per D-070', () => {
+  /**
+   * Proposes a code from the panel's empty search and saves it onto an excerpt.
+   */
+  async function codeWithAProposal(name: string) {
+    renderAt(`/projects/${project.projectId}/sources/${fixture.sources[0].sourceId}`);
+
+    const turn = document.querySelector<HTMLElement>('[data-turn-id]')!;
+    act(() => turn.focus());
+    chord('excerpt.code');
+
+    const panel = screen.getByRole('dialog', { name: /code assignment/i });
+    fireEvent.change(within(panel).getByRole('searchbox', { name: 'Search codes' }), {
+      target: { value: name },
+    });
+    fireEvent.click(within(panel).getByRole('button', { name: /propose/i }));
+    fireEvent.click(within(panel).getByRole('button', { name: 'Save & Close' }));
+    await waitFor(() =>
+      expect(screen.queryAllByRole('dialog', { name: /code assignment/i })).toHaveLength(0),
+    );
+  }
+
+  it('shows the excerpt at all, rather than dropping the row', async () => {
+    /*
+      The failure this closes. An assignment naming a provisional resolved to
+      nothing, so an excerpt coded only that way produced no codes, was filtered
+      out of the results entirely, and left the count — a coder would have coded
+      a passage and found the page empty.
+    */
+    await codeWithAProposal('Compost queue');
+    followSidebarLink('Coded data');
+
+    expect(resultRows()).toHaveLength(1);
+    expect(document.querySelector('main')!.textContent).toContain('Compost queue');
+  });
+
+  it('marks it provisional in both channels', async () => {
+    // D-070. The pill the eye reads and the line the ear does, rather than the
+    // grey that reached neither.
+    await codeWithAProposal('Compost queue');
+    followSidebarLink('Coded data');
+
+    const row = resultRows()[0];
+    expect(row.querySelector('.coded-data__pill')).toHaveTextContent(
+      'Compost queue (provisional)',
+    );
+    expect(row.querySelector('.coded-data__code-names')).toHaveTextContent(
+      'Codes: Compost queue (provisional)',
+    );
+  });
+});

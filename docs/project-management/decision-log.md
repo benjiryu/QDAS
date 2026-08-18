@@ -1219,6 +1219,26 @@ The most drag-and-drop-bound workflow in commercial QDAS becomes keyboard-first:
 
 *On Accept the placement fields are offered; on an edit they are not.* This decision's immutability clause names editing a code already in the hierarchy. A provisional is not in it yet, and choosing a parent is precisely how it enters — so Accept can place, and only a canonical edit is frozen.
 
+**The coder half is built by Task 50, and it reverses D-039.** "Create code is a progressive disclosure" and item 8 of that decision's fixed region order are both gone: this decision puts the affordance at the failure point "rather than as standing chrome", and a standing disclosure beside an empty-state button would be two ways to do one thing. code-selection.md sections 3 and 7 are amended to match.
+
+Three failures found while building it, all silent, all now closed. The **transcript rail** dropped a provisional's pill while the turn description went on counting the assignment — one turn saying "1 excerpt, 1 code" and drawing nothing, two channels D-041 built to agree disagreeing at the moment right after the coder saved; the workspace now reads the panel's own lookup, which merges proposals, rather than a second map built from the codebook alone. **Coded data** lost not the pill but the row: an excerpt coded only provisionally produced no codes, was filtered out of the results, and left the count. **Notes** rendered such an excerpt as though it were note-only, which is a different thing entirely. All three now merge proposed codes the way the Codebook page already did.
+
+*Marking, in both channels.* `code.status` was read by no component anywhere; every surface told a provisional apart by grey, under two stylesheet comments reading "a proposed code is marked in words, never by colour alone" — the words did not exist. On a code row the mark rides the D-054 description channel beside the lineage, never the name, which D-051 pins to the code name alone; the visible half sits outside the label where it cannot join that name. On a codebook record it is text after the heading, so the code's identity does not move and a deep link or rotor jump still arrives with it. Downstream pills carry it in the pill and in the readback line alike.
+
+*Search covers proposals now.* Without that, a coder searching for a code they had proposed found nothing and would have been offered the chance to propose it a second time — two codes with one name and no way to tell them apart from the panel. The codebook region still renders the canonical tree only, so section 7's rule that a proposal never joins the canonical list holds.
+
+*And a Task 49 defect this closes:* accepting a provisional wrote an approved copy under the same identifier while the append-only proposal store kept the original, so the code sat in the canonical list and the provisional section at once. Task 49 tested that it arrived and never that it left.
+
 **Left unbuilt, for the team to place.** Editing an existing canonical code's name and definition works and has no entry point: destinations.md section 1 describes only Create and Accept, and a control on every code card is a visible change to a read surface D-047 keeps read-only. Accept exercises the same path meanwhile.
 
 **Contained deliberately:** no re-parenting of existing canonical codes, since moving a code across families changes its hue and every existing pill — a version-migration problem, deferred. Family cards keep their read-only color display; color is assigned only in the editor. Editing an existing code's name and definition uses the same panel; parent and color are immutable there.
+
+## D-071 The sidebar title becomes the role switcher, knowingly
+
+Date: 2026-08 | Workflow: navigation, session support | Status: approved. Reverses the D-059 addendum's static-text rule for the title block; prototype-only placement
+
+Role-dependent behavior is now part of what the prototype tests — D-049's views, D-070's gated editing — and there was no reachable way to switch roles. The sidebar title block becomes a native select labeled "Role", options "AFB Researcher" (coder) and "Qualitative Lead" (qualitativeLead); reviewer stays unoffered. The displayed title is the select's value, so the name updates by definition.
+
+Recorded honestly: this is scaffolding placed in product chrome, the inverse of the D-056 addendum's rule, allowed because role switching is a facilitator's session tool, not a product feature — a real deployment takes the role from authentication and returns this block to static text per the D-059 addendum. The select is marked as simulation in the prototype-scope sense.
+
+Behavior: role change announces discretely ("Role: Qualitative Lead"); focus stays on the select; controls appearing or vanishing elsewhere never take focus. D-070's gate remains role and phase together — a lead mid-round still cannot edit, which is the design working. Phase switching stays in the prototype-support surface deliberately.

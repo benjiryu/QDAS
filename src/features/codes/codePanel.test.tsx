@@ -486,7 +486,7 @@ describe('regions, per section 3', () => {
     );
     // The order D-039 fixes: heading and close, search, results, recent,
     // codebook, Create code, note, Save & Close.
-    expect(order).toEqual(['search-results', 'codebook', 'create', 'note', 'actions']);
+    expect(order).toEqual(['search-results', 'codebook', 'note', 'actions']);
   });
 
   it('keeps conditional regions absent rather than empty', () => {
@@ -786,7 +786,7 @@ describe('the fixed header and footer', () => {
     openPanel();
 
     const scroll = scrollRegion();
-    for (const name of ['codebook', 'create', 'note']) {
+    for (const name of ['codebook', 'note']) {
       expect(scroll.contains(region(name))).toBe(true);
     }
   });

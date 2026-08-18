@@ -263,18 +263,46 @@ test('nothing between the input and the dialog is a group to interact into', asy
   }
 });
 
-test('the create form asks for a name and nothing else', async ({ page }) => {
-  // D-046: proposing a code mid-coding costs one field. Scanned expanded,
-  // because the form only exists while the disclosure is open.
-  await page.getByRole('button', { name: /create new code/i }).click();
-  const form = page.locator('.code-panel__create');
-  await expect(form).toBeVisible();
+test('the empty search offers one action, and it is not a form', async ({ page }) => {
+  /*
+    D-070 moved creation to the failure point. What replaced the standing form
+    is a single button in the empty result, so the panel carries nothing a coder
+    has to learn until the vocabulary fails them.
 
-  await expect(form.locator('input, textarea')).toHaveCount(1);
-  await expect(form.getByLabel('Code name')).toBeVisible();
+    Axe runs over the dialog with the empty state up, which is the state the
+    unit tests can describe but not evaluate.
+  */
+  // The panel is already open: this file's `beforeEach` opens it.
+  const panel = page.getByRole('dialog', { name: /code assignment/i });
+  await panel.getByRole('searchbox', { name: 'Search codes' }).fill('zzzznotacode');
+  const results = panel.locator('[data-region="search-results"]');
+  await expect(results.getByRole('button', { name: /propose/i })).toBeVisible();
+  await expect(results.locator('input, textarea')).toHaveCount(0);
 
-  const results = await new AxeBuilder({ page }).include('[role="dialog"]').analyze();
-  expect(results.violations).toEqual([]);
+  expect(
+    (await new AxeBuilder({ page }).include('[role="dialog"]').analyze()).violations,
+  ).toEqual([]);
+});
+
+test('a proposed code is marked in words, and the dialog stays clean', async ({ page }) => {
+  const panel = page.getByRole('dialog', { name: /code assignment/i });
+  await panel.getByRole('searchbox', { name: 'Search codes' }).fill('Compost queue');
+  await panel.getByRole('button', { name: /propose/i }).click();
+
+  /*
+    Both channels, and each in its own element: the visible tag beside the row
+    and the description the checkbox points at. Located separately so this
+    cannot pass on one of them alone, which is the failure D-070 names.
+  */
+  const proposed = panel.locator('[data-region="proposed"]');
+  await expect(proposed.locator('.code-panel__provisional')).toBeVisible();
+  const box = proposed.getByRole('checkbox', { name: 'Compost queue' });
+  await expect(box).toBeChecked();
+  await expect(box).toHaveAccessibleDescription('Provisional');
+
+  expect(
+    (await new AxeBuilder({ page }).include('[role="dialog"]').analyze()).violations,
+  ).toEqual([]);
 });
 
 /**
@@ -350,7 +378,7 @@ const RATIO = `(a, b) => {
   return (hi + 0.05) / (lo + 0.05);
 }`;
 
-test('the three disclosure rows wear one treatment, and the footer does not', async ({ page }) => {
+test('the disclosure rows wear one treatment, and the footer does not', async ({ page }) => {
   /*
     Open Codebook, Create new code and Add note all expand something rather than
     doing something, and since they share a treatment the panel says so: grey
@@ -386,8 +414,9 @@ test('the three disclosure rows wear one treatment, and the footer does not', as
       }),
     );
 
-  // Both of them: Create new code and Add note, not whichever comes first.
-  expect(rows).toHaveLength(2);
+  // The note row, and only it: D-070 removed the standing Create code row that
+  // used to sit beside it.
+  expect(rows).toHaveLength(1);
   for (const row of rows) expect(row).toEqual(codebook);
 
   /*

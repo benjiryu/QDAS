@@ -2,14 +2,19 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { lineageDescription, matchCode } from '../features/codes/codeTree';
 import { useAnnouncer } from '../a11y';
 import { Link, useParams } from 'react-router';
-import { readCodedDataFilter, readSavedWork, writeCodedDataFilter } from '../data/codingSessionStore';
+import {
+  readCodedDataFilter,
+  readProvisionalCodes,
+  readSavedWork,
+  writeCodedDataFilter,
+} from '../data/codingSessionStore';
 import { mergeSessionCodes, readCodebookEdits } from '../data/codebookStore';
 import { changePhase } from '../features/codebook/phaseBoundary';
 import { createSeedFixture } from '../data/seed';
 import { CURRENT_CODER_ID } from '../data/seed/project';
 import { readSimulatedSession, writeSimulatedSession } from '../data/simulatedSession';
 import { PHASE_LABELS } from '../domain';
-import type { ProjectPhase, UserRole } from '../domain';
+import type { Code, ProjectPhase, UserRole } from '../domain';
 import { buildCodedData } from '../features/codedData/codedDataView';
 import type { CodedResult } from '../features/codedData/codedDataView';
 import { resolveCodedDataView, VIEW_LABELS } from '../features/codedData/resolveView';
@@ -75,8 +80,13 @@ export function CodedDataPage() {
       turns: fixture.turns,
       speakers: fixture.speakers,
       users: fixture.users,
+      /*
+        Proposed codes included, per Task 50. Without them an assignment naming
+        one resolved to nothing and was dropped silently — and an excerpt coded
+        only provisionally lost its whole row and its place in the count.
+      */
       codes: mergeSessionCodes(
-        fixture.codes,
+        [...fixture.codes, ...readProvisionalCodes(fixture.project.projectId)],
         readCodebookEdits(fixture.project.projectId).codes,
       ),
       // Seeded work and this session's, which is the only place the coder's own
@@ -429,7 +439,13 @@ function FilterOption({
  * names as text, so a screen reader hears them once rather than twice.
  */
 function ResultRow({ projectId, result }: { projectId: string; result: CodedResult }) {
-  const names = result.codes.map((code) => code.name).join(', ');
+  /*
+    Provisional codes say so in both channels, per D-070: in the pill the eye
+    reads and in the line the ear does. Grey alone told nobody anything.
+  */
+  const nameOf = (code: Code) =>
+    code.status === 'provisional' ? `${code.name} (provisional)` : code.name;
+  const names = result.codes.map(nameOf).join(', ');
   const noteId = useId();
   const [noteOpen, setNoteOpen] = useState(false);
 
@@ -478,7 +494,7 @@ function ResultRow({ projectId, result }: { projectId: string; result: CodedResu
         <span className="coded-data__pills" aria-hidden="true">
           {result.codes.map((code) => (
             <span key={code.codeId} className="coded-data__pill" data-color-token={code.colorToken}>
-              {code.name}
+              {nameOf(code)}
             </span>
           ))}
         </span>

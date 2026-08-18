@@ -451,13 +451,12 @@ describe('provisional codes, per section 1', () => {
     act(() => turn.focus());
     chord('excerpt.code');
 
+    // From the empty search, which since D-070 is the only route to a proposal.
     const panel = () => screen.getByRole('dialog', { name: /code assignment/i });
-    const create = panel().querySelector<HTMLElement>('[data-region="create"]')!;
-    fireEvent.click(within(create).getByRole('button', { name: /create new code/i }));
-    fireEvent.change(within(create).getByLabelText('Code name'), {
+    fireEvent.change(within(panel()).getByRole('searchbox', { name: 'Search codes' }), {
       target: { value: 'Compost queue' },
     });
-    fireEvent.click(within(create).getByRole('button', { name: /create provisional code/i }));
+    fireEvent.click(within(panel()).getByRole('button', { name: /propose/i }));
 
     fireEvent.click(within(panel()).getByRole('button', { name: 'Save & Close' }));
     await waitFor(() =>
@@ -729,10 +728,10 @@ describe('accepting a provisional code, per D-070', () => {
     chord('excerpt.code');
 
     const panel = () => screen.getByRole('dialog', { name: /code assignment/i });
-    const create = panel().querySelector<HTMLElement>('[data-region="create"]')!;
-    fireEvent.click(within(create).getByRole('button', { name: /create new code/i }));
-    fireEvent.change(within(create).getByLabelText('Code name'), { target: { value: name } });
-    fireEvent.click(within(create).getByRole('button', { name: /create provisional code/i }));
+    fireEvent.change(within(panel()).getByRole('searchbox', { name: 'Search codes' }), {
+      target: { value: name },
+    });
+    fireEvent.click(within(panel()).getByRole('button', { name: /propose/i }));
     fireEvent.click(within(panel()).getByRole('button', { name: 'Save & Close' }));
     await waitFor(() =>
       expect(screen.queryAllByRole('dialog', { name: /code assignment/i })).toHaveLength(0),
@@ -777,6 +776,34 @@ describe('accepting a provisional code, per D-070', () => {
     const canonical = region('codebook')!;
     expect(canonical.querySelector(`[data-code-id="${codeId}"]`)).not.toBeNull();
     expect(within(canonical).getByText('Compost queue')).toBeInTheDocument();
+
+    /*
+      And it left. The proposal store is append-only by design, so accepting
+      writes an approved copy under the same identifier and the original stays
+      behind it — without a filter the code would sit in the canonical list and
+      in the provisional section at once. Task 49 tested that it arrived here
+      and never that it left.
+    */
+    expect(region('provisional')).toBeNull();
+  });
+
+  it('marks a provisional record in words, not by its grey alone', async () => {
+    /*
+      D-070: marked in both channels wherever they render. The stylesheet has
+      carried the comment "a proposed code is marked in words, never by colour
+      alone" since the grey was written; the words did not exist.
+
+      After the heading rather than inside it, so the code's identity — which
+      its fragment id and a heading jump both rest on — does not move.
+    */
+    await proposeAndCode('Compost queue');
+    followSidebarLink('Code book');
+
+    const record = region('provisional')!.querySelector('[data-code-id]')!;
+    expect(within(record as HTMLElement).getByText('Provisional')).toBeInTheDocument();
+    expect(
+      within(record as HTMLElement).getByRole('heading', { name: 'Compost queue' }),
+    ).toBeInTheDocument();
   });
 
   it('names each Accept by its code, so a list of them is not one word repeated', async () => {

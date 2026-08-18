@@ -223,8 +223,6 @@ export function TranscriptWorkspace({
     [allExcerpts, allNotes, effectiveAssignments, resolved],
   );
 
-  const codeById = useMemo(() => new Map(codes.map((code) => [code.codeId, code])), [codes]);
-
   const orientation = useTranscriptOrientation({ resolved, userId, flags });
 
   /**
@@ -1011,7 +1009,17 @@ export function TranscriptWorkspace({
         excerptEndOffset={excerpt.endOffset}
         excerptState={excerpt.selection.state}
         codingByTurnId={codingByTurnId}
-        codeById={codeById}
+        /*
+          The panel's lookup, which merges the codebook with whatever has been
+          proposed this session — not a second map built from `codes` alone.
+
+          That map could not resolve a code the coder had just proposed, so the
+          rail dropped its pill while the turn description went on counting the
+          assignment: one turn saying "2 codes" and drawing one. Reading the
+          store instead would fix it only after a remount, and the moment that
+          matters is the one right after saving.
+        */
+        codeById={panel.codeById}
       />
       {/* D-033: below the transcript at narrow width, alongside it when there
           is room, in the same logical order either way. */}
