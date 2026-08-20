@@ -163,9 +163,63 @@ main {
  * destinations.md forbids assuming the user agent's default is visible on this
  * background — which on blue it is not.
  */
-.project-nav__role:focus-visible {
+.project-nav__role:focus-visible,
+.project-nav__session button:focus-visible {
   outline: var(--border-thick) solid var(--focus);
   outline-offset: 2px;
+}
+
+/*
+ * Session controls, per D-072: the prototype-support surface, last in the
+ * landmark.
+ *
+ * Marked as scaffolding by a dashed edge, the treatment the Coded data page's
+ * scenario box used before this absorbed it — so a facilitator's tooling never
+ * reads as part of the product. In blue-50 rather than the border token, which
+ * would disappear on this background.
+ */
+.project-nav__session {
+  margin-top: 1rem;
+  padding-top: 0.5rem;
+  border-top: var(--border-thin) dashed var(--color-blue-50);
+}
+
+/* The controls here wear the nav's white pill, like the role switcher. */
+.project-nav__session button {
+  font: inherit;
+  padding: 0.2rem 0.5rem;
+  color: var(--color-blue-100);
+  background: var(--color-white);
+  border: var(--border-thin) solid var(--color-white);
+  border-radius: var(--radius-small);
+  cursor: pointer;
+}
+
+.project-nav__session-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+}
+
+.project-nav__session-note,
+.project-nav__session-confirm p {
+  margin: 0;
+  font-size: 0.85em;
+  font-weight: var(--font-weight-regular);
+}
+
+.project-nav__session-field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+
+.project-nav__session-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
 }
 
 /*

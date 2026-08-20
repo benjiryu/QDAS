@@ -340,12 +340,16 @@ test('the colour value needs no pan to the card edge at 400 percent', async ({ p
 
 /** Puts the facilitator scenario into a phase where the codebook may be edited. */
 async function asEditingLead(page: import('@playwright/test').Page) {
-  await page.goto(`${projectUrl}/coded-data`);
+  /*
+    Both controls are in the sidebar since D-072 gave the prototype-support
+    surface one home, so this no longer has to start on the Coded data page to
+    reach them — which was the point of moving the phase select.
+  */
+  await page.goto(`${projectUrl}/codebook`);
   await page.getByLabel('Role', { exact: true }).selectOption('qualitativeLead');
+  await page.getByRole('button', { name: 'Session controls' }).click();
   await page.getByLabel('Project phase').selectOption('setup');
-  // By the sidebar, not by `goto`: the scenario lives in a module store and a
-  // full load would throw it away.
-  await page.getByRole('link', { name: 'Code book' }).click();
+
   await expect(page.getByRole('button', { name: 'Create new code' })).toBeVisible();
 }
 
@@ -429,6 +433,30 @@ test('every hue the editor offers clears 3:1 against white', async ({ page }) =>
   for (const { token, ratio } of ratios) {
     expect(ratio, `${token} against white`).toBeGreaterThanOrEqual(3);
   }
+});
+
+test('the session controls open on the blue without violations or sideways scroll', async ({
+  page,
+}) => {
+  /*
+    The half jsdom cannot answer. The sidebar redefines its text to white for
+    the blue it paints on, so a control taking that without colours of its own
+    is invisible; and an expanded region holding a select is exactly what
+    overflows a 320px column, which contract 2.5 forbids.
+
+    Axe with it open, since collapsed it never looks at any of this.
+  */
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.goto(`${projectUrl}/codebook`);
+  await page.getByRole('button', { name: 'Session controls' }).click();
+  await expect(page.getByLabel('Project phase')).toBeVisible();
+
+  const overflows = await page.evaluate(
+    () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+  );
+  expect(overflows, 'the sidebar scrolls sideways with the controls open').toBe(false);
+
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });
 
 test('the codebook has no violations with a query active', async ({ page }) => {

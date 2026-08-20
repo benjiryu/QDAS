@@ -1,9 +1,11 @@
-import { useId, useMemo } from 'react';
-import { NavLink, useParams } from 'react-router';
+import { useId, useMemo, useState } from 'react';
+import { NavLink, useNavigate, useParams } from 'react-router';
 import { createSeedFixture } from '../../data/seed';
 import { CURRENT_CODER_ID } from '../../data/seed/project';
-import type { UserRole } from '../../domain';
+import { PHASE_LABELS } from '../../domain';
+import type { ProjectPhase, UserRole } from '../../domain';
 import { SWITCHABLE_ROLES, useRoleSwitcher } from './useRoleSwitcher';
+import { useSessionControls } from './useSessionControls';
 import { assignedSources } from './assignedSources';
 
 /**
@@ -54,7 +56,34 @@ export function ProjectNav() {
     rather than to the project — it is there on `/projects` too.
   */
   const roleId = useId();
+  const phaseId = useId();
+  const sessionId = useId();
   const roles = useRoleSwitcher();
+  const [sessionOpen, setSessionOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const controls = useSessionControls({
+    projectId: projectId ?? '',
+    seededVersionLabel: createSeedFixture().codebookVersion.versionLabel,
+    /*
+      To the projects list once the stores are cleared.
+
+      Not decoration. The transcript workspace holds the session's work in
+      component state and writes through, so a reset performed underneath it
+      would leave the last participant's excerpts on screen and write them back
+      on the next keystroke — a reset that un-resets itself. Two of the six
+      stores notify; a remount is what makes the other four take effect, and
+      the projects list is where starting over begins anyway.
+    */
+    onReset: () => navigate('/projects'),
+  });
+
+  /*
+    Pulled out before use. Passing `controls.setTriggerElement` straight to
+    `ref=` marks the whole object as holding a ref, and every other read of it
+    in this render then trips `react-hooks/refs`.
+  */
+  const { setTriggerElement } = controls;
 
   const view = useMemo(() => {
     const fixture = createSeedFixture();
@@ -177,6 +206,84 @@ export function ProjectNav() {
           </ul>
         </>
       )}
+
+      {/*
+        The prototype-support surface D-072 gives a home, and the surface the
+        D-056 addendum and D-071 both referenced before one existed.
+
+        Last in the landmark and outside the branch above: a phase and a reset
+        belong to the session rather than to a project, so they are here on
+        `/projects` too, exactly as the role switcher is.
+
+        Collapsed by default, and focus stays on the button across the toggle —
+        D-067's case rather than the code panel's disclosures, because what
+        opens is a group of controls and there is no one field to send focus to.
+
+        The rule this does not escape: participants should never need any of
+        this, and product features never live here.
+      */}
+      <div className="project-nav__session">
+        <button
+          type="button"
+          className="project-nav__session-toggle"
+          aria-expanded={sessionOpen}
+          aria-controls={sessionOpen ? sessionId : undefined}
+          onClick={() => setSessionOpen((open) => !open)}
+        >
+          Session controls
+        </button>
+
+        {sessionOpen ? (
+          <div id={sessionId} className="project-nav__session-body">
+            <p className="project-nav__session-note">
+              Prototype scaffolding, for facilitator setup. Not part of the product.
+            </p>
+
+            <div className="project-nav__session-field">
+              <label htmlFor={phaseId}>Project phase</label>
+              <select
+                id={phaseId}
+                className="project-nav__role"
+                value={controls.phase}
+                onChange={(event) => controls.setPhase(event.target.value as ProjectPhase)}
+              >
+                {Object.entries(PHASE_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {controls.resetPending ? (
+              /*
+                Asking first, per D-072: this one destroys the work a
+                participant did. The prompt the eye reads and the one the ear
+                heard are deliberately not the same string — present tense at
+                the moment of arming, present perfect while it stands.
+              */
+              <div className="project-nav__session-confirm" data-confirm="reset">
+                <p>Reset the session for the next participant? Nothing has been reset yet.</p>
+                <button type="button" autoFocus onClick={controls.confirmReset}>
+                  Reset it
+                </button>
+                <button type="button" onClick={controls.keepSession}>
+                  Keep it
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="project-nav__session-reset"
+                ref={setTriggerElement}
+                onClick={controls.requestReset}
+              >
+                Reset for next participant
+              </button>
+            )}
+          </div>
+        ) : null}
+      </div>
     </nav>
   );
 }

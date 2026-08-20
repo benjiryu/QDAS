@@ -9,16 +9,13 @@ import {
   writeCodedDataFilter,
 } from '../data/codingSessionStore';
 import { mergeSessionCodes, readCodebookEdits } from '../data/codebookStore';
-import { changePhase } from '../features/codebook/phaseBoundary';
 import { createSeedFixture } from '../data/seed';
 import { CURRENT_CODER_ID } from '../data/seed/project';
 import {
   readSimulatedSession,
   subscribeToSimulatedSession,
-  writeSimulatedSession,
 } from '../data/simulatedSession';
-import { PHASE_LABELS, ROLE_LABELS } from '../domain';
-import type { Code, ProjectPhase, UserRole } from '../domain';
+import type { Code } from '../domain';
 import { buildCodedData } from '../features/codedData/codedDataView';
 import type { CodedResult } from '../features/codedData/codedDataView';
 import { resolveCodedDataView, VIEW_LABELS } from '../features/codedData/resolveView';
@@ -49,8 +46,6 @@ const ALL_CODES = 'all';
 
 export function CodedDataPage() {
   const { projectId } = useParams();
-  const roleId = useId();
-  const phaseId = useId();
   const filtersId = useId();
   const searchId = useId();
   const resultsId = useId();
@@ -283,65 +278,12 @@ export function CodedDataPage() {
       )}
 
       {/*
-        The simulated session, per prototype-scope.md: a role switcher standing
-        in for authentication, not a login. Last on the page, after the four
-        regions section 2 fixes in order, so the specified sequence is untouched
-        and a facilitator's control is out of a participant's path.
+        The scenario controls that stood here moved to the sidebar's Session
+        controls disclosure with D-072, which gives the prototype-support
+        surface one home. The role select had been redundant with D-071's
+        switcher since that decision; the phase select was reachable only from
+        this page.
       */}
-      <section className="coded-data__scenario" data-region="scenario">
-        <h2>Session scenario</h2>
-        <p>
-          Simulated, for facilitator setup. Authentication is not built; this stands in for it,
-          per the prototype scope.
-        </p>
-
-        <div className="coded-data__scenario-field">
-          {/*
-            "Simulated role", not "Role": the sidebar's switcher carries that
-            name since D-071, and two controls with one accessible name on one
-            page leaves a screen reader user unable to tell which is which.
-            D-053 settled the same shape for the two search fields.
-          */}
-          <label htmlFor={roleId}>Simulated role</label>
-          <select
-            id={roleId}
-            value={session.role}
-            onChange={(event) => {
-              writeSimulatedSession({ role: event.target.value as UserRole });
-            }}
-          >
-            {Object.entries(ROLE_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="coded-data__scenario-field">
-          <label htmlFor={phaseId}>Project phase</label>
-          <select
-            id={phaseId}
-            value={session.phase}
-            onChange={(event) => {
-              const phase = event.target.value as ProjectPhase;
-              /*
-                Through `changePhase` rather than straight to the session,
-                because the codebook version bumps here: D-070 puts the bump at
-                the phase boundary and only when edits occurred, so a round
-                always references one stable version.
-              */
-              changePhase(projectId ?? '', phase, fixture.codebookVersion.versionLabel);
-            }}
-          >
-            {Object.entries(PHASE_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </div>
-      </section>
     </>
   );
 }

@@ -1262,3 +1262,15 @@ Several decisions — the D-056 addendum, D-071 — reference a prototype-suppor
 A "Session controls" disclosure renders at the very end of the sidebar: collapsed by default, last in reading order, visibly marked as prototype scaffolding. It holds the phase select (all seven phases, announced discretely on change, focus never stolen) and the between-participants reset the store already exposes (`clearSimulatedSession`), with a confirmation since it discards the session's coding work. Role stays in the D-071 switcher; the phase select and it write the same store.
 
 The general rule stands from the D-056 addendum: this surface is scaffolding, participants should never need it, and product features never live here. Facilitators open it during setup and between participants.
+
+**Built by Task 52, and the stated reason above is wrong about the build.** The phase was not "writable only by tests": a "Project phase" select had been on the Coded data page since Task 29, and `destinations.spec.ts`'s `asEditingLead` drove a real browser through it to reach D-070's gate. The gap is real but different — the control was on one page rather than reachable from every route, and it sat beside a role select D-071 had already made redundant. That is a good reason to move it; it is not the reason this decision gives, and the correction is recorded rather than implemented around.
+
+*The Coded data scenario region is gone rather than duplicated.* Two "Project phase" controls on one page is the collision D-071 had just resolved for Role, and the surface this decision creates is meant to be the one home.
+
+*The reset clears six stores, not one.* This decision names `clearSimulatedSession` and justifies the confirmation by "it discards the session's coding work" — but that function discards role and phase and no coding work at all. Six stores carry the comment "For the between-participants reset" and none had a caller outside tests; all six are cleared, which is the only reading under which the confirmation guards anything.
+
+*Confirming navigates to the projects list.* Not decoration: the transcript workspace holds the session's work in component state and writes through, so a reset performed underneath it would leave the last participant's excerpts on screen and write them back on the next keystroke — a reset that un-resets itself. Two of the six stores notify; a remount is what makes the other four take effect.
+
+*And a gap this closed:* the codebook version bump D-070 put at the phase boundary had no test at all. Task 49 built it and this task moved its only caller, and neither would have failed had the phase stopped routing through `changePhase`. It has one now.
+
+The confirmation copies the code panel's delete, with one correction: that pattern leaves focus on the body when its buttons vanish, and this one returns it to the trigger, per contract 2.4.

@@ -6,7 +6,8 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import App from '../../App';
 import { AnnouncerProvider, createAnnouncer } from '../../a11y';
 import { createSeedFixture } from '../../data/seed';
-import { writeSimulatedSession } from '../../data/simulatedSession';
+import { readSavedWork, writeSavedWork } from '../../data/codingSessionStore';
+import { readSimulatedSession, writeSimulatedSession } from '../../data/simulatedSession';
 import { CURRENT_CODER_ID } from '../../data/seed/project';
 import { assignedSources } from './assignedSources';
 
@@ -308,5 +309,171 @@ describe('the role switcher, per D-071', () => {
 
     const label = document.querySelector('.project-nav__group-label')!;
     expect(block()!.compareDocumentPosition(label) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+});
+
+describe('the session controls, per D-072', () => {
+  /*
+    The prototype-support surface several decisions referenced before one
+    existed. What makes it a surface rather than a control: it is last, it is
+    shut until asked for, and it says what it is.
+  */
+  const toggle = () => screen.getByRole('button', { name: 'Session controls' });
+  const open = () => fireEvent.click(toggle());
+
+  it('is collapsed until asked for, and says it is scaffolding when opened', () => {
+    renderAt(`/projects/${project.projectId}`);
+
+    expect(toggle()).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByLabelText('Project phase')).toBeNull();
+
+    open();
+
+    expect(toggle()).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByLabelText('Project phase')).toBeInTheDocument();
+    expect(document.querySelector('.project-nav__session')!.textContent).toMatch(
+      /prototype scaffolding/i,
+    );
+  });
+
+  it('is the last thing in the landmark', () => {
+    // D-072 puts it at the very end of the sidebar's reading order: a
+    // facilitator's tooling after everything a participant needs.
+    renderAt(`/projects/${project.projectId}`);
+
+    const block = document.querySelector('.project-nav__session')!;
+    const destinations = document.querySelector('.project-nav__list')!;
+
+    expect(
+      destinations.compareDocumentPosition(block) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('is there with no project in context, since the session is not the project’s', () => {
+    renderAt('/projects');
+
+    expect(toggle()).toBeInTheDocument();
+  });
+
+  it('leaves focus on the button across the toggle', () => {
+    // D-067's case: what opens is a group of controls, so there is no one field
+    // to send focus to and nothing to send it back from.
+    renderAt(`/projects/${project.projectId}`);
+    act(() => toggle().focus());
+
+    open();
+    expect(toggle()).toHaveFocus();
+
+    fireEvent.click(toggle());
+    expect(toggle()).toHaveFocus();
+  });
+
+  it('announces a phase change once, and leaves focus on the select', () => {
+    renderAt(`/projects/${project.projectId}`);
+    open();
+
+    const select = screen.getByLabelText('Project phase');
+    act(() => select.focus());
+    fireEvent.change(select, { target: { value: 'review' } });
+
+    const spoken = announcer
+      .getHistory()
+      .filter((entry) => entry.message.startsWith('Project phase:'));
+    expect(spoken).toHaveLength(1);
+    expect(spoken[0].message).toBe('Project phase: Review');
+    expect(select).toHaveFocus();
+  });
+
+  it('reveals Create new code on the Codebook page for a lead in a non-coding phase', async () => {
+    /*
+      Task 52's own acceptance, and the thing D-072 says was unreachable. It was
+      reachable — from the Coded data page — but only from there; the point of
+      the move is that a facilitator sets it from wherever they are standing.
+    */
+    renderAt(`/projects/${project.projectId}/codebook`);
+    fireEvent.change(screen.getByLabelText('Role'), { target: { value: 'qualitativeLead' } });
+    open();
+
+    expect(screen.queryByRole('button', { name: 'Create new code' })).toBeNull();
+
+    fireEvent.change(screen.getByLabelText('Project phase'), { target: { value: 'review' } });
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Create new code' })).toBeInTheDocument(),
+    );
+  });
+});
+
+describe('the between-participants reset, per D-072', () => {
+  const openControls = () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Session controls' }));
+  };
+  const resetTrigger = () => screen.getByRole('button', { name: 'Reset for next participant' });
+
+  it('asks first, assertively, and resets nothing until confirmed', () => {
+    /*
+      The second of the two events contract 2.3 lets interrupt. It destroys the
+      work a participant did, which is what D-070's delete confirmation was
+      built for and what this borrows.
+    */
+    renderAt(`/projects/${project.projectId}`);
+    openControls();
+    writeSimulatedSession({ role: 'qualitativeLead' });
+
+    fireEvent.click(resetTrigger());
+
+    expect(document.querySelector('[data-confirm="reset"]')).toBeInTheDocument();
+    const armed = announcer.getHistory().find((entry) => /reset the session/i.test(entry.message))!;
+    expect(armed.politeness).toBe('assertive');
+    expect(armed.reason).toBe('destructiveConfirmation');
+    expect(armed.message).toMatch(/nothing is reset until you confirm/i);
+
+    // And nothing has happened yet.
+    expect(readSimulatedSession().role).toBe('qualitativeLead');
+  });
+
+  it('returns focus to the trigger when kept, which the pattern it copies does not', () => {
+    /*
+      The code panel's delete confirmation leaves focus on the body when its
+      buttons vanish. That is a gap rather than a precedent; contract 2.4 says a
+      temporary view returns focus where it came from.
+    */
+    renderAt(`/projects/${project.projectId}`);
+    openControls();
+    act(() => resetTrigger().focus());
+    fireEvent.click(resetTrigger());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Keep it' }));
+
+    return waitFor(() => {
+      expect(resetTrigger()).toHaveFocus();
+      expect(announcer.getHistory().some((entry) => entry.message === 'Nothing was reset.')).toBe(
+        true,
+      );
+    });
+  });
+
+  it('clears the coding work as well as the scenario, which is what the confirmation promises', () => {
+    /*
+      D-072 names only `clearSimulatedSession`, which discards role and phase
+      and no coding work at all — a confirmation guarding that alone would warn
+      about a loss that does not happen. Every store documenting itself as part
+      of this reset is cleared.
+    */
+    writeSavedWork(project.projectId, {
+      excerpts: [fixture.excerpts[0]],
+      assignments: [fixture.codeAssignments[0]],
+      notes: [],
+      supersededIds: [],
+    });
+    writeSimulatedSession({ role: 'qualitativeLead', phase: 'review' });
+
+    renderAt(`/projects/${project.projectId}`);
+    openControls();
+    fireEvent.click(resetTrigger());
+    fireEvent.click(screen.getByRole('button', { name: 'Reset it' }));
+
+    expect(readSimulatedSession()).toEqual({ role: 'coder', phase: 'independentCoding' });
+    expect(readSavedWork(project.projectId).excerpts).toEqual([]);
   });
 });

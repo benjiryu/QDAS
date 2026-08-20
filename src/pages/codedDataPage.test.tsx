@@ -533,25 +533,28 @@ describe('the simulated session, per prototype-scope.md', () => {
     expect(viewLabel()).toBe('Your coded work');
   });
 
-  it('flips the view when the phase is switched', async () => {
+  it('flips the view when the phase is switched from the sidebar', async () => {
+    /*
+      The phase control moved to the sidebar's Session controls with D-072,
+      which gave the prototype-support surface one home. What this asserts is
+      unchanged: D-049 resolves the view from role and phase together, so a
+      coder past independent coding reads project-wide.
+    */
     const user = userEvent.setup();
     renderAt(codedDataUrl);
 
+    fireEvent.click(screen.getByRole('button', { name: 'Session controls' }));
     await user.selectOptions(screen.getByLabelText('Project phase'), 'review');
+
     expect(viewLabel()).toBe('Project-wide view');
   });
 
-  it('sits after the regions section 2 fixes in order', () => {
+  it('no longer carries a scenario region of its own', () => {
+    // It moved to the sidebar, where a facilitator reaches it from any route
+    // rather than only from this page. D-072.
     renderAt(codedDataUrl);
 
-    const scenario = region('scenario')!;
-    const summary = document.querySelector('.coded-data__summary')!;
-    expect(summary.compareDocumentPosition(scenario) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  });
-
-  it('says it is simulated rather than presenting itself as sign-in', () => {
-    renderAt(codedDataUrl);
-    expect(region('scenario')!.textContent).toMatch(/simulated/i);
+    expect(region('scenario')).toBeNull();
   });
 });
 

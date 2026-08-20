@@ -816,3 +816,39 @@ describe('accepting a provisional code, per D-070', () => {
     ).toBeInTheDocument();
   });
 });
+
+describe('the codebook version at the phase boundary, per D-070', () => {
+  it('bumps once edits have been made, and not before', async () => {
+    /*
+      D-070 puts the bump at the boundary and only when edits occurred, so a
+      round always references one stable version. Untested until now — Task 49
+      built the bump and Task 52 moved its only caller, and neither would have
+      failed if the phase had stopped routing through it.
+
+      The label lives beside the count on this page, stated once.
+    */
+    const seeded = fixture.codebookVersion.versionLabel;
+    const version = () => region('codebook')!.closest('main')!.textContent ?? '';
+
+    writeSimulatedSession({ role: 'qualitativeLead', phase: 'setup' });
+    renderAt(codebookUrl);
+    expect(version()).toContain(seeded);
+
+    // A phase change with nothing edited moves nothing.
+    fireEvent.click(screen.getByRole('button', { name: 'Session controls' }));
+    fireEvent.change(screen.getByLabelText('Project phase'), { target: { value: 'review' } });
+    expect(version()).toContain(seeded);
+
+    // Now edit, and cross a boundary.
+    fireEvent.click(screen.getByRole('button', { name: 'Create new code' }));
+    await waitFor(() => expect(screen.getByLabelText('Code name')).toHaveFocus());
+    fireEvent.change(screen.getByLabelText('Code name'), { target: { value: 'Compost queue' } });
+    fireEvent.change(screen.getByLabelText('Colour'), { target: { value: 'code-color-violet' } });
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'New code' })).toBeNull());
+
+    fireEvent.change(screen.getByLabelText('Project phase'), { target: { value: 'recoding' } });
+
+    await waitFor(() => expect(version()).not.toContain(seeded));
+  });
+});

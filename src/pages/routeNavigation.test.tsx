@@ -80,8 +80,10 @@ describe('reaching a source by following links alone', () => {
     renderAt('/projects');
 
     // Tab past the skip link, the product name, the Projects nav link, the
-    // banner's shortcuts control, and the sidebar's role switcher, which D-071
-    // put in the landmark between them and `main`.
+    // banner's shortcuts control, the sidebar's role switcher, which D-071 put
+    // in the landmark between them and `main`, and its Session controls
+    // disclosure, which D-072 put at the end of the same landmark.
+    await user.tab();
     await user.tab();
     await user.tab();
     await user.tab();
