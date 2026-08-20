@@ -1252,3 +1252,13 @@ Behavior: role change announces discretely ("Role: Qualitative Lead"); focus sta
 *Reviewer left the support surface.* This decision leaves it unoffered in the sidebar and says nothing about the surface that still offered it, which would have let a facilitator reach a state the sidebar could only misreport — a native select whose value matches no option renders as its first, so the sidebar would have claimed "AFB Researcher" while the role was reviewer. Two roles everywhere instead. The cost, recorded rather than absorbed: the prototype can no longer put a participant in the case `resolveCodedDataView` reasons about, a reviewer during independent coding, which D-049 does not name and that comment exists to flag.
 
 The option labels are read from the seeded users' `title` fields rather than written in the component, which is what the D-059 addendum asked of the static text this replaces.
+
+## D-072 The prototype-support surface finally exists: session controls
+
+Date: 2026-08 | Workflow: session support | Status: approved. Closes a spec-vs-build gap D-071 exposed
+
+Several decisions — the D-056 addendum, D-071 — reference a prototype-support surface holding the phase control, but the build never had one: the simulated session's phase was writable only by tests, so a lead could never reach D-070's editing gate in the running prototype.
+
+A "Session controls" disclosure renders at the very end of the sidebar: collapsed by default, last in reading order, visibly marked as prototype scaffolding. It holds the phase select (all seven phases, announced discretely on change, focus never stolen) and the between-participants reset the store already exposes (`clearSimulatedSession`), with a confirmation since it discards the session's coding work. Role stays in the D-071 switcher; the phase select and it write the same store.
+
+The general rule stands from the D-056 addendum: this surface is scaffolding, participants should never need it, and product features never live here. Facilitators open it during setup and between participants.

@@ -1451,3 +1451,17 @@ loss; switching back hides it; the announcement fires once per change. When
 tests pass, commit and update the progress line in the same commit. Do not
 push.
 ```
+
+### Task 52. Session controls
+
+```
+Implement decision D-072. A "Session controls" disclosure at the end of the
+sidebar, collapsed by default, marked as prototype scaffolding. Inside: a
+phase select writing the simulated session store (discrete announcement,
+focus stays on the select) and a between-participants reset calling
+clearSimulatedSession behind a confirmation. Tests: switching to review as
+qualitativeLead reveals Create new code on the Codebook page; the disclosure
+is the last stop in the sidebar's reading order; reset restores the seeded
+session. When tests pass, commit and update the progress line in the same
+commit. Do not push.
+```
