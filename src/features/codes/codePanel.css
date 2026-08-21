@@ -357,6 +357,31 @@
 
 /* Create code and Add note, each collapsed to one row. D-039. Styled above. */
 
+/*
+ * The create form, per section 7 and D-073, which brought it back.
+ *
+ * Its submit takes the same grey the disclosure rows wear rather than a third
+ * button treatment: it sits inside one of them, and the panel's one primary is
+ * still Save & Close.
+ */
+.code-panel__create {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-start;
+  margin-top: 0.35rem;
+}
+
+.code-panel__create button {
+  font: inherit;
+  padding: 0.35rem 0.9rem;
+  color: var(--color-black);
+  background: var(--row-bg);
+  border: var(--border-thick) solid var(--color-grey-750);
+  border-radius: var(--radius-medium);
+  cursor: pointer;
+}
+
 .code-panel__create-plus {
   font-size: 1.1em;
   line-height: 1;

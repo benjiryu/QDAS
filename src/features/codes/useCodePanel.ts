@@ -72,6 +72,14 @@ export interface CodePanelApi {
    */
   proposeFromQuery: () => Code | null;
   /**
+   * The standing Create code disclosure's route, per D-073.
+   *
+   * The same creation flow as `proposeFromQuery`; what differs is the sentence
+   * spoken and where focus goes afterwards, both of which belong to the door.
+   * Returns null where the name is empty or already taken.
+   */
+  proposeFromForm: (name: string) => Code | null;
+  /**
    * Seeds the pending assignment and the note when reopening a saved excerpt.
    * D-030.
    */
@@ -532,6 +540,22 @@ export function useCodePanel({
       const name = draft.name.trim();
       if (name === '') return null;
 
+      /*
+        And not a name something already has, case-insensitively, per the same
+        rule D-070 gave the codebook editor.
+
+        In the shared core rather than in the form, so both doors obey it. The
+        empty-search route cannot reach this — its search covers proposals, so a
+        name that exists is found rather than offered — but the form can, and two
+        provisional codes a coder cannot tell apart is exactly what Task 50's
+        search change existed to prevent.
+      */
+      const taken = [...codes, ...proposedCodes].some(
+        (candidate) =>
+          candidate.name.trim().localeCompare(name, undefined, { sensitivity: 'base' }) === 0,
+      );
+      if (taken) return null;
+
       const code: Code = {
         codeId: newCodeId(),
         projectId,
@@ -565,7 +589,7 @@ export function useCodePanel({
       // Task 50 removed the standing form: one action, one sentence.
       return code;
     },
-    [applyPending, projectId],
+    [applyPending, codes, proposedCodes, projectId],
   );
 
   /**
@@ -579,6 +603,28 @@ export function useCodePanel({
    * state only renders on a query that has already been trimmed and found
    * non-empty.
    */
+  /**
+   * The standing route, per D-073: the Create code disclosure's form.
+   *
+   * The same core as the accelerator below, and a different sentence — each
+   * says where the coder is and what happens next, and those differ by door.
+   * Section 7's wording: created as provisional, added to pending, with the
+   * count, because this route does not return the coder to a search field that
+   * would show them the result.
+   */
+  const proposeFromForm = useCallback(
+    (name: string): Code | null => {
+      const code = createProvisionalCode({ name });
+      if (!code) return null;
+
+      announcer.announce(
+        `${code.name} created as provisional and added to pending. ${pendingListRef.current.length} pending.`,
+      );
+      return code;
+    },
+    [announcer, createProvisionalCode],
+  );
+
   const proposeFromQuery = useCallback((): Code | null => {
     const code = createProvisionalCode({ name: query });
     if (!code) return null;
@@ -836,6 +882,7 @@ export function useCodePanel({
     proposedCodes,
     createProvisionalCode,
     proposeFromQuery,
+    proposeFromForm,
     loadPending,
     noteText,
     setNoteText,

@@ -112,14 +112,33 @@ function checkedCodeIds(): string[] {
   return [...new Set(ids)];
 }
 
+/** Expands the Create code disclosure, per D-039 and D-073. */
+function openCreate() {
+  fireEvent.click(within(region('create')).getByRole('button', { name: /create new code/i }));
+}
+
 /**
- * Proposes a code from the empty search, which since D-070 is the only route.
+ * Proposes a code from the empty search: the accelerator, per D-070.
  *
- * A name is the whole form, per D-046, and now the query is the name.
+ * A name is the whole form, per D-046, and here the query is the name.
  */
 function createCode(name: string) {
   search(name);
   fireEvent.click(proposeButton()!);
+}
+
+/**
+ * The same, by the standing disclosure — the other door D-073 restored.
+ *
+ * Scoped to `region('create')` throughout: "Create new code" is also the
+ * Codebook page's button, and since D-048 the panel can render the companion
+ * codebook inside its own dialog.
+ */
+function createCodeFromForm(name: string) {
+  openCreate();
+  const create = region('create');
+  fireEvent.change(within(create).getByLabelText('Code name'), { target: { value: name } });
+  fireEvent.click(within(create).getByRole('button', { name: /create provisional code/i }));
 }
 
 describe('acceptance: provisional codes do not enter the canonical list', () => {
@@ -241,8 +260,9 @@ describe('creating a provisional code, per section 7', () => {
     renderWorkspace({ ...defaultFlags, allowProvisionalCodes: false });
     openPanel();
 
-    // Nothing standing to remove any more: what the flag hides is the one
-    // action in the empty state, and the region a proposal would land in.
+    // Both doors and the region a proposal would land in: a build that hides
+    // proposed codes must offer no way to make one.
+    expect(panel().querySelector('[data-region="create"]')).toBeNull();
     search('zzzznotacode');
     expect(proposeButton()).toBeNull();
     expect(panel().querySelector('[data-region="proposed"]')).toBeNull();
@@ -275,6 +295,7 @@ describe('creating a provisional code, per section 7', () => {
       'search-results',
       'codebook',
       'proposed',
+      'create',
       'note',
       'actions',
     ]);
@@ -353,5 +374,177 @@ describe('a provisional code says so wherever it renders, per D-070', () => {
 
     const box = within(region('search-results')).getByRole('checkbox', { name: 'Winter planning' });
     expect(box).toHaveAccessibleDescription('Provisional');
+  });
+});
+
+describe('the Create code disclosure, per D-039 and D-073', () => {
+  /*
+    Removed by D-070 and restored here. Task 50 made the empty search the only
+    route on a reasoning of economy; the discoverability cost showed at once,
+    and a coder who does not know that route cannot find it.
+  */
+  const row = () => within(region('create')).getByRole('button', { name: /create new code/i });
+  const nameField = () => within(region('create')).queryByLabelText('Code name');
+
+  it('starts collapsed, as one row', () => {
+    renderWorkspace();
+    openPanel();
+
+    expect(row()).toHaveAttribute('aria-expanded', 'false');
+    expect(row()).not.toHaveAttribute('aria-controls');
+    expect(nameField()).toBeNull();
+  });
+
+  it('focuses the name field on expanding', async () => {
+    renderWorkspace();
+    openPanel();
+
+    openCreate();
+    await act(async () => {});
+
+    expect(nameField()).toHaveFocus();
+    expect(row()).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('returns focus to the row on collapsing', async () => {
+    renderWorkspace();
+    openPanel();
+    openCreate();
+    await act(async () => {});
+
+    fireEvent.click(row());
+    await act(async () => {});
+
+    expect(row()).toHaveFocus();
+    expect(nameField()).toBeNull();
+  });
+
+  it('collapses on Escape, returning focus to the row', async () => {
+    renderWorkspace();
+    openPanel();
+    openCreate();
+    await act(async () => {});
+
+    fireEvent.keyDown(nameField()!, { key: 'Escape' });
+    await act(async () => {});
+
+    expect(row()).toHaveAttribute('aria-expanded', 'false');
+    expect(row()).toHaveFocus();
+  });
+
+  it('leaves the panel open when Escape collapses the form', async () => {
+    /*
+      One key, one effect. The panel's own Escape handler is on `document` and
+      would close the whole panel; the form's handler stops the event before it
+      gets there, which works because React forwards `stopPropagation` to the
+      native event.
+    */
+    renderWorkspace();
+    openPanel();
+    openCreate();
+    await act(async () => {});
+
+    fireEvent.keyDown(nameField()!, { key: 'Escape' });
+    await act(async () => {});
+
+    expect(panel()).toBeInTheDocument();
+  });
+
+  it('still requires a name, and refuses without losing the form', () => {
+    // The validation the empty-search route cannot reach, because a query is
+    // non-empty by the time it offers anything. Contract 2.6: the refusal says
+    // what happened and puts focus where the fix is.
+    renderWorkspace();
+    openPanel();
+    openCreate();
+
+    const create = region('create');
+    fireEvent.change(within(create).getByLabelText('Code name'), { target: { value: '   ' } });
+    fireEvent.click(within(create).getByRole('button', { name: /create provisional code/i }));
+
+    expect(within(create).getByText(/needs a name/i)).toBeInTheDocument();
+    expect(within(create).getByLabelText('Code name')).toHaveFocus();
+    expect(within(create).getByLabelText('Code name')).toHaveValue('   ');
+    expect(panel().querySelector('[data-region="proposed"]')).toBeNull();
+  });
+
+  it('refuses a name a code already has, which is the guard both doors share', () => {
+    /*
+      The empty-search route cannot produce a duplicate — its search covers
+      proposals, so an existing name is found rather than offered. The form can
+      reach the case, and two provisional codes a coder cannot tell apart is
+      exactly what that search change existed to prevent, so the guard lives in
+      the shared core and this door reports it.
+    */
+    renderWorkspace();
+    openPanel();
+
+    createCodeFromForm('Winter planning');
+    openCreate();
+    const create = region('create');
+    fireEvent.change(within(create).getByLabelText('Code name'), {
+      target: { value: 'winter PLANNING' },
+    });
+    fireEvent.click(within(create).getByRole('button', { name: /create provisional code/i }));
+
+    expect(within(create).getByText(/already has that name/i)).toBeInTheDocument();
+    expect(within(region('proposed')).getAllByRole('checkbox')).toHaveLength(1);
+  });
+});
+
+describe('two routes, one creation flow, per D-073', () => {
+  it('produces the same record whichever door made it', () => {
+    /*
+      The point of the task. What is shared is the record, the checking and the
+      provisional semantics; what differs is the sentence spoken and where focus
+      lands, which belong to the door rather than to the code.
+    */
+    renderWorkspace();
+    openPanel();
+
+    createCode('From the search');
+    createCodeFromForm('From the form');
+
+    const rows = within(region('proposed')).getAllByRole('checkbox');
+    expect(rows).toHaveLength(2);
+
+    // Both checked for the capture, both marked provisional in the same channel.
+    for (const box of rows) {
+      expect(box).toBeChecked();
+      expect(box).toHaveAccessibleDescription('Provisional');
+    }
+
+    // And both out of the canonical list, which is section 7's rule.
+    expect(within(region('codebook')).queryByText('From the search')).toBeNull();
+    expect(within(region('codebook')).queryByText('From the form')).toBeNull();
+  });
+
+  it('says a different sentence for each, once, because they leave the coder elsewhere', async () => {
+    /*
+      Counted rather than read off the end. The shared core stays silent and
+      each door speaks once; an announcement left in the core would have the
+      search route say two sentences, and reading only the last would not
+      notice.
+    */
+    renderWorkspace();
+    openPanel();
+
+    createCode('From the search');
+    const spokenOfSearch = announcer
+      .getHistory()
+      .filter((entry) => entry.message.includes('From the search'));
+    expect(spokenOfSearch.map((entry) => entry.message)).toEqual([
+      'Proposed and checked: From the search',
+    ]);
+
+    createCodeFromForm('From the form');
+    await act(async () => {});
+    const spokenOfForm = announcer
+      .getHistory()
+      .filter((entry) => entry.message.includes('From the form'));
+    expect(spokenOfForm).toHaveLength(1);
+    expect(spokenOfForm[0].message).toBe(
+      'From the form created as provisional and added to pending. 2 pending.',
+    );
   });
 });

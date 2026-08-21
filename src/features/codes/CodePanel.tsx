@@ -9,6 +9,7 @@ import {
 import type { PrototypeFlags } from '../../config/flags';
 import type { Code } from '../../domain';
 import { CodebookContent } from '../codebook/CodebookContent';
+import { CreateCodeDisclosure } from './CreateCodeDisclosure';
 import { NoteDisclosure } from './NoteDisclosure';
 import type { CodeNode } from './codeTree';
 import type { CodePanelApi } from './useCodePanel';
@@ -247,10 +248,11 @@ export function CodePanel({ panel, flags, excerptText }: CodePanelProps) {
             <>
               <p>No codes match. The codebook below is unchanged.</p>
               {/*
-                The one action the empty state offers, per D-070 and Task 50.
-                It lives here rather than in standing chrome so the panel gains
-                nothing a coder has to learn until the vocabulary fails them —
-                and when it does, the fix is one press from where they noticed.
+                The accelerator, per D-070 as amended by D-073: the fix offered
+                at the point the vocabulary failed, one press from where the
+                coder noticed. It was the only route until D-073 restored the
+                standing disclosure below; what it keeps is its one-action
+                value, not exclusivity.
 
                 Under the same flag as the region the proposal lands in: a build
                 that hides proposed codes must not offer a way to make one.
@@ -366,7 +368,16 @@ export function CodePanel({ panel, flags, excerptText }: CodePanelProps) {
         </div>
       ) : null}
 
-      {/* 6. Note, collapsed. One per excerpt, plain text, no type: types
+      {/* 6. Create code, collapsed. Offered only where the project permits
+          provisional codes: a form that cannot produce one is a dead control.
+
+          Restored by D-073, which reversed Task 50's removal on the
+          discoverability cost — a coder who does not know the empty-search
+          route cannot find it. Every role, every phase, as proposing always
+          was; D-070's gate is about the codebook, not about proposing into it. */}
+      {flags.allowProvisionalCodes ? <CreateCodeDisclosure panel={panel} /> : null}
+
+      {/* 7. Note, collapsed. One per excerpt, plain text, no type: types
           belong to the notes page specification, per D-020. D-032 keeps it
           here rather than on the top bar. */}
       <NoteDisclosure panel={panel} openExpanded={panel.openFocus === 'note'} />

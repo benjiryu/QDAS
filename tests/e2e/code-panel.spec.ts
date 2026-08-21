@@ -284,6 +284,27 @@ test('the empty search offers one action, and it is not a form', async ({ page }
   ).toEqual([]);
 });
 
+test('the create form asks for a name and nothing else', async ({ page }) => {
+  /*
+    Restored with the form by D-073. D-046 keeps the whole form to a name —
+    proposing happens mid-coding, and two fields of prose at that moment is a
+    codebook entry demanded in the middle of reading a transcript.
+
+    Axe over the dialog with the form expanded, which the empty-search state
+    cannot cover: it has no form in it at all.
+  */
+  const panel = page.getByRole('dialog', { name: /code assignment/i });
+  const create = panel.locator('[data-region="create"]');
+
+  await create.getByRole('button', { name: /create new code/i }).click();
+  await expect(create.getByLabel('Code name')).toBeVisible();
+  await expect(create.locator('input, textarea')).toHaveCount(1);
+
+  expect(
+    (await new AxeBuilder({ page }).include('[role="dialog"]').analyze()).violations,
+  ).toEqual([]);
+});
+
 test('a proposed code is marked in words, and the dialog stays clean', async ({ page }) => {
   const panel = page.getByRole('dialog', { name: /code assignment/i });
   await panel.getByRole('searchbox', { name: 'Search codes' }).fill('Compost queue');
@@ -378,7 +399,7 @@ const RATIO = `(a, b) => {
   return (hi + 0.05) / (lo + 0.05);
 }`;
 
-test('the disclosure rows wear one treatment, and the footer does not', async ({ page }) => {
+test('the three disclosure rows wear one treatment, and the footer does not', async ({ page }) => {
   /*
     Open Codebook, Create new code and Add note all expand something rather than
     doing something, and since they share a treatment the panel says so: grey
@@ -414,9 +435,9 @@ test('the disclosure rows wear one treatment, and the footer does not', async ({
       }),
     );
 
-  // The note row, and only it: D-070 removed the standing Create code row that
-  // used to sit beside it.
-  expect(rows).toHaveLength(1);
+  // Both of them again: D-073 restored the Create code row D-070 had removed,
+  // and it wears the same treatment as the note row beside it.
+  expect(rows).toHaveLength(2);
   for (const row of rows) expect(row).toEqual(codebook);
 
   /*

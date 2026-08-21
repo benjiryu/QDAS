@@ -94,12 +94,13 @@ Per D-053, **`codes.codebook`** hops between the surfaces without closing anythi
 5. Recently used codes, collapsed by default
 6. Codebook, in canonical order
 7. Proposed codes, present only when the project permits provisional codes
-8. Pending assignment
-9. Note
-10. Uncertainty control
-11. Save, Cancel
+8. Create a code
+9. Pending assignment
+10. Note
+11. Uncertainty control
+12. Save, Cancel
 
-**Amended by D-070:** "Create a code" is gone from this list. Creating one is now the empty search result's single action, so there is no standing region for it — see *Propose a code from the empty search* below. This reverses D-039's Create code disclosure and shortens its fixed order by one.
+**Amended by D-070 and restored by D-073.** D-070 removed "Create a code" from this list, on the reasoning that creation belonged at the failure point rather than in standing chrome. D-073 puts it back after the codebook region: the discoverability cost was immediate, and a coder who does not know the empty-search route cannot find it. The empty-search offer stays as an accelerator into the same flow — see *Propose a code* below.
 
 This order never changes. Sections 4, 5, and 7 appear and disappear, but the sections that remain never reorder around them. Search results appear in their own region rather than filtering the canonical codebook in place, so the codebook's structure stays where the user learned it.
 
@@ -146,7 +147,9 @@ Examples remain out of scope for v0.1 per D-019, and remain hidden from a coder 
 
 ## 7. Creating a provisional code
 
-**Amended by D-070:** there is no form. The name comes from the search query that found nothing, so the whole act is one press — and the empty-name refusal this section used to require is unreachable, the empty state rendering only on a query already found non-empty.
+**Amended by D-070, restored by D-073: two routes, one flow.** The standing Create code disclosure collects the name; the empty search result proposes the query as one press. Both produce the same record with the same provisional semantics, and each announces its own sentence, because they leave the coder in different places — the accelerator returns them to the search field that now finds the code, and the form collapses to its row.
+
+The empty-name refusal below applies to the form, which can reach that case. The accelerator cannot: the empty state renders only on a query already found non-empty. Neither can create a name another code already has, case-insensitively — the accelerator because its search covers proposals and finds one rather than offering to make a second, the form because the shared creation flow refuses and says so.
 
 - ~~Name and short definition are required; full definition is optional.~~ **Amended by D-046:** a name is the whole form. Proposing a code happens mid-coding, and two fields of prose at that moment is a codebook entry demanded in the middle of reading a transcript.
 - A created code enters the pending assignment immediately.
