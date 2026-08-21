@@ -1274,3 +1274,11 @@ The general rule stands from the D-056 addendum: this surface is scaffolding, pa
 *And a gap this closed:* the codebook version bump D-070 put at the phase boundary had no test at all. Task 49 built it and this task moved its only caller, and neither would have failed had the phase stopped routing through `changePhase`. It has one now.
 
 The confirmation copies the code panel's delete, with one correction: that pattern leaves focus on the body when its buttons vanish, and this one returns it to the trigger, per contract 2.4.
+
+## D-073 The standing Create code disclosure returns to the panel
+
+Date: 2026-08 | Workflow: code selection | Status: approved. Partially reverses D-070's coder-proposal placement; restores D-039's disclosure
+
+Task 50 made the empty search result the only route to proposing a code, on a reasoning of economy: creation at the failure point, no new standing chrome in a validated panel, no duplicate routes. The discoverability cost surfaced immediately — a coder who does not know the route cannot find it — and the duplicate-routes objection cuts the other way in this project, where capture itself has three deliberate routes and the menu "adds no capability" by design.
+
+D-039's collapsed Create code disclosure returns to the panel's fixed region order, in its old position after the codebook region: one row with a plus affordance, expanding to name and definition, focus to the name field on expand, back to the row on collapse; created codes are provisional under all existing D-070 rules, available to every role at every phase, as proposing always was. The empty-search offer stays as an accelerator into the same creation flow, name prefilled and the code checked on creation, so its one-action value survives. Two routes, one flow, one set of provisional semantics.

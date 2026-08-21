@@ -1465,3 +1465,19 @@ is the last stop in the sidebar's reading order; reset restores the seeded
 session. When tests pass, commit and update the progress line in the same
 commit. Do not push.
 ```
+
+### Task 53. The Create code disclosure returns
+
+```
+Implement decision D-073 per the amended docs/patterns/code-selection.md.
+Restore the collapsed Create code disclosure to the panel's fixed region
+order after the codebook region: plus-affordance row, expanding to name and
+definition, focus to the name on expand and back to the row on collapse,
+Escape while expanded collapses without closing the panel. Creation goes
+through the same provisional flow Task 50 built; the empty-search offer
+stays and prefills. No role or phase gating. Tests: both routes produce one
+identical provisional code path; the disclosure is reachable in the region
+order; Escape layering collapses the disclosure before the panel. When
+tests pass, commit and update the progress line in the same commit. Do not
+push.
+```
