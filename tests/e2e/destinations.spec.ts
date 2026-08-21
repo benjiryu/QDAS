@@ -547,6 +547,34 @@ test('the excerpt reads whole and stays inside 320px, per D-069', async ({ page 
   expect(geometry.spills, 'the quote reaches past its card').toBe(false);
 });
 
+test('the notes page quotes its excerpts rather than slanting them', async ({ page }) => {
+  /*
+    In a browser because generated content is what draws the marks, and jsdom
+    reports neither `::before` content nor a computed `font-style` it never
+    applied.
+
+    The passage in the DOM stays the passage: the quotes are drawn, not written
+    into the text, so what a test compares against the transcript is still what
+    the participant said.
+  */
+  await noteAnExcerpt(page, 'A thought about this passage.');
+
+  const quote = page.locator('.notes__excerpt').first();
+  await expect(quote).toBeVisible();
+
+  const drawn = await quote.evaluate((node) => ({
+    slant: getComputedStyle(node).fontStyle,
+    before: getComputedStyle(node, '::before').content,
+    after: getComputedStyle(node, '::after').content,
+    text: node.textContent ?? '',
+  }));
+
+  expect(drawn.slant).toBe('normal');
+  expect(drawn.before).not.toBe('none');
+  expect(drawn.after).not.toBe('none');
+  expect(drawn.text, 'the marks are drawn, not written into the passage').not.toContain('“');
+});
+
 test('the notes page with an excerpt entry has no accessibility violations', async ({ page }) => {
   // The existing axe run sees only the two scoped notes, so it never looks at
   // the blockquote or the hidden "Note:" prefix. This one does.

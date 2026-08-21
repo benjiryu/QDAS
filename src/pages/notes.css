@@ -67,19 +67,35 @@
  * Long words break for the same reason. Nothing truncates any more, so a URL or
  * a long unbroken token in a captured passage now reaches this box whole.
  *
- * Italic, the conventional treatment for quoted speech, and a third channel on
- * top of D-069's two rather than a replacement for either: the grey block and
- * the `blockquote` still carry the distinction on their own, so a reader who
- * cannot make out the slant loses nothing.
+ * Quotation marks rather than italics, which is what this carried first. They
+ * say the same thing more plainly and without the reading cost a slant puts on
+ * some dyslexic readers — which counts for more here than it would elsewhere.
+ *
+ * Generated content, so the passage in the DOM stays exactly the passage: the
+ * tests that compare this block's text against the transcript's own segments
+ * keep comparing what the participant said rather than what the participant
+ * said plus punctuation.
+ *
+ * A third channel either way, on top of D-069's two rather than replacing
+ * either: the grey block and the `blockquote` still carry the distinction
+ * between the participant's voice and the coder's on their own.
  */
 .notes__excerpt {
   font-size: var(--reading-font-size);
-  font-style: italic;
+  quotes: '“' '”' '‘' '’';
   margin: 0;
   padding: 0.35rem 0.5rem;
   background: var(--row-bg);
   border-radius: var(--radius-small);
   overflow-wrap: break-word;
+}
+
+.notes__excerpt::before {
+  content: open-quote;
+}
+
+.notes__excerpt::after {
+  content: close-quote;
 }
 
 .notes__codes {
