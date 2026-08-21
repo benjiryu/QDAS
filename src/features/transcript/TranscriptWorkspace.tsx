@@ -327,24 +327,6 @@ export function TranscriptWorkspace({
     /* `excerpt.note` with the code panel open goes to its note region rather
        than capturing again. D-055. */
     onFocusPanelNote: () => panelFocusNote.current?.(),
-    onOpenNote: (summary) => {
-      const note = summary.noteId
-        ? allNotes.find((candidate) => candidate.noteId === summary.noteId)
-        : undefined;
-      /*
-        The excerpt's own turn, not the focused one. A pointer user clicks the
-        rail icon on a turn they never focused, and returning them to wherever
-        focus happened to be would land them somewhere they did not come from.
-      */
-      noteReturnTurnId.current = requireTurnOf(resolved, summary.range.startSegmentId).turn.turnId;
-      /* Wears selection blue while its panel is open, per D-063. */
-      setNotedRange(summary.range);
-      notePanel.open({
-        target: { kind: 'excerpt', excerptId: summary.excerptId, noteId: summary.noteId },
-        label: `sentences ${summary.startSentence} to ${summary.endSentence}`,
-        text: note?.noteText ?? '',
-      });
-    },
     onReopen: (summary) => {
       /*
         The panel opens pre-populated with what is already saved, per D-030 —
@@ -356,7 +338,14 @@ export function TranscriptWorkspace({
         ? allNotes.find((candidate) => candidate.noteId === summary.noteId)
         : undefined;
       panelLoad.current?.(summary.codeIds, note?.noteText ?? '');
-      setPanelFocus('search');
+      /*
+        And it lands on the note where there is one, whichever route asked.
+
+        One rule rather than three: `excerpt.open`, `note.open` and a click all
+        reopen the whole excerpt, and what the excerpt carries decides where the
+        coder arrives — the note if it has one, the search field if it does not.
+      */
+      setPanelFocus(summary.noteId ? 'note' : 'search');
       setPanelOpen(true);
     },
     initialSelection: restored.draft.selection,
@@ -438,6 +427,22 @@ export function TranscriptWorkspace({
         const existing = allNotes.find(
           (candidate) => candidate.relatedExcerptId === reopenedId,
         );
+
+        /*
+          Emptied, on the coder's own note: delete it.
+
+          D-055 made emptying the field the way to delete a note, and that
+          affordance lived in the isolated panel. Now that every route into an
+          existing excerpt opens this one instead, the delete comes with it —
+          otherwise a note written by mistake could only be removed by deleting
+          the whole excerpt.
+
+          Another coder's is untouched, the same rule the write path below
+          follows: nothing here overwrites or removes work that is not ours.
+        */
+        if (noteText === '' && existing && existing.authorId === userId) {
+          setSavedNotes((current) => current.filter((note) => note.noteId !== existing.noteId));
+        }
 
         if (noteText !== '') {
           if (existing && existing.authorId === userId) {

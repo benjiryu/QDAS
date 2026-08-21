@@ -78,6 +78,17 @@ const noteField = () => within(notePanel()!).getByRole('textbox', { name: 'Note'
 const codePanelIsOpen = () =>
   screen.queryAllByRole('dialog', { name: /code assignment/i }).length > 0;
 
+/** The code panel, which every route into an existing excerpt now opens. */
+const codePanel = () => screen.getByRole('dialog', { name: /code assignment/i });
+/** Its note field, which a reopened noted excerpt lands in already expanded. */
+const panelNoteField = () =>
+  within(codePanel()).getByLabelText(/note about this excerpt/i) as HTMLTextAreaElement;
+/** Saves and closes the code panel, per D-042: every way out commits. */
+async function saveAndClosePanel() {
+  fireEvent.click(within(codePanel()).getByRole('button', { name: 'Save & Close' }));
+  await waitFor(() => expect(codePanelIsOpen()).toBe(false));
+}
+
 /** Every turn, so a test can pick one that is uncoded in the fixture. */
 const turns = () => Array.from(document.querySelectorAll<HTMLElement>('[data-turn-id]'));
 
@@ -169,13 +180,17 @@ describe('excerpt.note opens the note and nothing else, per D-055', () => {
   });
 });
 
-describe('note.open reaches an existing note, per D-055', () => {
-  it('opens loaded with what was written, and says so', async () => {
-    /*
-      Loaded and new are announced differently, the D-036 honesty idiom. A coder
-      who believes they are starting a new note while editing an old one
-      destroys the old one on the way past.
-    */
+describe('note.open reaches an existing note, per D-055 as amended', () => {
+  /*
+    The destination moved. D-055 sent every direct note route to the isolated
+    panel, which split an excerpt in half: reopening a passage you had noted
+    gave you a surface that could only edit the note, and adding a code meant
+    closing and coming back by another chord.
+
+    Now every route into an existing excerpt opens the code panel, and what the
+    excerpt carries decides where focus lands rather than which panel opens.
+  */
+  it('opens the code panel on the note, loaded with what was written', async () => {
     renderAt(sourceUrl);
     const turn = focusFreshTurn();
     await writeNoteOn(turn, 'First thought.');
@@ -183,14 +198,17 @@ describe('note.open reaches an existing note, per D-055', () => {
     act(() => turn.focus());
     chord('note.open');
 
-    await waitFor(() => expect(notePanel()).not.toBeNull());
-    expect(noteField()).toHaveValue('First thought.');
-    expect(announced().join(' ')).toContain('Existing note loaded');
-    expect(announced().join(' ')).toContain('New note');
+    await waitFor(() => expect(codePanelIsOpen()).toBe(true));
+    expect(notePanel(), 'the isolated panel is not this route any more').toBeNull();
+    expect(panelNoteField()).toHaveValue('First thought.');
+    expect(panelNoteField()).toHaveFocus();
+    expect(announced().join(' ')).toContain('Note field focused');
   });
 
   it('edits the note in place rather than writing a second one', async () => {
-    // D-011 allows one note per excerpt, so an edit has to be an edit.
+    // D-011 allows one note per excerpt, so an edit has to be an edit — and
+    // that holds through the code panel's note region as it did through the
+    // isolated one, because both always edited the same note.
     renderAt(sourceUrl);
     const turn = focusFreshTurn();
     await writeNoteOn(turn, 'First thought.');
@@ -198,20 +216,20 @@ describe('note.open reaches an existing note, per D-055', () => {
 
     act(() => turn.focus());
     chord('note.open');
-    await waitFor(() => expect(notePanel()).not.toBeNull());
-    fireEvent.change(noteField(), { target: { value: 'Second thought.' } });
-    fireEvent.click(within(notePanel()!).getByRole('button', { name: 'Save & Close' }));
-    await waitFor(() => expect(notePanel()).toBeNull());
+    await waitFor(() => expect(codePanelIsOpen()).toBe(true));
+    fireEvent.change(panelNoteField(), { target: { value: 'Second thought.' } });
+    await saveAndClosePanel();
 
     expect(savedCounts().notes, 'still one note').toBe(afterFirst.notes);
     act(() => turn.focus());
     chord('note.open');
-    await waitFor(() => expect(noteField()).toHaveValue('Second thought.'));
+    await waitFor(() => expect(panelNoteField()).toHaveValue('Second thought.'));
   });
 
   it('deletes the note when the field is emptied', async () => {
-    // The one destructive act the panel offers, and deliberate rather than a
-    // side effect: the panel says on screen that clearing deletes.
+    // Emptying still deletes, through this panel as through the other: the
+    // note is the same record whichever surface edits it, per D-055's last
+    // paragraph, which this change leaves standing.
     renderAt(sourceUrl);
     const turn = focusFreshTurn();
     await writeNoteOn(turn, 'Delete me.');
@@ -219,15 +237,12 @@ describe('note.open reaches an existing note, per D-055', () => {
 
     act(() => turn.focus());
     chord('note.open');
-    await waitFor(() => expect(notePanel()).not.toBeNull());
-    expect(within(notePanel()!).getByText(/deletes the note/i)).toBeInTheDocument();
+    await waitFor(() => expect(codePanelIsOpen()).toBe(true));
 
-    fireEvent.change(noteField(), { target: { value: '   ' } });
-    fireEvent.click(within(notePanel()!).getByRole('button', { name: 'Save & Close' }));
-    await waitFor(() => expect(notePanel()).toBeNull());
+    fireEvent.change(panelNoteField(), { target: { value: '   ' } });
+    await saveAndClosePanel();
 
     expect(savedCounts().notes).toBe(afterFirst.notes - 1);
-    expect(announced().join(' ')).toContain('Note deleted.');
   });
 
   it('is unavailable on a turn with no note, and says which is missing', async () => {
@@ -239,6 +254,7 @@ describe('note.open reaches an existing note, per D-055', () => {
     chord('note.open');
 
     expect(notePanel()).toBeNull();
+    expect(codePanelIsOpen(), 'and nothing else opens either').toBe(false);
     expect(announced().join(' ')).toContain('No note on this speaker turn.');
   });
 });
@@ -270,8 +286,8 @@ describe('two notes on one turn are disambiguated, per D-055', () => {
     expect(announced().join(' ')).toContain('2 notes on this speaker turn');
 
     fireEvent.click(options[1]);
-    await waitFor(() => expect(notePanel()).not.toBeNull());
-    expect(noteField()).toHaveValue('Second note.');
+    await waitFor(() => expect(codePanelIsOpen()).toBe(true));
+    expect(panelNoteField()).toHaveValue('Second note.');
   });
 });
 
@@ -291,7 +307,10 @@ describe('the pointer twin, per D-055', () => {
     expect(icon.closest('[aria-hidden="true"]')).not.toBeNull();
 
     fireEvent.click(icon);
-    await waitFor(() => expect(noteField()).toHaveValue('Click me open.'));
+    // Into the code panel now, on the note: the icon is still the pointer twin
+    // of `note.open`, and both arrive at the same place.
+    await waitFor(() => expect(codePanelIsOpen()).toBe(true));
+    expect(panelNoteField()).toHaveValue('Click me open.');
   });
 });
 
@@ -321,11 +340,15 @@ describe('the code panel keeps its own note region', () => {
     chord('excerpt.open');
     await waitFor(() => expect(codePanelIsOpen()).toBe(true));
 
-    const panel = screen.getByRole('dialog', { name: /code assignment/i });
-    expect(within(panel).getByRole('button', { name: /edit note/i })).toBeInTheDocument();
-    expect(panel.querySelector('[data-note-text]')?.textContent).toBe(
-      'Written in the note panel.',
-    );
+    /*
+      Open on the note rather than shut over it. The collapsed preview was what
+      showed the text while the box was closed; on an excerpt that carries a
+      note the box is the thing the coder arrives in, so the text is in the
+      field instead.
+    */
+    expect(within(codePanel()).getByRole('button', { name: /edit note/i })).toBeInTheDocument();
+    expect(panelNoteField()).toHaveValue('Written in the note panel.');
+    expect(panelNoteField()).toHaveFocus();
   });
 });
 
@@ -360,18 +383,22 @@ describe('clicking routes by what the excerpt carries', () => {
   const clickFirstSentenceOf = (turn: HTMLElement) =>
     fireEvent.click(turn.querySelector('[data-segment-id]')!);
 
-  it('opens the note panel on an excerpt carrying only a note', async () => {
-    // The code panel on a note-only excerpt is an empty codebook with the note
-    // hidden in a disclosure, which is the cost D-055 exists to remove.
+  it('opens the code panel on the note of an excerpt carrying only a note', async () => {
+    /*
+      A click means "open what is here", and what is here is the excerpt — all
+      of it. The note is where focus lands rather than what decides the panel,
+      so the codes are one Tab away instead of a close and a different chord.
+    */
     renderAt(sourceUrl);
     const turn = focusFreshTurn();
     await writeNoteOn(turn, 'Only a note here.');
 
     clickFirstSentenceOf(turn);
 
-    await waitFor(() => expect(notePanel()).not.toBeNull());
-    expect(noteField()).toHaveValue('Only a note here.');
-    expect(codePanelIsOpen(), 'code selection stays out of it').toBe(false);
+    await waitFor(() => expect(codePanelIsOpen()).toBe(true));
+    expect(notePanel()).toBeNull();
+    expect(panelNoteField()).toHaveValue('Only a note here.');
+    expect(panelNoteField()).toHaveFocus();
   });
 
   it('still opens code selection on a coded excerpt', async () => {
@@ -449,10 +476,92 @@ describe('clicking routes by what the excerpt carries', () => {
     expect(labels.some((label) => label.endsWith('a note'))).toBe(true);
     expect(labels.some((label) => /\d+ codes?$/.test(label))).toBe(true);
 
-    // And each row opens its own kind.
+    /*
+      Each row still says which it is — the chooser's wording is the one thing
+      the intent still shapes — but every row opens the excerpt now, and the
+      note it carries is where focus lands.
+    */
     const noteRow = options[labels.findIndex((label) => label.endsWith('a note'))];
     fireEvent.click(noteRow);
-    await waitFor(() => expect(notePanel()).not.toBeNull());
-    expect(noteField()).toHaveValue('A note over the turn.');
+    await waitFor(() => expect(codePanelIsOpen()).toBe(true));
+    expect(panelNoteField()).toHaveValue('A note over the turn.');
+  });
+});
+
+describe('one panel for an existing excerpt, whatever the route', () => {
+  /*
+    The rule this change replaced three with: every route into an excerpt that
+    already exists opens the code panel, and what the excerpt carries decides
+    where the coder lands rather than which panel opens.
+  */
+  const codeCheckbox = () =>
+    codePanel().querySelector<HTMLInputElement>('[data-region="codebook"] [data-code-id]')!;
+
+  it('lands on the note when the excerpt has one, and on search when it does not', async () => {
+    renderAt(sourceUrl);
+    const turn = focusFreshTurn();
+    await writeNoteOn(turn, 'A thought.');
+
+    act(() => turn.focus());
+    chord('excerpt.open');
+    await waitFor(() => expect(codePanelIsOpen()).toBe(true));
+    expect(panelNoteField(), 'a noted excerpt lands on its note').toHaveFocus();
+
+    // Add a code and drop the note, then come back: no note, so search.
+    fireEvent.click(codeCheckbox());
+    fireEvent.change(panelNoteField(), { target: { value: '' } });
+    await saveAndClosePanel();
+
+    act(() => turn.focus());
+    chord('excerpt.open');
+    await waitFor(() => expect(codePanelIsOpen()).toBe(true));
+    expect(
+      within(codePanel()).getByRole('searchbox', { name: 'Search codes' }),
+      'and one without lands on search',
+    ).toHaveFocus();
+  });
+
+  it('lets a note-only excerpt gain a code without leaving the panel', async () => {
+    /*
+      The round trip the old routing blocked. Reopening a noted passage used to
+      give a surface that could only edit the note, so adding a code meant
+      closing and coming back by a different chord — the cost recorded when the
+      split was built.
+    */
+    renderAt(sourceUrl);
+    const turn = focusFreshTurn();
+    await writeNoteOn(turn, 'Worth coding later.');
+    const before = savedCounts();
+
+    fireEvent.click(turn.querySelector('[data-segment-id]')!);
+    await waitFor(() => expect(codePanelIsOpen()).toBe(true));
+    fireEvent.click(codeCheckbox());
+    await saveAndClosePanel();
+
+    const after = savedCounts();
+    expect(after.assignments, 'the code went on').toBe(before.assignments + 1);
+    expect(after.notes, 'and the note stayed').toBe(before.notes);
+    expect(after.excerpts, 'on the same excerpt').toBe(before.excerpts);
+  });
+
+  it('deletes the note when its field is emptied, the way the isolated panel did', async () => {
+    /*
+      D-055 made emptying the field the delete, and that affordance lived in the
+      panel this routing replaced. It came across: the note is the same record
+      whichever surface edits it.
+    */
+    renderAt(sourceUrl);
+    const turn = focusFreshTurn();
+    await writeNoteOn(turn, 'Written by mistake.');
+    const before = savedCounts();
+
+    act(() => turn.focus());
+    chord('note.open');
+    await waitFor(() => expect(codePanelIsOpen()).toBe(true));
+
+    fireEvent.change(panelNoteField(), { target: { value: '   ' } });
+    await saveAndClosePanel();
+
+    expect(savedCounts().notes).toBe(before.notes - 1);
   });
 });

@@ -57,7 +57,7 @@ Per D-060, the menu never alters the native selection or its appearance. The tra
 | `confirmed` | A range is captured and the panel is open |
 | `saved` | Range persisted with at least one code assignment |
 
-Transitions: `idle` → `confirmed` on capture. `confirmed` → `saved` on save with a non-empty pending assignment, or per D-055 with a saved note: an excerpt persists with at least one code or a note. `confirmed` → `idle` on closing with neither, which discards the capture; with codes checked, closing commits, per D-042; in the note panel, closing with text commits the note. `saved` → `confirmed` via `excerpt.open` per D-030, range locked, assignments preloaded. Note-only excerpts reopen through `note.open` into the note panel, and **clicking** one opens the note panel as well: a click means "open what is here", so it answers with whatever is there.
+Transitions: `idle` → `confirmed` on capture. `confirmed` → `saved` on save with a non-empty pending assignment, or per D-055 with a saved note: an excerpt persists with at least one code or a note. `confirmed` → `idle` on closing with neither, which discards the capture; with codes checked, closing commits, per D-042; in the note panel, closing with text commits the note. `saved` → `confirmed` via `excerpt.open` per D-030, range locked, assignments preloaded. **Every route into an existing excerpt reaches this same panel** — `excerpt.open`, `note.open`, a click on the passage, a click on the rail's note icon — and what the excerpt carries decides where focus lands rather than which panel opens: the note field where it has a note, the search field where it does not. A click still means "open what is here", and what is here is the excerpt, all of it.
 
 `excerpt.open` deliberately does not route that way. It reopens for coding whatever the excerpt carries, and it is the only path by which a passage noted before it was coded can gain codes: re-capturing the same range creates a second excerpt rather than editing the first. The three routes each mean something distinct — the click asks what is here, `excerpt.open` asks to code, `note.open` asks for the note.
 
@@ -70,7 +70,7 @@ There is no adjustment phase. Fixing a wrong range means cancelling and reselect
 | `excerpt.code` | Always | Capture per 1.1, open panel, focus in search |
 | `excerpt.note` | Always | Capture per 1.1, open the isolated note panel per D-055; if the code panel is already open, focus its note region instead |
 | `excerpt.open` | `idle`, focused turn intersects a saved excerpt | Reopen per D-030, list disambiguation when several intersect |
-| `note.open` | `idle`, focused turn intersects an excerpt carrying a note | Open the isolated note panel loaded with the note, list disambiguation when several intersect. Pointer twin: clicking the rail's note icon |
+| `note.open` | `idle`, focused turn intersects an excerpt carrying a note | Reopen the excerpt into the code panel with focus in its note field, list disambiguation when several intersect. Pointer twin: clicking the rail's note icon |
 
 Per D-065 the command strip is removed and none of these has a visible control. `excerpt.code` and `excerpt.note` are reachable by chord and from the context menu, which is now the only pointer route to capture; `excerpt.open` and `note.open` are chords with the clickable coded sentence and note icon as their pointer twins. D-057's discoverability floor names the shortcuts help as the surface that teaches the vocabulary, and it is unbuilt — recorded under D-065 as a known gap rather than an assumption.
 

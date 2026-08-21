@@ -942,6 +942,14 @@ Process note, for the working habits section of the build sequence: a behavior c
 
 One panel at a time: the note panel and code panel do not stack. The isolated panel serves the direct routes from the transcript; the code panel's note region serves the combined coding flow. Editing via either surface edits the same note.
 
+**Amended: reopening an existing excerpt goes to the code panel.** The Open note paragraph above sent `note.open` and its pointer twin to the isolated panel, and the click route followed for a note-only excerpt. That split an excerpt in half — a coder reopening a passage they had noted got a surface that could only edit the note, so adding a code meant closing and coming back by a different chord, a cost recorded as a finding when the split was built.
+
+Every route into an excerpt that already exists now opens the code panel: `excerpt.open`, `note.open`, a click on the passage, a click on the rail icon. What the excerpt carries decides where focus lands, not which panel opens — the note field where there is a note, the search field where there is not. `note.open` stays, because "take me to the note on this turn" is a different thing to ask for than "reopen this excerpt" even when both now arrive together; it is still offered only where a note exists, and its chooser still counts notes rather than excerpts.
+
+**What did not move.** `excerpt.note` on a fresh capture still opens the isolated panel: there is no excerpt to reopen, and the quick single-field case is the one the session evidence in this decision's header was about. The Notes page's non-excerpt entries and its New note button are unchanged. The last paragraph above holds and is what made the rest of this possible — the note is the same record whichever surface edits it.
+
+**A capability that had to come with it.** Close semantics above made emptying the field the way to delete a note, and that affordance lived in the panel this routing replaced. Without carrying it across there would have been no way to delete a note from the transcript at all. The code panel's save deletes the coder's own note when the field is emptied, and Save becomes available on a reopened excerpt whose own note has been cleared — narrowly, because "this excerpt had a note and the field is now empty" is not "every code has been unchecked", and D-030 keeps deleting a coded excerpt a separate explicit action.
+
 ## D-056 Transcript text sizing, a per-user reading preference
 
 Date: 2026-08 | Workflow: transcript display | Status: approved

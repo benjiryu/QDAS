@@ -158,8 +158,6 @@ interface Options {
   savedAt?: SavedExcerptSummary[];
   /** Opens the panel pre-populated with a saved excerpt's codes. */
   onReopen?: (summary: SavedExcerptSummary) => void;
-  /** Opens the isolated note panel on a saved excerpt's note. D-055. */
-  onOpenNote?: (summary: SavedExcerptSummary) => void;
   /**
    * Excerpts the focused turn intersects that carry a note, for `note.open`.
    * A subset of `savedAt`: an excerpt can be saved here and have no note.
@@ -212,7 +210,6 @@ export function useExcerptSelection({
   savedAt = [],
   notedAt = [],
   onReopen,
-  onOpenNote,
   onCapture,
   onClosePanel,
   codePanelOpen = false,
@@ -334,22 +331,6 @@ export function useExcerptSelection({
   );
 
   /**
-   * Opens a saved excerpt's note in the isolated panel, per D-055.
-   *
-   * The range is not captured and the machine does not move: this edits a note
-   * on an excerpt that already exists, and putting the selection into
-   * `confirmed` would draw a capture highlight over saved work and make the
-   * excerpt commands refuse.
-   */
-  const openNote = useCallback(
-    (summary: SavedExcerptSummary) => {
-      setOpenChoices([]);
-      onOpenNote?.(summary);
-    },
-    [onOpenNote],
-  );
-
-  /**
    * Reopens for coding, whatever the excerpt carries.
    *
    * Deliberately not routed by content, where the click below is. This command
@@ -378,17 +359,18 @@ export function useExcerptSelection({
   /**
    * The click route, per excerpt-selection.md section 3: open what is here.
    *
-   * An excerpt carrying only a note opens the note panel, because sending it to
-   * code selection shows an empty codebook with the note hidden in a
-   * disclosure — the cost D-055 exists to remove.
+   * "What is here" is the excerpt, all of it. This used to send a note-only one
+   * to the isolated note panel, which split an excerpt in half: a coder who
+   * reopened a passage they had noted got a surface that could only edit the
+   * note, and adding a code to it meant closing and coming back by another
+   * chord. Where the note lives now is where focus lands, not which panel opens.
    */
   const runOpenByContentAt = useCallback(
     (summaries: SavedExcerptSummary[]) => {
       if (summaries.length === 0) return;
       setChoiceIntent('auto');
       if (summaries.length === 1) {
-        if (isNoteOnly(summaries[0])) openNote(summaries[0]);
-        else reopen(summaries[0]);
+        reopen(summaries[0]);
         return;
       }
       setOpenChoices(summaries);
@@ -396,16 +378,22 @@ export function useExcerptSelection({
         `${summaries.length} saved excerpts cover this sentence. Choose which one to open.`,
       );
     },
-    [announcer, openNote, reopen],
+    [announcer, reopen],
   );
 
-  /** The same shape for notes, per D-055: one opens, several are offered. */
+  /**
+   * `note.open` and the rail icon: the same panel, landing on the note.
+   *
+   * The command still means "take me to the note on this turn" — it is offered
+   * only where one exists, and its chooser counts notes rather than excerpts —
+   * but what it opens is the excerpt's own panel, so the codes are there too.
+   */
   const runNoteAt = useCallback(
     (summaries: SavedExcerptSummary[]) => {
       if (summaries.length === 0) return;
       setChoiceIntent('note');
       if (summaries.length === 1) {
-        openNote(summaries[0]);
+        reopen(summaries[0]);
         return;
       }
       setOpenChoices(summaries);
@@ -413,7 +401,7 @@ export function useExcerptSelection({
         `${summaries.length} notes on this speaker turn. Choose which one to open.`,
       );
     },
-    [announcer, openNote],
+    [announcer, reopen],
   );
 
   const chooseSavedExcerpt = useCallback(
@@ -422,18 +410,14 @@ export function useExcerptSelection({
       if (!summary) return;
 
       /*
-        `note` means the note whatever the excerpt carries, which is what makes
-        `note.open` reach the note on a coded excerpt. `auto` asks the excerpt,
-        so one chooser can hold a coded excerpt and a note-only one and send
-        each where it belongs.
+        One destination now, whichever chord filled the chooser. The intent
+        still shapes what the list says — `note` counts notes on the turn,
+        `code` and `auto` count excerpts covering the sentence — but every row
+        opens the excerpt, and the note it carries is where focus lands.
       */
-      if (choiceIntent === 'note' || (choiceIntent === 'auto' && isNoteOnly(summary))) {
-        openNote(summary);
-        return;
-      }
       reopen(summary);
     },
-    [choiceIntent, openChoices, openNote, reopen],
+    [openChoices, reopen],
   );
 
   const dismissChoices = useCallback(() => {

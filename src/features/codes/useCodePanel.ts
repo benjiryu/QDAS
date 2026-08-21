@@ -288,6 +288,14 @@ export function useCodePanel({
   }, []);
   /** How many codes the panel opened with, for the opening announcement. */
   const loadedCountRef = useRef(0);
+  /**
+   * Whether the reopened excerpt arrived carrying a note. See `canSave`.
+   *
+   * State rather than a ref: what it decides is whether a control is available,
+   * so clearing the field has to re-render for the coder to see that saving
+   * became possible.
+   */
+  const [loadedNote, setLoadedNote] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const errorRef = useRef<HTMLElement | null>(null);
   const setErrorElement = useCallback((node: HTMLElement | null) => {
@@ -527,6 +535,11 @@ export function useCodePanel({
   const loadPending = useCallback(
     (codeIds: Id[], noteText = '') => {
       loadedCountRef.current = codeIds.length;
+      /*
+        Whether the excerpt arrived carrying a note, which is what makes
+        emptying the field a deletion rather than an empty form. See `canSave`.
+      */
+      setLoadedNote(noteText.trim() !== '');
       applyPending(codeIds);
       // The note comes back with the codes, so the row reads "Edit note" and
       // opens on what is already written rather than on an empty box.
@@ -661,10 +674,26 @@ export function useCodePanel({
    * elsewhere — an empty pending list never supersedes an assignment.
    */
   const hasNote = noteText.trim() !== '';
-  const canSave = pendingCodeIds.length > 0 || hasNote;
+  /*
+    And where a reopened excerpt's own note has been emptied, because that is a
+    deletion the coder asked for.
+
+    D-055 let them delete a note by clearing the field, and when every route
+    into an existing excerpt started opening this panel instead of the isolated
+    one, that affordance would have gone missing — the note is the same record
+    whichever surface edits it, so the delete has to be reachable from whichever
+    surface is offered.
+
+    Narrow on purpose. "This excerpt had a note and now the field is empty" is
+    not "every code has been unchecked": D-030 keeps deleting a coded excerpt a
+    separate explicit action, and making save available on any reopened excerpt
+    would have turned unchecking into a back route to it.
+  */
+  const clearedItsNote = isReopened && loadedNote && !hasNote;
+  const canSave = pendingCodeIds.length > 0 || hasNote || clearedItsNote;
 
   const save = useCallback(() => {
-    if (pendingCodeIds.length === 0 && noteText.trim() === '') {
+    if (pendingCodeIds.length === 0 && noteText.trim() === '' && !clearedItsNote) {
       announcer.announce(
         'Save is unavailable because nothing is pending. Check a code or write a note.',
       );
@@ -694,7 +723,7 @@ export function useCodePanel({
 
     // Section 9: focus lands on the error message, with retry adjacent.
     queueMicrotask(() => errorRef.current?.focus?.());
-  }, [announcer, noteText, onSave, pendingCodeIds, uncertain]);
+  }, [announcer, clearedItsNote, noteText, onSave, pendingCodeIds, uncertain]);
 
   /**
    * Clears everything this panel was holding. Called after a save has been
@@ -702,6 +731,7 @@ export function useCodePanel({
    */
   const clearAfterSave = useCallback(() => {
     loadedCountRef.current = 0;
+    setLoadedNote(false);
     setSaveError(null);
     // D-048: a reopened panel starts with the companion closed. Reset on the
     // close routes rather than on open, because resetting on open would be a
@@ -726,6 +756,7 @@ export function useCodePanel({
    */
   const discardAndClose = useCallback(() => {
     loadedCountRef.current = 0;
+    setLoadedNote(false);
     setSaveError(null);
     setCompanionOpen(false);
     applyPending([]);

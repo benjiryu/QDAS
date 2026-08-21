@@ -213,7 +213,7 @@ describe('3b: codes win over a note', () => {
 });
 
 describe('4: revisiting shows the note', () => {
-  it('reads "Edit note", shows the text while shut, and opens on it', async () => {
+  it('reads "Edit note" and opens already on the note', async () => {
     renderWorkspace();
     captureFirstTurn();
     fireEvent.click(panel().querySelector(`[data-code-id="${FIRST.codeId}"]`)!);
@@ -223,12 +223,13 @@ describe('4: revisiting shows the note', () => {
 
     await reopenFirstTurn();
 
+    /*
+      Open on it, not shut over it. Reopening an excerpt that carries a note now
+      lands the coder in the field, so the collapsed preview that used to show
+      the text is not what they meet — the text is in the box they are in.
+    */
     expect(noteRow()).toHaveTextContent('Edit note');
-    // Visible while the box is shut, so returning shows it without opening.
-    expect(noteRegion().querySelector('[data-note-text]')).toHaveTextContent('The first thought.');
-    expect(noteRow()).toHaveAttribute('aria-expanded', 'false');
-
-    fireEvent.click(noteRow());
+    expect(noteRow()).toHaveAttribute('aria-expanded', 'true');
     expect(within(noteRegion()).getByLabelText(/note about this excerpt/i)).toHaveValue(
       'The first thought.',
     );
@@ -255,7 +256,7 @@ describe('5: editing a note on a revisited excerpt keeps it', () => {
     expect(saved(container)).toMatchObject({ notes: 1 });
 
     await reopenFirstTurn();
-    expect(noteRegion().querySelector('[data-note-text]')).toHaveTextContent(
+    expect(within(noteRegion()).getByLabelText(/note about this excerpt/i)).toHaveValue(
       'Second draft, after rereading.',
     );
   });

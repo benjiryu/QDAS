@@ -403,12 +403,17 @@ test('a reopened excerpt wears the blue, and its saved treatment returns', async
   expect(squashed(dragged)).not.toBe('');
 });
 
-test('a note-only excerpt wears the blue while note.open addresses it', async ({ page }) => {
+test('a note-only excerpt wears the blue while a panel addresses it', async ({ page }) => {
   /*
-    The case that did not work before this. A note edit does not move the
-    excerpt machine — it is not a capture — so the range says which panel is
-    addressing it instead, and goes back to the note-only grey and its dotted
-    underline when the panel commits.
+    D-063: while a panel addresses a range, that range wears selection blue, and
+    goes back to the note-only grey and its dotted underline when the panel
+    commits.
+
+    The mechanism changed underneath this. A note edit used to open the isolated
+    panel without moving the excerpt machine, so the range had to say which
+    panel was addressing it; `note.open` reopens the excerpt now, which moves
+    the machine and paints the captured band. What the reader sees is the same,
+    which is what the test is for.
   */
   await page.locator('[data-turn-id]').first().click();
   await press(page, 'excerpt.note');
@@ -425,7 +430,7 @@ test('a note-only excerpt wears the blue while note.open addresses it', async ({
 
   await page.locator('[data-turn-id]').first().click();
   await press(page, 'note.open');
-  await expect(page.locator('[data-region="note-panel"]')).toBeVisible();
+  await expect(page.getByRole('dialog', { name: /code assignment/i })).toBeVisible();
 
   const selectionBlue = await page
     .locator('[data-segment-id]')
@@ -434,7 +439,7 @@ test('a note-only excerpt wears the blue while note.open addresses it', async ({
   expect(await capturedBackground(page)).toBe(selectionBlue);
 
   await page.getByRole('button', { name: 'Save & Close' }).click();
-  await expect(page.locator('[data-region="note-panel"]')).toHaveCount(0);
+  await expect(page.getByRole('dialog', { name: /code assignment/i })).toHaveCount(0);
 
   await expect(page.locator('[data-captured]')).toHaveCount(0);
   expect(
